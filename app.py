@@ -8,10 +8,59 @@ import requests
 import pandas as pd
 from streamlit_float import *
 import re
+import gspread
+from google.oauth2.service_account import Credentials
+import toml
 st.set_page_config(layout="wide")
 float_init(theme=True, include_unstable_primary=False)
 
+def get_user_ip():
+    try:
+        ip = requests.get('https://api64.ipify.org?format=json').json()["ip"]
+        response = requests.get(f'https://ipinfo.io/{ip}/json')
+        data = response.json()
+        location = {
+            'ip': data.get('ip'),
+            'city': data.get('city'),
+            'region': data.get('region'),
+            'country': data.get('country'),
+            'loc': data.get('loc'),  # Latitude and Longitude
+            'org': data.get('org'),
+            'timezone': data.get('timezone')
+        }
+        return location
+    except Exception as e:
+        return {"error": str(e)}
+
+if 'user_data' not in st.session_state:
+    st.session_state.user_data = {
+        "visits": 0,
+        'last question done': None,
+        'location data': get_user_ip()
+    }
+
+toml_data = toml.load(".streamlit/secrets.toml")
+credentials_data = toml_data["connections"]["gsheets"]
+
+st.write(st.session_state)
+
+# Define the scope for the Google Sheets API
+scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+
+# Authenticate using the credentials from the TOML file
+credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
+client = gspread.authorize(credentials)
+
+# Open the Google Sheet by name
+sheet = client.open('interactive chains').sheet1 # change name but this is for testing purposes
+
+def write_to_sheet(data):
+    # write the data in the format of: user, quetion idx, step #, action, time?
+    row_data = [data] # this is to be edited later by pulling in data from session state
+    sheet.append_row(data)
+
 openai.api_key = os.environ["OPENAI_API_KEY"]
+# openai.api_key = toml_data["openai_api_key"]
 openai_api_key = openai.api_key
 env = wikienv.WikiEnv()
 env = wrappers.FeverWrapper(env, split="dev")
@@ -121,17 +170,24 @@ def add_thought_step(i, prompt, right_column):
 
 def display_right_column(idx, right_column, condition):
     question = env.reset(idx=idx)
+    steps = 1
     if condition == "human" or condition == "hai-answer" or condition == "hai-static-chain":
         right_column.write("Perform a Search or Lookup action to obtain additional information")
         search_query = right_column.text_input('Search', key=f"search {idx}")
         if search_query:
+            write_to_sheet([idx, f"search[{search_query}]", steps])
             obs, r, done, info = step(env, f"search[{search_query}]")
             right_column.write(obs)
+            steps += 1
+            search_query = False
 
         lookup_query = right_column.text_input('Lookup', key=f"lookup {idx}")
         if lookup_query:
+            write_to_sheet([idx, f"lookup[{lookup_query}]", steps])
             obs, r, done, info = step(env, f"lookup[{lookup_query}]")
             right_column.write(obs)
+            steps += 1
+            lookup_query = False
         form = right_column.form(key='user-form')
         answer = form.radio(
             "Select your final answer",
@@ -141,6 +197,9 @@ def display_right_column(idx, right_column, condition):
 
         submit = form.form_submit_button('Submit')
         if submit:
+            # reset the search boxes
+            # log response into spreadsheet here.
+            write_to_sheet([idx, f"finish[{answer}]", steps])
             obs, r, done, info = step(env, f"finish[{answer}]")
             st.session_state['answer'] = answer
             right_column.write(f'Submitted: {answer}!')
@@ -450,9 +509,3 @@ else:
     left_column = display_left_column(idx, left_column, st.session_state.condition)
     right_column = display_right_column(idx, right_column, st.session_state.condition)
     # print(st.session_state)
-    
-
-
-
-
-
