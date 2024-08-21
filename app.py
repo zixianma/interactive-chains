@@ -59,14 +59,6 @@ if not st.session_state.username:
     st.button("Submit", on_click=submit_username)
 else:
 
-    def write_to_sheet(data):
-        # write the data in the format of: user, quetion idx, step #, action, time?
-        data.insert(0, st.session_state.username) # this is to be edited later by pulling in data from session state
-        sheet.worksheet('actions').append_row(data)
-
-    def write_to_user_sheet(data):
-        sheet.worksheet('users').append_row(data)
-
     toml_data = toml.load(".streamlit/secrets.toml")
     credentials_data = toml_data["connections"]["gsheets"]
 
@@ -81,9 +73,6 @@ else:
 
     # Open the Google Sheet by name
     sheet = client.open('interactive chains')
-
-    # send user data to user sheet
-    write_to_user_sheet([st.session_state.username, st.session_state.user_data["visits"], json.dumps(st.session_state.user_data["location data"])])
 
     # this is to load it using TOML as well
     openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -211,7 +200,6 @@ else:
             search_query = right_column.text_input('Search', key=f"search {idx}")
             # may need to incoporate a flag when text input changes
             if search_query != st.session_state[f"question_idx_{idx}"][f"last_search_{idx}"] and search_query != "":
-                write_to_sheet([idx, st.session_state[f"question_idx_{idx}"][f"step_number_{idx}"], f"search[{search_query}]", condition])
                 st.session_state[f"question_idx_{idx}"][f"last_search_{idx}"] = search_query
                 obs, r, done, info = step(env, f"search[{search_query}]")
                 right_column.write(obs)
@@ -219,7 +207,6 @@ else:
 
             lookup_query = right_column.text_input('Lookup', key=f"lookup {idx}")
             if lookup_query != st.session_state[f"question_idx_{idx}"][f"last_lookup_{idx}"] and lookup_query != "":
-                write_to_sheet([idx, st.session_state[f"question_idx_{idx}"][f"step_number_{idx}"], f"lookup[{lookup_query}]", condition])
                 st.session_state[f"question_idx_{idx}"][f"last_lookup_{idx}"] = lookup_query
                 obs, r, done, info = step(env, f"lookup[{lookup_query}]")
                 right_column.write(obs)
@@ -237,14 +224,11 @@ else:
             if submit:
                 end_time = datetime.now()
                 elapsed_time = (end_time - st.session_state[f"question_idx_{idx}"][f"start_time_{idx}"]).total_seconds()
-                # reset the search boxes to help prevent duplicate logging?
-                # log response into spreadsheet here.
-                write_to_sheet([idx, st.session_state[f"question_idx_{idx}"][f"step_number_{idx}"], f"finish[{answer}]", condition, elapsed_time])
                 obs, r, done, info = step(env, f"finish[{answer}]")
                 st.session_state.user_data["last question idx done"] = idx
                 # st.session_state['answer'] = answer
                 right_column.write(f'Submitted: {answer}!')
-                right_column.write(f'{obs}')
+                # right_column.write(f'{obs}')
         # elif condition.find("interact") > -1:
             
         #     right_column.write("Modify AI's thoughts/actions:")
