@@ -37,6 +37,7 @@ def submit_username():
     if st.session_state.username_input:
         st.session_state.username = st.session_state.username_input
 
+# @st.cache_data
 def step(env, action):
     attempts = 0
     while attempts < 10:
@@ -45,6 +46,7 @@ def step(env, action):
         except requests.exceptions.Timeout:
             attempts += 1
 
+@st.cache_data
 def llm(messages, stop=["\n"]):
     client = OpenAI()
 
@@ -67,7 +69,18 @@ def load_model_outputs():
     q_id2output = {}
     for _, row in df.iterrows():
         q_id = row['question_idx']
-        q_id2output[q_id] = row['all_steps']
+        
+        model_output = row['all_steps']
+        new_steps = []
+        for i, step_str in enumerate(model_output):
+            step_str = process_model_output(step_str, final=False) # (i == len(model_output) -1)
+            thought_str = get_part_from_step(step_str, "Thought", "Action").strip()
+            action_str = get_part_from_step(step_str, "Action", "Observation").strip()
+            obs_str = get_part_from_step(step_str, "Observation", "\n").strip()
+            new_step = {"thought": thought_str, "action": action_str, "observation": obs_str}
+            new_steps.append(new_step)
+
+        q_id2output[q_id] = new_steps
     return q_id2output
 
 def get_model_output(output_df, idx):
@@ -95,8 +108,16 @@ def get_part_from_step(step_str, kw, stop="\n"):
             end_idx = len(step_str)
         if end_idx > -1:
             return step_str[:end_idx] # start_idx+
-   
     return ""
+
+@st.cache_data
+def extract_final_answer(model_output):
+    last_step_str = model_output[-1]['action']
+    # last_step_str = process_model_output(last_step_str, final=True)
+    start = max(last_step_str.find("["), 0)
+    end = last_step_str.find("]")
+    final_ans = last_step_str[start+1:end if end > 0 else len(last_step_str)]
+    return final_ans
 
 def display_left_column(idx, left_column, condition):
     question = env.reset(idx=idx)
@@ -108,51 +129,60 @@ def display_left_column(idx, left_column, condition):
     if condition == "C. hai-answer":
         # model_output = get_model_output(model_outputs, idx)
         model_output = st.session_state.model_outputs[idx]
-        last_step_str = model_output[-1]
-        last_step_str = process_model_output(last_step_str, final=True)
-        start = max(last_step_str.find("["), 0)
-        end = last_step_str.find("]")
-        final_ans = last_step_str[start+1:end if end > 0 else len(last_step_str)]
+        final_ans = extract_final_answer(model_output)
+        
         left_column.divider()
-        left_column.write(f"AI answer: {final_ans}")
+        container = left_column.chat_message("assistant")
+        container.write(f"AI answer: {final_ans}")
 
     elif condition != "A. human":
         # model_output = get_model_output(model_outputs, idx)
         model_output = st.session_state.model_outputs[idx]
         left_column.divider()
+        
         for i, step_str in enumerate(model_output):
-            step_str = process_model_output(step_str, final=(i == len(model_output) -1))
-            left_column.write(step_str)
+            step_container = left_column.chat_message("assistant")
+            # step_str = process_model_output(step_str, final=(i == len(model_output) -1))
+            keywords = ['thought', 'action', 'observation']
+            if i == len(model_output) - 1:
+                keywords = ['thought', 'action']
+            for kw in keywords:
+                if kw == "observation":
+                    left_column.chat_message("user", avatar="🌐").write(step_str[kw])
+                else:
+                    step_container.write(step_str[kw])
+
             left_column.divider()
     return left_column
 
+@st.cache_data
 def validate_action_str_format(action_str):
     pattern = r"(search|lookup)\[.+\]"
     match = re.fullmatch(pattern, action_str)
     return match is not None
 
+# def add_thought_step(i, prompt, right_column): 
+#     right_column.write(f"Step {i}")
+#     thought = ""
 
-def add_thought_step(i, prompt, right_column): 
-    right_column.write(f"Step {i}")
-    thought = ""
-
-    thought = right_column.text_area("Enter your thought:", key=f"thought {i}")
+#     thought = right_column.text_area("Enter your thought:", key=f"thought {i}")
     
-    finish_t = right_column.button("Finish", key=f"finish thought {i}")
-    # right_column.write("PROMPT:\n" + prompt + thought + f"\nAction {i}:")
-    if finish_t:
-        action = llm(prompt + thought + f"\nAction {i}:", stop=[f"\nObservation {i}:"])
-        obs, r, done, info = step(env, action[0].lower() + action[1:])
+#     finish_t = right_column.button("Finish", key=f"finish thought {i}")
+#     # right_column.write("PROMPT:\n" + prompt + thought + f"\nAction {i}:")
+#     if finish_t:
+#         action = llm(prompt + thought + f"\nAction {i}:", stop=[f"\nObservation {i}:"])
+#         obs, r, done, info = step(env, action[0].lower() + action[1:])
 
-        obs = obs.replace('\\n', '')
-        step_str = f"Thought {i}: {thought}\nAction {i}: {action}\nObservation {i}: {obs}\n"
-        right_column.write(f"STEP:\n{step_str}")
-        prompt += step_str
+#         obs = obs.replace('\\n', '')
+#         step_str = f"Thought {i}: {thought}\nAction {i}: {action}\nObservation {i}: {obs}\n"
+#         right_column.write(f"STEP:\n{step_str}")
+#         prompt += step_str
 
-    return prompt, right_column
+#     return prompt, right_column
 
+@st.cache_data
 def format_action_str(action):
-    pattern = r'Action\s\d+:'
+    pattern = r'Action\s*\d*:'
     match = re.search(pattern, action)
     if match:
         start_idx = match.end()
@@ -161,17 +191,17 @@ def format_action_str(action):
 
 def display_right_column(idx, right_column, condition):
     question = env.reset(idx=idx)
-
-     # make session state dict per question
-    if idx not in st.session_state:
-        st.session_state[idx] = {
-            f"last_search_{idx}":  None,
-            f"last_lookup_{idx}": None,
-            f"start_time_{idx}": datetime.now(),  # Record the start time
-            f"step_number_{idx}": 1
-        }
-
     if condition == "A. human" or condition == "C. hai-answer" or condition == "D. hai-static-chain":
+        # make session state dict per question
+        if f"last_search_{idx}" not in st.session_state[idx]:
+            st.session_state[idx][f"last_search_{idx}"] = None
+        if f"last_lookup_{idx}" not in st.session_state[idx]:
+            st.session_state[idx][f"last_lookup_{idx}"] = None
+        if f"start_time_{idx}" not in st.session_state[idx]:
+            st.session_state[idx][f"start_time_{idx}"] = datetime.now()
+        if f"step_number_{idx}" not in st.session_state[idx]:
+            st.session_state[idx][f"step_number_{idx}"] = 1
+
         right_column.write("Perform a Search or Lookup action to obtain additional information")
         search_query = right_column.text_input('Search', key=f"search {idx}")
         # may need to incoporate a flag when text input changes
@@ -206,28 +236,28 @@ def display_right_column(idx, right_column, condition):
             right_column.write(f'Submitted: {answer}!')
             # right_column.write(f'{obs}')
 
-        right_column.write("Perform a Search or Lookup action to obtain additional information")
-        search_query = right_column.text_input('Search', key=f"search {idx}")
-        if search_query:
-            obs, r, done, info = step(env, f"search[{search_query}]")
-            right_column.write(obs)
+        # right_column.write("Perform a Search or Lookup action to obtain additional information")
+        # search_query = right_column.text_input('Search', key=f"search {idx}")
+        # if search_query:
+        #     obs, r, done, info = step(env, f"search[{search_query}]")
+        #     right_column.write(obs)
 
-        lookup_query = right_column.text_input('Lookup', key=f"lookup {idx}")
-        if lookup_query:
-            obs, r, done, info = step(env, f"lookup[{lookup_query}]")
-            right_column.write(obs)
-        form = right_column.form(key='user-form')
-        answer = form.radio(
-            "Select your final answer",
-            ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"],
-            index=None,
-        )
-        submit = form.form_submit_button('Submit')
-        if submit:
-            obs, r, done, info = step(env, f"finish[{answer}]")
-            st.session_state['answer'] = answer
-            right_column.write(f'Submitted: {answer}!')
-            right_column.write(f'{obs}')
+        # lookup_query = right_column.text_input('Lookup', key=f"lookup {idx}")
+        # if lookup_query:
+        #     obs, r, done, info = step(env, f"lookup[{lookup_query}]")
+        #     right_column.write(obs)
+        # form = right_column.form(key='user-form')
+        # answer = form.radio(
+        #     "Select your final answer",
+        #     ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"],
+        #     index=None,
+        # )
+        # submit = form.form_submit_button('Submit')
+        # if submit:
+        #     obs, r, done, info = step(env, f"finish[{answer}]")
+        #     st.session_state['answer'] = answer
+        #     right_column.write(f'Submitted: {answer}!')
+        #     right_column.write(f'{obs}')
     else:
         
         if condition.find("thought") > -1:
@@ -243,12 +273,10 @@ def display_right_column(idx, right_column, condition):
             with st.container():
                 for msg in st.session_state[idx]["messages"][1:]:
                     content = msg['content']
-                    # pattern = r'Action\s\d+'
-                    # match = re.search(pattern, content)
-                    # if match:
-                    #     start_idx = match.start()
-                    #     content = content[:start_idx]
-                    right_column.chat_message(msg["role"]).write(content)
+                    if msg['content'].find("Observation") > -1:
+                        right_column.chat_message(msg["role"], avatar="🌐").write(msg["content"])
+                    else:
+                        right_column.chat_message(msg["role"]).write(msg["content"])
                 
                 if prompt := init_prompt:
                     # button_b_pos = "0rem"
@@ -262,19 +290,19 @@ def display_right_column(idx, right_column, condition):
                     content = action
                     st.session_state[idx]["messages"].append({"role": "assistant", "content": content})
                     right_column.chat_message("assistant").write(content)
-
-                    pattern = r'Action\s\d+:'
-                    match = re.search(pattern, action)
-                    if match:
-                        start_idx = match.end()
-                        action = action[start_idx+1:].strip()
-                    obs, r, done, info = step(env, action[0].lower() + action[1:])
+                    action = format_action_str(action)
+                    # pattern = r'Action\s\d+:'
+                    # match = re.search(pattern, action)
+                    # if match:
+                    #     start_idx = match.end()
+                    #     action = action[start_idx+1:].strip()
+                    obs, r, done, info = step(env, action)
                     obs = obs.replace('\\n', '')
                     
                     if not done:
                         content = content = f"Observation {st.session_state[idx]['turn_id']}: {obs}\n"
                         st.session_state[idx]["messages"].append({"role": "user", "content": content})
-                        right_column.chat_message("user").write(content)
+                        right_column.chat_message("user", avatar="🌐").write(content)
                         st.session_state[idx]["turn_id"] += 1
 
         elif condition.find("action") > -1:
@@ -292,7 +320,10 @@ def display_right_column(idx, right_column, condition):
             # float_parent(css=button_css)
             with st.container():
                 for msg in st.session_state[idx]["messages"][1:]:
-                    right_column.chat_message(msg["role"]).write(msg["content"])
+                    if msg['content'].find("Observation") > -1:
+                        right_column.chat_message(msg["role"], avatar="🌐").write(msg["content"])
+                    else:
+                        right_column.chat_message(msg["role"]).write(msg["content"])
 
                 if st.session_state[idx]["turn_id"] == 0:
                     # last_msg = st.session_state[idx]["messages"][-1]
@@ -324,7 +355,7 @@ def display_right_column(idx, right_column, condition):
                         if not done:
                             content = f"Observation {st.session_state[idx]['turn_id']}: {obs}\n"
                             st.session_state[idx]["messages"].append({"role": "user", "content": content})
-                            right_column.chat_message("user").write(content)
+                            right_column.chat_message("user", avatar="🌐").write(content)
                             st.session_state[idx]["turn_id"] += 1
                             
                             # last_msg = st.session_state[idx]["messages"][-1]
@@ -345,7 +376,10 @@ def display_right_column(idx, right_column, condition):
             init_prompt = right_column.chat_input(placeholder="Or, enter your thought or action (e.g. search[query], lookup[text]):")
             with st.container():
                 for msg in st.session_state[idx]["messages"][1:]:
-                    right_column.chat_message(msg["role"]).write(msg["content"])
+                    if msg['content'].find("Observation") > -1:
+                        right_column.chat_message(msg["role"], avatar="🌐").write(msg["content"])
+                    else:
+                        right_column.chat_message(msg["role"]).write(msg["content"])
 
                 last_msg = st.session_state[idx]['messages'][-1]['content']
                 # print("LAST MSG:", last_msg)
@@ -367,7 +401,7 @@ def display_right_column(idx, right_column, condition):
                         if not done:
                             content = f"Observation {st.session_state[idx]['turn_id']}: {obs}\n"
                             st.session_state[idx]["messages"].append({"role": "user", "content": content})
-                            right_column.chat_message("user").write(content)
+                            right_column.chat_message("user", avatar="🌐").write(content)
                             st.session_state[idx]["turn_id"] += 1
                             
                 elif call_ai:
@@ -384,80 +418,109 @@ def display_right_column(idx, right_column, condition):
                         st.session_state[idx]["messages"].append({"role": "assistant", "content": content})
                         right_column.chat_message("assistant").write(content)
 
-                        pattern = r'Action\s\d+:'
-                        match = re.search(pattern, action)
-                        if match:
-                            start_idx = match.end()
-                            action = action[start_idx+1:].strip()
-                        obs, r, done, info = step(env, action[0].lower() + action[1:])
+                        # pattern = r'Action\s\d+:'
+                        # match = re.search(pattern, action)
+                        # if match:
+                        #     start_idx = match.end()
+                        #     action = action[start_idx+1:].strip()
+                        action = format_action_str(action)
+                        obs, r, done, info = step(env, action)
                         obs = obs.replace('\\n', '')
                         
                         if not done:
                             content = content = f"Observation {st.session_state[idx]['turn_id']}: {obs}\n"
                             st.session_state[idx]["messages"].append({"role": "user", "content": content})
-                            right_column.chat_message("user").write(content)
+                            right_column.chat_message("user", avatar="🌐").write(content)
                             st.session_state[idx]["turn_id"] += 1
         elif condition.find("update") > -1:
             # all_steps_dict = {"thought": [], "action": [], "observation": [], "delete": []}
             # valid_steps = {}
-            if 'curr_model_output' not in st.session_state:
-                st.session_state['curr_model_output'] = st.session_state.model_outputs[idx][:-1]
+            right_column.write("Edit AI's thought/action and get a new answer:")
+            model_output =  st.session_state.model_outputs[idx][:-1]
+            if 'curr_model_output' not in st.session_state[idx]:
+                st.session_state[idx]['curr_model_output'] = model_output
+            if 'curr_num_steps' not in st.session_state[idx]:
+                st.session_state[idx]['curr_num_steps'] = len(model_output)
 
             new_model_output = []
-            for i, step_str in enumerate(st.session_state.model_outputs[idx][:-1]):
-                step_str = process_model_output(step_str, final=False) #(i == len(model_output) -1)
-                obs_str = get_part_from_step(step_str, "Observation", "\n").strip()
-                thought_str = get_part_from_step(step_str, "Thought", "Action").strip()
-                action_str = get_part_from_step(step_str, "Action", "Observation").strip()
-                before_obs_str = step_str.replace(obs_str, "")
+            for i, step_dict in enumerate(model_output):
+                # step_str = process_model_output(step_str, final=False) #(i == len(model_output) -1)
+                obs_str = step_dict['observation'] #get_part_from_step(step_str, "Observation", "\n").strip()
+                thought_str = step_dict['thought'] # get_part_from_step(step_str, "Thought", "Action").strip()
+                action_str = step_dict['action'] # get_part_from_step(step_str, "Action", "Observation").strip()
                 # if i not in valid_steps:
                 #     valid_steps[i] = True
                 # right_column.chat_message("assistant").write(before_obs_str) # , avatar="🧑‍💻"
                 # right_column.header("🤖")
  
-                # if valid_steps[i]:
-                step_container = right_column.container(border=True)
-                if f"step {i} deleted" not in st.session_state or not st.session_state[f"step {i} deleted"]:
-                    thought_input = step_container.text_area("🤖", thought_str, label_visibility="visible", key=f"thought {i}")
+                step_container = right_column.chat_message("assistant") # right_column.container(border=False)
+                if f"step {i} deleted" not in st.session_state or not st.session_state[idx][f"step {i} deleted"]:
+                    thought_input = step_container.text_area("", thought_str, label_visibility="collapsed", key=f"thought {i}")
                     action_input = step_container.text_input("", action_str, label_visibility="collapsed", key=f"actiin {i}")
                     
-                    if action := action_input:
+                    if action := action_input and action_input != action_str:
                         action = format_action_str(action_input)
                         obs, r, done, info = step(env, action)
                         obs_str = obs.replace('\\n', '')   
 
-                        # update = right_column.button("Edit", key=f"update step {i}")
-                        if len(obs_str) > 0:
-                            # right_column.chat_message("user").write(obs_str)
-                            # right_column.header("🌐")
-                            step_container.text_area("🌐", obs_str, disabled=True, label_visibility="collapsed", key=f"observation {i}")
+                    if len(obs_str) > 0: # it's possible that the extraction on the original step str failed
+                        # obs_container = right_column.chat_message("user", avatar="🌐")
+                        right_column.chat_message("user", avatar="🌐").write(obs_str)
+                        # step_container.text_area("🌐", obs_str, disabled=True, label_visibility="visible", key=f"observation {i}")
 
                     if f"step {i} deleted" not in st.session_state:
-                        st.session_state[f"step {i} deleted"] = False
+                        st.session_state[idx][f"step {i} deleted"] = False
 
                     def click_button(i):
-                        st.session_state[f"step {i} deleted"] = True
+                        st.session_state[idx][f"step {i} deleted"] = True
 
                     delete = right_column.button("Delete this step",  key=f"delete {i}", on_click=click_button, args=(i, )) # 
-                    new_model_output.append(step_str)
+                    new_model_output.append(step_dict)
                 else:
                     if f"delete {i}" not in st.session_state:
                         st.session_state[f"delete {i}"] = True
-                    
+            
+            step_num = st.session_state[idx]['curr_num_steps']
+            if f"step_{step_num}_added" not in st.session_state:
+                st.session_state[idx][f"step_{step_num}_added"] = False
+
+            def click_button(step_num):
+                st.session_state[idx][f"step_{step_num}_added"] = True
+                st.session_state[idx]['curr_num_steps'] += 1
+
+            # new_step_container = right_column.container(border=False) # right_column.empty()
+            for j in range(len(model_output), step_num):
+                new_step_container = right_column.chat_message("assistant")
+                # print(j, st.session_state[idx][f"step_{j}_added"])
+                if st.session_state[idx][f"step_{j}_added"]:
+
+                    new_thought_input = new_step_container.text_area("🤖", "Thought:", label_visibility="collapsed", key=f"thought {j}")
+                    new_action_input = new_step_container.text_input("", "Action:", label_visibility="collapsed", key=f"action {j}")
+
+                    new_step = {"thought": new_thought_input, "action": new_action_input, "observation": ""}
+                    # new_action = "Action:"
+                    if new_action := new_action_input and new_action_input != "Action:":
+                        new_action = format_action_str(new_action_input)
+                        new_obs, r, done, info = step(env, new_action)
+                        new_obs_str = new_obs.replace('\\n', '')  
+                        new_obs = new_step_container.text_area("🌐", new_obs_str, disabled=True, label_visibility="collapsed", key=f"observation {j}")
+                        # new_step["action"] = new_action_input
+                        new_step["observation"] = new_obs_str
+                    new_model_output.append(new_step)
+            add = right_column.button("Add step", key=f"add {step_num}", on_click=click_button, args=(step_num, ))
+            
             st.session_state['curr_model_output'] = new_model_output
 
             num_steps = len(st.session_state['curr_model_output'])
-            print(st.session_state['curr_model_output'])
             call_ai = right_column.button("Get AI's suggested answer", key="call ai")
             curr_msgs = [{"role": "user", "content": st.session_state['task_prompt'] + st.session_state[idx]['question']}]
-            curr_msgs += [{"role": "assistant", "content": content} for content in new_model_output]
+            curr_msgs += [{"role": "assistant", "content": "\n".join([step_dict['thought'], step_dict['action'], step_dict['observation']])} for step_dict in new_model_output]
             curr_msgs.append({"role": "user", "content": f"Thought {num_steps+1}: Conclude with the final answer\n"})
             if call_ai:
                 final_thought_action = llm(curr_msgs, stop=["Observation"])
-                print(final_thought_action)
-                step_container = right_column.container(border=True)
+                step_container = right_column.container(border=False)
                 
-                final = step_container.text_area("🤖", final_thought_action, label_visibility="visible", key=f"final answer", disabled=True)
+                final = step_container.text_area("🤖", final_thought_action, label_visibility="collapsed", key=f"final answer", disabled=True)
             
             
             # for i in range(num_steps):
@@ -563,11 +626,11 @@ all_ids = [5376, 6158, 4627, 2836, 1557, 4118, 2711, 3477, 280, 2208, 802, 1955,
 # st.write(model_outputs.head())
 condition = st.radio(
         "Condition",
-        ["A. human", "C. hai-answer", "D. hai-static-chain", "E. hai-human-thought", "F. hai-human-action", "G. hai-mixed"], # "hai-interact-chain", "hai-interact-chain-delayed", 
+        ["A. human", "C. hai-answer", "D. hai-static-chain", "E. hai-human-thought", "F. hai-human-action", "G. hai-mixed", "H. hai-update"], # "hai-interact-chain", "hai-interact-chain-delayed", 
         # captions=["A", "C", "D", "E", "F", "G"]
         # index=None,
 )
-condition = "hai-human-update"
+# condition = "hai-update"
 # if 'condition' not in st.session_state:
 st.session_state.condition = condition
 
