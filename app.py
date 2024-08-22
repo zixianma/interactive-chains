@@ -33,8 +33,13 @@ def get_user_ip():
     except Exception as e:
         return {"error": str(e)}
 
-def submit_username():
-    if st.session_state.username_input:
+def submit_consent():
+    if not consent_input or not username_input:
+        st.warning("Please fill in all required fields.")
+    elif consent_input.lower() != 'yes':
+        st.warning("You cannot proceed unless you agree to the terms.") 
+    else:
+        st.session_state.consent = st.session_state.consent_input
         st.session_state.username = st.session_state.username_input
 
 def step(env, action):
@@ -127,15 +132,32 @@ def add_thought_step(i, prompt, right_column):
 
 def display_right_column(idx, right_column, condition):
     question = env.reset(idx=idx)
+
+    # make session state dict per question
+    if f"question_idx_{idx}" not in st.session_state:
+        st.session_state[f"question_idx_{idx}"] = {
+            f"last_search_{idx}":  None,
+            f"last_lookup_{idx}": None,
+            f"start_time_{idx}": datetime.now(),  # Record the start time
+            f"step_number_{idx}": 0,
+            "actions": []
+        }
+
     if condition == "A. human" or condition == "C. hai-answer" or condition == "D. hai-static-chain":
         right_column.write("Perform a Search or Lookup action to obtain additional information")
         search_query = right_column.text_input('Search', key=f"search {idx}")
-        if search_query:
+        if search_query != st.session_state[f"question_idx_{idx}"][f"last_search_{idx}"] and search_query != "":
+            st.session_state[f"question_idx_{idx}"][f"step_number_{idx}"] += 1
+            st.session_state[f"question_idx_{idx}"][f"last_search_{idx}"] = search_query
+            st.session_state[f"question_idx_{idx}"]["actions"].append(f"search[{search_query}]")
             obs, r, done, info = step(env, f"search[{search_query}]")
             right_column.write(obs)
 
         lookup_query = right_column.text_input('Lookup', key=f"lookup {idx}")
-        if lookup_query:
+        if lookup_query != st.session_state[f"question_idx_{idx}"][f"last_lookup_{idx}"] and lookup_query != "":
+            st.session_state[f"question_idx_{idx}"][f"step_number_{idx}"] += 1
+            st.session_state[f"question_idx_{idx}"][f"last_lookup_{idx}"] = lookup_query
+            st.session_state[f"question_idx_{idx}"]["actions"].append(f"lookup[{lookup_query}]")
             obs, r, done, info = step(env, f"lookup[{lookup_query}]")
             right_column.write(obs)
         form = right_column.form(key='user-form')
@@ -143,10 +165,17 @@ def display_right_column(idx, right_column, condition):
             "Select your final answer",
             ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"],
             index=None,
+            key=f'answer_{idx}' # this is so the radio button clears it last saved answer because this is saved in session_state
         )
         submit = form.form_submit_button('Submit')
         if submit:
+            st.session_state[f"question_idx_{idx}"]["actions"].append(f"finish[{answer}]")
+            end_time = datetime.now()
+            elapsed_time = (end_time - st.session_state[f"question_idx_{idx}"][f"start_time_{idx}"]).total_seconds()
+            # log response into spreadsheet here.
+            write_to_sheet([st.session_state.username, idx, st.session_state[f"question_idx_{idx}"][f"step_number_{idx}"], str(st.session_state[f"question_idx_{idx}"]["actions"]), answer, condition, elapsed_time])
             obs, r, done, info = step(env, f"finish[{answer}]")
+            st.session_state.user_data["last question idx done"] = idx
             st.session_state['answer'] = answer
             right_column.write(f'Submitted: {answer}!')
             right_column.write(f'{obs}')
@@ -179,6 +208,8 @@ def display_right_column(idx, right_column, condition):
                     content = f"Thought {st.session_state[idx]['turn_id']}: " + prompt # + f"\nAction {st.session_state[idx]['turn_id']}:"
                     st.session_state[idx]["messages"].append({"role": "user", "content": content})
                     right_column.chat_message("user").write(content)
+                    st.session_state[f"question_idx_{idx}"][f"step_number_{idx}"] += 1
+                    st.session_state[f"question_idx_{idx}"]["actions"].append(content) # or juse use prompt
                     print(st.session_state[idx]["messages"][-1])
                     action = llm(st.session_state[idx]["messages"], stop=["Observation"])
 
@@ -240,6 +271,8 @@ def display_right_column(idx, right_column, condition):
                         content = f"Action {st.session_state[idx]['turn_id']}: {action}\n"
                         st.session_state[idx]["messages"].append({"role": "user", "content": content})
                         right_column.chat_message("user").write(content)
+                        st.session_state[f"question_idx_{idx}"][f"step_number_{idx}"] += 1
+                        st.session_state[f"question_idx_{idx}"]["actions"].append(content) # or juse use prompt
                         obs, r, done, info = step(env, action[0].lower() + action[1:])
                         
                         obs = obs.replace('\\n', '')
@@ -278,6 +311,8 @@ def display_right_column(idx, right_column, condition):
                     if len(st.session_state[idx]['messages']) == 1 or last_msg.find("Thought") == -1: # user entering a thought
                         content = prompt # + f"\nAction {st.session_state[idx]['turn_id']}:"
                         st.session_state[idx]["messages"].append({"role": "user", "content": content})
+                        st.session_state[f"question_idx_{idx}"][f"step_number_{idx}"] += 1
+                        st.session_state[f"question_idx_{idx}"]["actions"].append(content) # or juse use prompt
                         right_column.chat_message("user").write(content)
                         print(st.session_state[idx]["messages"][-1])
                         
@@ -285,6 +320,8 @@ def display_right_column(idx, right_column, condition):
                         action = prompt
                         content = f"Action {st.session_state[idx]['turn_id']}: {action}\n"
                         st.session_state[idx]["messages"].append({"role": "user", "content": content})
+                        st.session_state[f"question_idx_{idx}"][f"step_number_{idx}"] += 1
+                        st.session_state[f"question_idx_{idx}"]["actions"].append(content) # or juse use prompt
                         right_column.chat_message("user").write(content)
                         obs, r, done, info = step(env, action[0].lower() + action[1:])
                         
@@ -298,6 +335,8 @@ def display_right_column(idx, right_column, condition):
                             
                 elif call_ai:
                     if len(st.session_state[idx]['messages']) == 1 or last_msg.find("Thought") == -1: # generate next thought
+                        st.session_state[f"question_idx_{idx}"][f"step_number_{idx}"] += 1
+                        st.session_state[f"question_idx_{idx}"]["actions"].append("Generated next thought with AI")
                         thought = llm(st.session_state[idx]["messages"], stop=["Action"])
                         print(thought)
                         content = f"{thought}\n"
@@ -305,6 +344,8 @@ def display_right_column(idx, right_column, condition):
                         right_column.chat_message("assistant").write(content)
 
                     elif last_msg.find("Action") == -1: # generate next action
+                        st.session_state[f"question_idx_{idx}"][f"step_number_{idx}"] += 1
+                        st.session_state[f"question_idx_{idx}"]["actions"].append("Generated next action with AI")
                         action = llm(st.session_state[idx]["messages"], stop=["Observation"])
 
                         content = action
@@ -333,10 +374,17 @@ def display_right_column(idx, right_column, condition):
             "Select your final answer",
             ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"],
             index=None,
+            key=f'answer_{idx}_condition{st.session_state.condition}' # this is so the radio button clears it last saved answer because this is saved in session_state
         )
 
         submit = form.form_submit_button('Submit')
         if submit:
+            end_time = datetime.now()
+            elapsed_time = (end_time - st.session_state[f"question_idx_{idx}"][f"start_time_{idx}"]).total_seconds()
+            st.session_state[f"question_idx_{idx}"]["actions"].append(f"finish[{answer}]")
+            # log response into spreadsheet here.
+            write_to_sheet([st.session_state.username, idx, st.session_state[f"question_idx_{idx}"][f"step_number_{idx}"], str(st.session_state[f"question_idx_{idx}"]["actions"]), answer, condition, elapsed_time])
+            st.session_state.user_data["last question idx done"] = idx
             obs, r, done, info = step(env, f"finish[{answer}]")
             st.session_state['answer'] = answer
             right_column.write(f'Submitted: {answer}!')
@@ -355,6 +403,9 @@ def load_prompts():
 if 'username' not in st.session_state:
     st.session_state.username = ''
 
+if 'consent' not in st.session_state:
+    st.session_state.consent = ''
+
 if 'user_data' not in st.session_state:
     st.session_state.user_data = {
         "visits": 0,
@@ -362,20 +413,50 @@ if 'user_data' not in st.session_state:
         'location data': get_user_ip()
     }
 
-if not st.session_state.username:
+if not st.session_state.username and not st.session_state.consent:
     st.title("Welcome to the Application")
     st.subheader("Please enter your username from Prolific to continue")
-
     # Input field for the username
-    st.text_input("Username", key="username_input")
+    username_input = st.text_input("Username", key="username_input").strip()
+
+    st.subheader("Please carefully read below before proceeding.")
+    st.write("""You are invited to participate in a research study on user understanding of algorithms and models. You will be asked to answer multiple choice and free response questions about different provided algorithms and their expected behavior. You will not be recorded via audio or video.\n
+TIME INVOLVEMENT: Your participation will take approximately 30 minutes.\n
+PAYMENTS: You will receive \$7.50 via the survey platform upon completion of the study, and you will receive additional compensation of \$0.10 per correct answer afterwards, as payment for your participation. A total of up to $1.50 in bonuses is available.\n
+RISKS AND BENEFITS: The risks associated with this study are minimal. A potential data breach or breach of confidentiality should not adversely affect employment or reputation. Study data will be stored securely, in compliance with University of Washington standards, minimizing the risk of confidentiality breach. You may be exposed to content that is upsetting, as this study involves a wide array of statements to validate, some of which contain harmful text (e.g., profanity, slurs, expressions of bigotry like racism/sexism/homophobia/religious intolerance, discussion of violence, jokes about tragedies). The benefits which may reasonably be expected to result from this study are none. We cannot and do not guarantee or promise that you will receive any benefits from this study.\n
+PARTICIPANT’S RIGHTS: If you have read this form and have decided to participate in this project, please understand your participation is voluntary and you have the right to withdraw your consent or discontinue participation at any time without penalty or loss of benefits to which you are otherwise entitled. The alternative is not to participate. You have the right to refuse to answer particular questions. The results of this research study may be presented at scientific or professional meetings or published in scientific journals. Your individual privacy will be maintained in all published and written data resulting from the study.\n
+CONTACT INFORMATION: If you have any questions, concerns or complaints about this research, its procedures, risks and benefits, contact the Protocol Director, Zixian Ma, at zixianma@uw.edu.\n
+Independent Contact: If you are not satisfied with how this study is being conducted, or if you have any concerns, complaints, or general questions about the research or your rights as a participant, please contact the University of Washington Institutional Review Board (IRB) to speak to someone independent of the research team at 206-543-0098, or email at hsdreprt@uw.edu. You can also write to the University of Washington IRB at Human Subjects Division, University of Washington, Box 359470, 4333 Brooklyn Ave NE, Seattle, WA 98195-9470.""")
+    # Input field for the consent
+    consent_input = st.text_input("Do you consent? (Input 'Yes' or 'No')", key="consent_input").strip()
 
     # Submit button
-    st.button("Submit", on_click=submit_username)
+    st.button("Submit", on_click=submit_consent)
+
 else:
+    def write_to_sheet(data):
+        # write the data in the format of: user, quetion idx, step #, action, time?
+        sheet.worksheet('actions').append_row(data)
+        user_worksheet.append_row(data)
+    
+    def write_to_user_sheet(data):
+        sheet.worksheet('users').append_row(data)
+
+    def create_user_worksheet():
+        # Check if a worksheet for this user already exists
+        try:
+            worksheet = sheet.worksheet(st.session_state.username)
+        except gspread.exceptions.WorksheetNotFound:
+            # Create a new worksheet for the user if it doesn't exist
+            worksheet = sheet.add_worksheet(title=st.session_state.username, rows=100, cols=20)
+            worksheet.append_row(['user','question idx', 'total steps', 'action space', 'answer', 'condition', 'time'])
+        
+        return worksheet
+
     toml_data = toml.load(".streamlit/secrets.toml")
     credentials_data = toml_data["connections"]["gsheets"]
 
-    st.write(st.session_state)
+    # st.write(st.session_state) # debugging purposes
 
     # Define the scope for the Google Sheets API
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
@@ -385,7 +466,10 @@ else:
     client = gspread.authorize(credentials)
 
     # Open the Google Sheet by name
-    sheet = client.open('interactive chains')
+    sheet = client.open('interactive chains') # should add condition here so it goes to correct Sheet
+
+    # make sheet per user
+    user_worksheet = create_user_worksheet()
 
     # this is to load it using TOML as well
     openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -454,12 +538,3 @@ else:
         left_column = display_left_column(idx, left_column, st.session_state.condition)
         right_column = display_right_column(idx, right_column, st.session_state.condition)
         # print(st.session_state)
-
-
-
-    
-
-
-
-
-
