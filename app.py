@@ -1,30 +1,32 @@
 import streamlit as st
+st.set_page_config(layout="wide")
+
 from pages.main_study import main_study
 from pages.login import login
 
-# def main():
-st.set_page_config(layout="wide")
-st.markdown(
-    """
-    <style>
-    [data-testid="stSidebar"][aria-expanded="true"]{
-        min-width: 600px;
-    }
-    """,
-    unsafe_allow_html=True,
-)   
+def main():
 
-# Initialize the session state page if not already set
-if 'page' not in st.session_state:
-    st.session_state.page = 'login'
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebar"][aria-expanded="true"]{
+            min-width: 600px;
+        }
+        """,
+        unsafe_allow_html=True,
+    )   
 
-# Display the chosen page based on session state
-if st.session_state.page == "login":
-    login()
-elif st.session_state.page == 'main_study':
-    main_study()
-# elif st.session_state.page == 'Survey':
-#     survey()
+    # Initialize the session state page if not already set
+    if 'page' not in st.session_state:
+        st.session_state.page = 'login'
 
-# if __name__ == "__main__":
-#     main()
+    # Display the chosen page based on session state
+    if st.session_state.page == "login":
+        login()
+    elif st.session_state.page == 'main_study':
+        main_study()
+    # elif st.session_state.page == 'Survey':
+    #     survey()
+
+if __name__ == "__main__":
+    main()
