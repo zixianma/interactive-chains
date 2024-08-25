@@ -120,7 +120,7 @@ def extract_final_answer(model_output):
     final_ans = last_step_str[start+1:end if end > 0 else len(last_step_str)]
     return final_ans
 
-def display_left_column(idx, left_column, condition):
+def display_left_column(env, idx, left_column, condition):
     question = env.reset(idx=idx)
     left_column.text(f"You're at {st.session_state.count + 1} / 30 questions.")
     left_column.subheader(question)
@@ -191,7 +191,8 @@ def format_action_str(action):
         action = action[start_idx+1:].strip()
     return action[0].lower() + action[1:]
 
-def display_right_column(idx, right_column, condition):
+def display_right_column(env, idx, right_column, condition):
+    # env = st.session_state['env']
     question = env.reset(idx=idx)
     if condition == "A. human" or condition == "C. hai-answer" or condition == "D. hai-static-chain":
         # make session state dict per question
@@ -702,6 +703,8 @@ def main_study():
     env = wikienv.WikiEnv()
     env = wrappers.FeverWrapper(env, split="dev")
     env = wrappers.LoggingWrapper(env)
+    # if "env" not in st.session_state:
+    #     st.session_state.env = env
 
     if 'count' not in st.session_state:
         st.session_state.count = 0
@@ -751,8 +754,8 @@ def main_study():
             st.session_state[idx] = {}
             st.session_state[idx]["turn_id"] = 0
         
-        left_column = display_left_column(idx, left_column, st.session_state.condition)
-        right_column = display_right_column(idx, right_column, st.session_state.condition)
+        left_column = display_left_column(env, idx, left_column, st.session_state.condition)
+        right_column = display_right_column(env, idx, right_column, st.session_state.condition)
         # print(st.session_state)
     elif next:
         # progress = display_progress_bar(st.session_state.count + 1 + 1, progress)
@@ -765,8 +768,8 @@ def main_study():
             st.session_state[idx] = {}
             st.session_state[idx]["turn_id"] = 0
         
-        left_column = display_left_column(idx, left_column, st.session_state.condition)
-        right_column = display_right_column(idx, right_column, st.session_state.condition)
+        left_column = display_left_column(env, idx, left_column, st.session_state.condition)
+        right_column = display_right_column(env, idx, right_column, st.session_state.condition)
         # print(st.session_state)
     else:
         idx = all_ids[st.session_state.count]
@@ -775,8 +778,8 @@ def main_study():
             st.session_state[idx]["turn_id"] = 0
         # progress = display_progress_bar(st.session_state.count + 1, progress)
         # print(st.session_state.condition)
-        left_column = display_left_column(idx, left_column, st.session_state.condition)
-        right_column = display_right_column(idx, right_column, st.session_state.condition)
+        left_column = display_left_column(env, idx, left_column, st.session_state.condition)
+        right_column = display_right_column(env, idx, right_column, st.session_state.condition)
         # print(st.session_state)
 
 
