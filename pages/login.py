@@ -43,8 +43,8 @@ def login():
         }
 
     if not st.session_state.username: #and not st.session_state.consent
-        st.title("Welcome to the Application")
-        
+        st.title("Welcome to the study")
+        # st.title("🔥 Interactive chains ⛓️")
 
         st.subheader("Please carefully read below before proceeding.")
         st.write("""You are invited to participate in a research study on user understanding of algorithms and models. You will be asked to answer multiple choice and free response questions about different provided algorithms and their expected behavior. You will not be recorded via audio or video.\n
