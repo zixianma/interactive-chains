@@ -12,6 +12,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 import toml
 from datetime import datetime
+import pages.utils.logger as logger
 
 def write_to_sheet(data):
         # write the data in the format of: user, quetion idx, step #, action, time?
@@ -20,6 +21,14 @@ def write_to_sheet(data):
     
 def write_to_user_sheet(data):
     sheet.worksheet('users').append_row(data)
+
+def write_survey_response(data, header=False):
+    if header:
+        user_worksheet.append_row(["SURVEY INFORMATION", '-', '-'])
+    responses = []
+    for tuple in data:
+         responses.append(tuple[1])
+    user_worksheet.append_row(responses)
 
 def create_user_worksheet():
     # Check if a worksheet for this user already exists
@@ -32,20 +41,22 @@ def create_user_worksheet():
     
     return worksheet
 
+if 'username' not in st.session_state:
+    st.session_state.username = ''
+
 toml_data = toml.load(".streamlit/secrets.toml")
 credentials_data = toml_data["connections"]["gsheets"]
-
-# st.write(st.session_state) # debugging purposes
 
 # Define the scope for the Google Sheets API
 scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 
-# Authenticate using the credentials from the TOML file
-credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
-client = gspread.authorize(credentials)
+if st.session_state.username != '':
+    # Authenticate using the credentials from the TOML file
+    credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
+    client = gspread.authorize(credentials)
 
-# Open the Google Sheet by name
-sheet = client.open('interactive chains') # should add condition here so it goes to correct Sheet
+    # Open the Google Sheet by name
+    sheet = client.open('interactive chains') # TODO: should add condition here so it goes to correct Sheet
 
-# make sheet per user
-user_worksheet = create_user_worksheet()
+    # make sheet per user
+    user_worksheet = create_user_worksheet()
