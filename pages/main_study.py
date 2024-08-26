@@ -877,8 +877,10 @@ def main_study():
             st.session_state.count -= 1
         st.rerun()
     elif next:
-        if st.session_state.count == len(model_outputs):
-            st.warning("You're at the end of all examples. There is no previous example.", icon="⚠️")
+        total_num = len(st.session_state['train_ids']) + len(st.session_state['test_ids'])
+        if st.session_state.count == total_num - 1:
+            # st.warning("You're at the end of all examples. There is no next example.", icon="⚠️")
+            st.session_state.page = "survey"
         else:
             st.session_state.count += 1
         st.rerun()
