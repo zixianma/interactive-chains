@@ -3,6 +3,7 @@ import requests
 from streamlit_float import *
 from google.oauth2.service_account import Credentials
 import toml
+# import pages.utils.logger as logger
 
 def get_user_ip():
     try:
@@ -27,6 +28,7 @@ def submit_consent(username_input):
         st.warning("Please fill in all required fields.")
     else:
         st.session_state.username = st.session_state.username_input
+        st.session_state.page = "main_study"
 
 def login():
     if 'username' not in st.session_state:
@@ -63,11 +65,5 @@ def login():
 
         # Submit button
         st.button("Submit", on_click=submit_consent, args=(username_input,))
-        st.session_state.page = "main_study"
-        st.rerun()
-
-    else:
-        toml_data = toml.load(".streamlit/secrets.toml")
-        credentials_data = toml_data["connections"]["gsheets"]
-        st.session_state.page = "main_study"
-        st.rerun()
+        # st.session_state.page = "main_study"
+        # st.rerun()

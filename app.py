@@ -1,8 +1,9 @@
 import streamlit as st
 st.set_page_config(layout="wide")
 
-from pages.main_study import main_study
 from pages.login import login
+from pages.main_study import main_study
+from pages.survey import survey
 
 def main():
 
@@ -25,8 +26,8 @@ def main():
         login()
     elif st.session_state.page == 'main_study':
         main_study()
-    # elif st.session_state.page == 'Survey':
-    #     survey()
+    elif st.session_state.page == 'survey':
+        survey()
 
 if __name__ == "__main__":
     main()

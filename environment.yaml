@@ -22,3 +22,4 @@ dependencies:
     - google-auth
     - gym
     - bs4
+    - google-api-python-client
