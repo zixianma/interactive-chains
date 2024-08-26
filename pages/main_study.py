@@ -66,23 +66,28 @@ def llm(messages, stop=["\n"]):
 
 @st.cache_data
 def load_model_outputs():
-    df = pd.read_json("data/fever_data_with_questions.jsonl", lines=True)
-    q_id2output = {}
-    for _, row in df.iterrows():
-        q_id = row['question_idx']
+    # df = pd.read_json("data/fever_data_with_questions.jsonl", lines=True)
+    # q_id2output = {}
+    # for _, row in df.iterrows():
+    #     q_id = row['question_idx']
         
-        model_output = row['all_steps']
-        new_steps = []
-        for i, step_str in enumerate(model_output):
-            step_str = process_model_output(step_str, final=False) # (i == len(model_output) -1)
-            thought_str = get_part_from_step(step_str, "Thought", "Action").strip()
-            action_str = get_part_from_step(step_str, "Action", "Observation").strip()
-            obs_str = get_part_from_step(step_str, "Observation", "\n").strip()
-            new_step = {"thought": thought_str, "action": action_str, "observation": obs_str}
-            new_steps.append(new_step)
+    #     model_output = row['all_steps']
+    #     new_steps = []
+    #     for i, step_str in enumerate(model_output):
+    #         step_str = process_model_output(step_str, final=False) # (i == len(model_output) -1)
+    #         thought_str = get_part_from_step(step_str, "Thought", "Action").strip()
+    #         action_str = get_part_from_step(step_str, "Action", "Observation").strip()
+    #         obs_str = get_part_from_step(step_str, "Observation", "\n").strip()
+    #         new_step = {"thought": thought_str, "action": action_str, "observation": obs_str}
+    #         new_steps.append(new_step)
 
-        q_id2output[q_id] = new_steps
-    return q_id2output
+    #     q_id2output[q_id] = new_steps
+    # with open('qid2output.json', 'w') as file:
+    #     json.dump(q_id2output, file, indent=4)
+    with open('data/qid2output.json', 'r') as file:
+        q_id2output = json.load(file)
+    int_q_id2output = {int(k): v for k, v in q_id2output.items()}
+    return int_q_id2output
 
 def get_model_output(output_df, idx):
     output = output_df[output_df['question_idx'] == idx].iloc[0]
@@ -188,7 +193,22 @@ def format_action_str(action):
     if match:
         start_idx = match.end()
         action = action[start_idx+1:].strip()
-    return action[0].lower() + action[1:]
+    if len(action) >= 2:
+        return action[0].lower() + action[1:]
+    else:
+        return "none"
+
+@st.cache_data
+def turn_step_dict_into_msg(step_dict):
+    msg = "\n".join([step_dict['thought'], step_dict['action'], step_dict['observation']])
+    return msg
+
+# @st.cache_data
+def format_model_output_into_msgs_for_idx(idx):
+    curr_msgs = [{"role": "user", "content": st.session_state['task_prompt'] + st.session_state[idx]['question'] + "\n"}]     
+    curr_msgs += [{"role": "assistant", "content": turn_step_dict_into_msg(step_dict)} for step_dict in st.session_state[idx]['curr_model_output']]
+    return curr_msgs
+
 
 def display_right_column(env, idx, right_column, condition):
     # env = st.session_state['env']
@@ -227,39 +247,29 @@ def display_right_column(env, idx, right_column, condition):
             index=None,
             key=f'answer_{idx}' # this is so the radio button clears it last saved answer because this is saved in session_state
         )
+        
+        if "submitted" not in st.session_state[idx]:
+            st.session_state[idx]['submitted'] = False
+        def click_submit():
+            st.session_state[idx]['submitted'] = True
 
-        submit = form.form_submit_button('Submit')
-        if submit:
+        submit = form.form_submit_button('Submit', on_click=click_submit)
+        if st.session_state[idx]['submitted']:
             end_time = datetime.now()
             elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
             obs, r, done, info = step(env, f"finish[{answer}]")
             st.session_state.user_data["last question idx done"] = idx
             # st.session_state['answer'] = answer
-            right_column.write(f'Submitted: {answer}!')
-            # right_column.write(f'{obs}')
-
-        # right_column.write("Perform a Search or Lookup action to obtain additional information")
-        # search_query = right_column.text_input('Search', key=f"search {idx}")
-        # if search_query:
-        #     obs, r, done, info = step(env, f"search[{search_query}]")
-        #     right_column.write(obs)
-
-        # lookup_query = right_column.text_input('Lookup', key=f"lookup {idx}")
-        # if lookup_query:
-        #     obs, r, done, info = step(env, f"lookup[{lookup_query}]")
-        #     right_column.write(obs)
-        # form = right_column.form(key='user-form')
-        # answer = form.radio(
-        #     "Select your final answer",
-        #     ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"],
-        #     index=None,
-        # )
-        # submit = form.form_submit_button('Submit')
-        # if submit:
-        #     obs, r, done, info = step(env, f"finish[{answer}]")
-        #     st.session_state['answer'] = answer
-        #     right_column.write(f'Submitted: {answer}!')
-        #     right_column.write(f'{obs}')
+            right_column.write(f'Submitted: {answer}')
+            if idx in st.session_state['train_ids']:
+                if r == 1:
+                    output = "Your answer is right! :)\n"
+                else:
+                    output = f"Your answer is wrong :( The correct answer is {info['gt_answer']}.\n"
+                if idx in st.session_state['train_id2explanation']:
+                    expl = st.session_state['train_id2explanation'][idx]
+                    output += expl
+                right_column.write(f'{output}')
     else:
         
         if condition.find("thought") > -1:
@@ -525,16 +535,118 @@ def display_right_column(env, idx, right_column, condition):
                 
                 final = step_container.text_area("🤖", final_thought_action, label_visibility="collapsed", key=f"final answer", disabled=True)
             
-            
-            # for i in range(num_steps):
-            #     print(i, st.session_state[f'delete {i}'])
-            #     print(i, st.session_state[f'step {i} deleted'])
-                # if delete:
-                #     valid_steps[i] = False
-            # print(st.session_state)
-                # left_column.write(step_str)
-                # right_column.divider()
         elif condition.find("regenerate") > -1:
+            right_column.subheader("Edit any thought or action and update AI's output:")
+            model_output =  st.session_state.model_outputs[idx][:-1]
+            if 'curr_model_output' not in st.session_state[idx]:
+                st.session_state[idx]['curr_model_output'] = model_output
+            if 'curr_num_steps' not in st.session_state[idx]:
+                st.session_state[idx]['curr_num_steps'] = len(model_output)
+            if "generate_next_step" not in st.session_state[idx]:
+                st.session_state[idx]["generate_next_step"] = False
+
+            new_model_output = []
+            for i, step_dict in enumerate(st.session_state[idx]['curr_model_output']):
+                obs_str = step_dict['observation'] 
+                thought_str = step_dict['thought'] 
+                action_str = step_dict['action']
+                
+                step_container = right_column.chat_message("assistant")
+                thought_input = step_container.text_area("", thought_str, label_visibility="collapsed", key=f"thought {i}")
+                if thought := thought_input and thought_input != step_dict['thought']: 
+                    st.session_state[idx]["generate_next_step"] = False
+                    # new_model_output.append({"thought": thought_input, "action": "", "observation": ""})
+                    curr_msgs = [{"role": "user", "content": st.session_state['task_prompt'] + st.session_state[idx]['question']}]
+                    curr_msgs += [{"role": "assistant", "content": "\n".join([step_dict['thought'], step_dict['action'], step_dict['observation']])} for step_dict in model_output[:i]]
+                    curr_msgs += [{"role": "user", "content": f"{thought_input}"}]
+                    # curr_msgs = format_model_output_into_msgs_for_idx(idx)
+                    next_action = llm(curr_msgs, stop=["Observation"])
+                    action_str = next_action
+                    # break
+                
+                action_input = step_container.text_input("", action_str, label_visibility="collapsed", key=f"action {i}")
+                if action := action_input and action_input != step_dict['action']:
+                    action = format_action_str(action_input)
+                    obs, r, done, info = step(env, action)
+                    obs_str = obs.replace('\\n', '')   
+                    if done:
+                        st.session_state[idx]["done"] = True
+                        obs_str = f"Observation {i+1}: Done"
+                    else:
+                        st.session_state[idx]["done"] = False
+                        obs_str = f"Observation {i+1}: {obs_str}"
+                
+                # if len(obs_str) > 0: # it's possible that the extraction on the original step str failed
+                right_column.chat_message("user", avatar="🌐").write(obs_str)
+                new_model_output.append({"thought": thought_input, "action": action_input, "observation": f"{obs_str}"})
+
+                if thought_input != step_dict['thought'] or action_input != step_dict['action']:
+                    st.session_state[idx]["generate_next_step"] = False
+                    break
+            
+            st.session_state[idx]['curr_model_output'] = new_model_output
+            num_steps = len(st.session_state[idx]['curr_model_output'])
+
+            def click_button():
+                st.session_state[idx][f"generate_next_step"] = True
+            
+            generate = right_column.button("Update AI's output", key=f"generate {num_steps+1}", on_click=click_button)
+            print(generate)
+            curr_msgs = format_model_output_into_msgs_for_idx(idx)
+            if "curr_msgs" not in st.session_state[idx]:
+                st.session_state[idx]['curr_msgs'] = curr_msgs
+            
+            print(st.session_state[idx]["generate_next_step"])
+            print(not st.session_state[idx]["done"])
+            print(curr_msgs != st.session_state[idx]['curr_msgs'])
+            if st.session_state[idx]["generate_next_step"] and curr_msgs != st.session_state[idx]['curr_msgs']: # generate (not st.session_state[idx]["done"]) 
+                # container = right_column.container()
+                # with container:
+                with st.spinner('Wait for model to finish running...'):
+                    for i in range(num_steps, 8):
+                    # curr_msgs += [{"role": "user", "content": f"Thought {num_steps+1}:\n"}]
+                    # print("msgs before generate:", curr_msgs)
+                        # step_container = right_column.chat_message("assistant") #right_column.container(border=False)
+                        new_thought_action = llm(curr_msgs, stop=["Observation"])
+                        if len(new_thought_action.strip()) == 0:
+                            print("try running with prefix..")
+                            last_msg = curr_msgs[-1]['content']
+                            print("last msg:", curr_msgs[-1])
+                            action_exists = last_msg.find("Action") > -1
+                            prefix_msg = [{"role": "user", "content": f"Thought {num_steps+1}:\n" if action_exists else f"Action {num_steps+1}:\n"}]
+                            print("Prefix msg:", prefix_msg)
+                            new_thought_action = llm(curr_msgs + prefix_msg, stop=["Observation"])
+
+                        print("model output:", new_thought_action)
+                        thought_str = get_part_from_step(new_thought_action, "Thought", "Action")
+                        action_str = get_part_from_step(new_thought_action, "Action", None)
+                        # new_thought = step_container.write(thought_str)
+                        # new_action = step_container.write(action_str)
+                        print("action str:", action_str)
+                        action = format_action_str(action_str)
+                        obs, r, done, info = step(env, action)
+                        if not done:
+                            obs_str = obs.replace('\\n', '')
+                            obs_str = f"Observation {i+1}: {obs_str}"
+                            # right_column.chat_message("user", avatar="🌐").write(obs_str)
+                            new_step_dict = {"thought": thought_str, "action": action_str, "observation": obs_str}
+                            curr_msgs.append({"role": "assistant", "content": turn_step_dict_into_msg(new_step_dict)})
+                            st.session_state[idx]['curr_model_output'].append(new_step_dict)
+                        else:
+                            st.session_state[idx]["done"] = True
+                            obs_str = f"Observation {i+1}: Done"
+                            new_step_dict = {"thought": thought_str, "action": action_str, "observation": "Done"}
+                            curr_msgs.append({"role": "assistant", "content": turn_step_dict_into_msg(new_step_dict)})
+                            st.session_state[idx]['curr_model_output'].append(new_step_dict)
+                            break
+                st.session_state[idx]['curr_msgs'] = curr_msgs
+                st.rerun()
+            # else:
+            #     if  generate and curr_msgs == st.session_state[idx]['curr_msgs']: # st.session_state[idx]["generate_next_step"]
+            #         right_column.warning("The output is NOT updated as the thoughts and actions are the same as before.")
+                    # st.session_state[idx]["generate_next_step"] = False
+
+        elif condition.find("control") > -1:
             right_column.subheader("Edit AI's thought/action and get a new answer:")
             model_output =  st.session_state.model_outputs[idx][:-1]
             if 'curr_model_output' not in st.session_state[idx]:
@@ -544,17 +656,11 @@ def display_right_column(env, idx, right_column, condition):
 
             new_model_output = []
             for i, step_dict in enumerate(st.session_state[idx]['curr_model_output']):
-                # step_str = process_model_output(step_str, final=False) #(i == len(model_output) -1)
-                obs_str = step_dict['observation'] #get_part_from_step(step_str, "Observation", "\n").strip()
-                thought_str = step_dict['thought'] # get_part_from_step(step_str, "Thought", "Action").strip()
-                action_str = step_dict['action'] # get_part_from_step(step_str, "Action", "Observation").strip()
-                # if i not in valid_steps:
-                #     valid_steps[i] = True
-                # right_column.chat_message("assistant").write(before_obs_str) # , avatar="🧑‍💻"
-                # right_column.header("🤖")
+                obs_str = step_dict['observation'] 
+                thought_str = step_dict['thought'] 
+                action_str = step_dict['action'] 
  
-                step_container = right_column.chat_message("assistant") # right_column.container(border=False)
-                # if f"step {i} deleted" not in st.session_state or not st.session_state[idx][f"step {i} deleted"]:
+                step_container = right_column.chat_message("assistant") 
                 thought_input = step_container.text_area("", thought_str, label_visibility="collapsed", key=f"thought {i}")
                 update_action = step_container.button("Update action with AI", key=f"update_action_{i}")
                 if thought := thought_input and thought_input != step_dict['thought'] and update_action: # thought_str
@@ -590,7 +696,7 @@ def display_right_column(env, idx, right_column, condition):
             curr_msgs = [{"role": "user", "content": st.session_state['task_prompt'] + st.session_state[idx]['question'] + "\n"}]
             
             curr_msgs += [{"role": "assistant", "content": "\n".join([step_dict['thought'], step_dict['action'], step_dict['observation']])} for step_dict in st.session_state[idx]['curr_model_output']]
-            print(generate)
+
             if st.session_state[idx]["generate_next_step"]: #generate:
                 curr_msgs += [{"role": "user", "content": f"Thought {num_steps+1}:\n"}]
                 # print("msgs before generate:", curr_msgs)
@@ -638,12 +744,26 @@ def display_right_column(env, idx, right_column, condition):
             index=None,
         )
 
-        submit = form.form_submit_button('Submit')
-        if submit:
+        if "submitted" not in st.session_state[idx]:
+            st.session_state[idx]['submitted'] = False
+        def click_submit():
+            st.session_state[idx]['submitted'] = True
+
+        submit = form.form_submit_button('Submit', on_click=click_submit)
+        if st.session_state[idx]['submitted']:
             obs, r, done, info = step(env, f"finish[{answer}]")
             st.session_state['answer'] = answer
-            right_column.write(f'Submitted: {answer}!')
-            right_column.write(f'{obs}')
+            right_column.write(f'Submitted: {answer}')
+            # right_column.write(f'{obs}')
+            if idx in st.session_state['train_ids']:
+                if r == 1:
+                    output = "Your answer is right! :)"
+                else:
+                    output = f"Your answer is wrong :( The correct answer is {info['gt_answer']}.\n"
+                if idx in st.session_state['train_id2explanation']:
+                    expl = st.session_state['train_id2explanation'][idx]
+                    output += expl
+                right_column.write(f'{output}')
 
     return right_column
 
@@ -679,14 +799,21 @@ def main_study():
     webthink_prompt = prompt_dict['webthink_simple3']
     st.session_state['task_prompt'] = webthink_prompt
 
-    all_ids = [4278, 2646, 468, 2208, 280, 1391, 5726, 217, 2544, 3805, 4118, 565, 1557, 2226, 4627, 2033, 2836, 4859, 1781, 802, 1955, 2019, 2498, 2711, 3234, 4341, 5376, 5965, 7096, 6996, 3477, 7203, 6158, 4050, 2424, 4525, 3196, 2674]
+    train_ids = [4050, 6996, 802, 4118, 1557, 5726,] # 3805
+    test_ids = [4278, 2646, 468, 2208, 280, 1391, 217, 2544, 565, 2226, 4627, 2033, 2836, 4859, 1781, 1955, 2019, 2498, 2711, 3234, 4341, 5376, 5965, 7096, 3477, 7203, 6158, 2424, 4525, 3196]
+    if 'train_ids' not in st.session_state:
+        st.session_state['train_ids'] = train_ids
+    if 'test_ids' not in st.session_state:
+        st.session_state['test_ids'] = test_ids
+    all_ids = train_ids + test_ids
     # list(model_outputs.keys()) 
     
     # uncomment this for deployment
     # if 'condition' in st.session_state:
     #     condition = st.session_state.condition
     # else:
-    all_conditions = ["A. human", "C. hai-answer", "D. hai-static-chain", "E. hai-human-thought", "F. hai-human-action", "G. hai-mixed", "H. hai-update", "I. hai-regenerate"]
+    # "A. human", 
+    all_conditions = ["C. hai-answer", "D. hai-static-chain", "E. hai-human-thought", "F. hai-human-action", "G. hai-mixed", "H. hai-update", "I. hai-regenerate"]
     condition = st.radio(
             "Condition",
             all_conditions, # "hai-interact-chain", "hai-interact-chain-delayed", 
@@ -696,6 +823,17 @@ def main_study():
     # condition = "hai-regenerate" # random.choice(all_conditions) 
     st.session_state.condition = condition
     print(condition)
+
+    if st.session_state.count < len(st.session_state['train_ids']):
+        st.title("📚 Training phase")
+        st.text("During this training phase, you will get to try answering 6 questions. You will see whether your answer is correct or not after you submit it. ")
+        total_num = len(st.session_state['train_ids'])
+        curr_pos = st.session_state.count + 1
+    else:   
+        st.title("📝 Study phase")
+        st.text("You are now in the study phase, where you will answer 30 questions in total and be rewarded if you answer more questions correctly. You will NOT see if your answer is correct or not.")
+        total_num = len(st.session_state['test_ids'])
+        curr_pos = st.session_state.count + 1 - len(st.session_state.train_ids)
 
     with st.expander("See task instruction and examples"):
         st.write(st.session_state['task_prompt'])
@@ -707,62 +845,44 @@ def main_study():
     prev = left_head.button("Prev", use_container_width=True)
     next = right_head.button("Next", use_container_width=True)
 
+    st.text(f"You are at {curr_pos} / {total_num} questions.")
+
     idx = all_ids[st.session_state.count]
     question = env.reset(idx=idx)
     if idx not in st.session_state:
         st.session_state[idx] = {}
+        st.session_state[idx]["done"] = False
         st.session_state[idx]["turn_id"] = 0
 
     if 'question' not in st.session_state[idx]:
         st.session_state[idx]['question'] = question
-    st.text(f"You're at {st.session_state.count + 1} / 30 questions.")
+
     st.subheader(question)
     st.divider()
     
     left_column, right_column = st.columns(2)
     left_column = display_left_column(env, idx, left_column, st.session_state.condition)
     right_column = display_right_column(env, idx, right_column, st.session_state.condition)
-    # progress = left_column.empty()
+
+    if 'train_id2explanation' not in st.session_state:
+        st.session_state['train_id2explanation'] = {
+        4118: "The correct action is Search[Stephen Hillenburg], which yields the result below that supports the claim:\nStephen McDannell Hillenburg (August 21, 1961 – November 26, 2018) was an American animator, writer, producer, director, voice actor, marine science educator, and entrepreneur. He was best known for creating the animated television series SpongeBob SquarePants for Nickelodeon in 1999. Serving as the showrunner for its first three seasons, and again from season nine until his death, the show has become the fifth-longest-running American animated series. He also provided the original voice of Patchy's pet, Potty the Parrot.. Born in Lawton, Oklahoma and raised in Anaheim, California, Hillenburg became fascinated with the ocean as a child and developed an interest in art.",
+        5726: "The correct action is Search[Emma Watson], which yields the result below that supports the claim: Emma Charlotte Duerre Watson (born 15 April 1990) is an English actress. Known for her roles in both blockbusters and independent films, she has received a selection of accolades, including a Young Artist Award and three MTV Movie Awards. Watson has been ranked among the world's highest-paid actresses by Forbes and Vanity Fair, and was named one of the 100 most influential people in the world by Time magazine in 2015.[1][2][3]. Watson attended the Dragon School and trained in acting at the Oxford branch of Stagecoach Theatre Arts. As a child, she rose to stardom after landing her first professional acting role as Hermione Granger in the Harry Potter film series, having previously acted only in school plays.",  
+        1557: "The correct answer is NOT ENOUGH INFO, because the wiki page about folklore does not mention anything about pratfalls: \nFolklore is the body of expressive culture shared by a particular group of people, culture or subculture.[1] This includes oral traditions such as tales, myths, legends,[a] proverbs, poems, jokes, and other oral traditions.[3][4] This also includes material culture, such as traditional building styles common to the group. Folklore also encompasses customary lore, taking actions for folk beliefs, and the forms and rituals of celebrations such as Christmas, weddings, folk dances, and initiation rites.[3]. Each one of these, either singly or in combination, is considered a folklore artifact or traditional cultural expression. Just as essential as the form, folklore also encompasses the transmission of these artifacts from one region to another or from one generation to the next. Folklore is not something one can typically gain from a formal school curriculum or study in the fine arts."
+    }
     if prev:
-        # progress = display_progress_bar(st.session_state.count + 1 - 1, progress)
         if st.session_state.count == 0:
             st.warning("You're at the start of all examples. There is no previous example.", icon="⚠️")
         else:
             st.session_state.count -= 1
-        
-        # idx = all_ids[st.session_state.count]
-        # if idx not in st.session_state:
-        #     st.session_state[idx] = {}
-        #     st.session_state[idx]["turn_id"] = 0
-        
-        # left_column = display_left_column(env, idx, left_column, st.session_state.condition)
-        # right_column = display_right_column(env, idx, right_column, st.session_state.condition)
         st.rerun()
-        # print(st.session_state)
     elif next:
-        # progress = display_progress_bar(st.session_state.count + 1 + 1, progress)
         if st.session_state.count == len(model_outputs):
             st.warning("You're at the end of all examples. There is no previous example.", icon="⚠️")
         else:
             st.session_state.count += 1
-        # idx = all_ids[st.session_state.count]
-        # if idx not in st.session_state:
-        #     st.session_state[idx] = {}
-        #     st.session_state[idx]["turn_id"] = 0
-        # left_column = display_left_column(env, idx, left_column, st.session_state.condition)
-        # right_column = display_right_column(env, idx, right_column, st.session_state.condition)
-        # print(st.session_state)
         st.rerun()
-    # else:
-    #     idx = all_ids[st.session_state.count]
-    #     if idx not in st.session_state:
-    #         st.session_state[idx] = {}
-    #         st.session_state[idx]["turn_id"] = 0
-    #     # progress = display_progress_bar(st.session_state.count + 1, progress)
-    #     # print(st.session_state.condition)
-    #     left_column = display_left_column(env, idx, left_column, st.session_state.condition)
-    #     right_column = display_right_column(env, idx, right_column, st.session_state.condition)
-    #     # print(st.session_state)
+
 
 
 
