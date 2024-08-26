@@ -199,6 +199,7 @@ def tasks_demand_questions():
         # log data
         record_data_clear_state( ['mental_demand', 'success', 'effort', 'pace', 'stress', 'complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'time_spent'])
         st.session_state.qa_page = 'ai_usage'
+        st.rerun()
 
 def survey():
     st.title("Reflection Questions & Feedback")
