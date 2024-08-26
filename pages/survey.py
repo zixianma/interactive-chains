@@ -85,6 +85,7 @@ def free_form_questions():
             record_data_clear_state(['strategy', 'error_finding', 'ai_model_usage', 'ai_model_interaction_usage', 'misc_comments', 'time_spent'])
             # create clickable link so worker can be paid
             st.session_state.qa_page = 'complete'
+            st.rerun()
 
 def interaction_questions():
     if 'time_spent' not in st.session_state:
@@ -122,6 +123,7 @@ def interaction_questions():
         # log data
         record_data_clear_state(['code_completion_helpful', 'highlights_helpful', 'willing_to_pay', 'willing_to_pay_highlights', 'code_completion_distracting', 'highlights_distracting', 'time_spent'])
         st.session_state.qa_page = 'frq'
+        st.rerun()
 
 def ai_usage_questions():
     if 'time_spent' not in st.session_state:
@@ -163,6 +165,7 @@ def ai_usage_questions():
         # log data
         record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_answer_helpful', 'ai_reasoning_chain_usage', 'ai_reasoning_chain_helpful', 'interaction_usage', 'interaction_helpfulness', 'explanation_usage', 'explanation_helpfulness', 'time_spent'])
         st.session_state.qa_page = 'interactions'
+        st.rerun()
 
 def tasks_demand_questions():
     if 'time_spent' not in st.session_state:
