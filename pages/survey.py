@@ -15,6 +15,8 @@ from datetime import datetime
 import pages.utils.logger as logger
 import sys
 
+# TODO: change to horizontal and remove "default" radio button on streamlit to "default" option with checks
+
 def record_data_clear_state(keys_list = []):
     # convert the data from dict to tuple
     responses_dict = []
@@ -94,36 +96,36 @@ def interaction_questions():
     st.title("Interaction Reflection Questions")
     st.subheader("Note: You cannot go back, please take your time answering these.")
 
+    options = ['Select an Option', 'Strongly Disagree', 'Disagree', 'Somewhat Disagree', 'Neutral', 'Somewhat Agree', 'Agree', 'Strongly Agree'] 
     st.subheader("Rate the following statements regarding the interactions")
-
-    st.write("I found the AI’s code completions helpful as a starting point.")
-    st.session_state.code_completion_helpful = st.radio("Options", ["Strongly Agree", "Agree", "Neutral", "Disagree", "Strongly Disagree"], key='code_completion_helpful_radio')
-
+    st.session_state.code_completion_helpful = st.radio("I found the AI’s code completions helpful as a starting point.", options, horizontal=True, key='code_completion_helpful_radio')
     # condition based
     st.write("I found the AI’s highlights helpful in determining what to edit")
-    st.session_state.highlights_helpful = st.radio("Options", ["Strongly Agree", "Agree", "Neutral", "Disagree", "Strongly Disagree"], key='highlights_helpful_radio')
-
-    st.write("I would be willing to pay to access the AI’s code completions.")
-    st.session_state.willing_to_pay = st.radio("Options", ["Strongly Agree", "Agree", "Neutral", "Disagree", "Strongly Disagree"], key='willing_to_pay_radio')
-
+    st.session_state.highlights_helpful = st.radio("I found the AI’s highlights helpful in determining what to edit", options, horizontal=True, key='highlights_helpful_radio')
+    st.session_state.willing_to_pay = st.radio("I would be willing to pay to access the AI’s code completions.", options, horizontal=True, key='willing_to_pay_radio')
     # condition based
-    st.write("I would be willing to pay to access the AI’s highlights.")
-    st.session_state.willing_to_pay_highlights = st.radio("Options", ["Strongly Agree", "Agree", "Neutral", "Disagree", "Strongly Disagree"], key='willing_to_pay_highlights_radio')
-
-    st.write("I found the AI’s code completions distracting.")
-    st.session_state.code_completion_distracting = st.radio("Options", ["Strongly Agree", "Agree", "Neutral", "Disagree", "Strongly Disagree"], key='code_completion_distracting_radio')
-
+    st.session_state.willing_to_pay_highlights = st.radio("I would be willing to pay to access the AI’s highlights.", options, horizontal=True, key='willing_to_pay_highlights_radio')
+    st.session_state.code_completion_distracting = st.radio("I found the AI’s code completions distracting.", options, horizontal=True, key='code_completion_distracting_radio')
     # condition based
-    st.write("I found the AI’s highlights distracting.")
-    st.session_state.highlights_distracting = st.radio("Options", ["Strongly Agree", "Agree", "Neutral", "Disagree", "Strongly Disagree"], key='highlights_distracting_radio')
+    st.session_state.highlights_distracting = st.radio("I found the AI’s highlights distracting.", options, horizontal=True, key='highlights_distracting_radio')
 
     if st.button("Next", key="interaction_questions_next"):
-        end_time = datetime.now()
-        st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
-        # log data
-        record_data_clear_state(['code_completion_helpful', 'highlights_helpful', 'willing_to_pay', 'willing_to_pay_highlights', 'code_completion_distracting', 'highlights_distracting', 'time_spent'])
-        st.session_state.qa_page = 'frq'
-        st.rerun()
+        if (
+            st.session_state.code_completion_helpful == 'Select an Option' or
+            st.session_state.highlights_helpful == 'Select an Option' or
+            st.session_state.willing_to_pay == 'Select an Option' or
+            st.session_state.willing_to_pay_highlights == 'Select an Option' or
+            st.session_state.code_completion_distracting == 'Select an Option' or
+            st.session_state.highlights_distracting == 'Select an Option'
+        ):
+            st.error("Please make sure to select an option for all questions before submitting.")
+        else:
+            end_time = datetime.now()
+            st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
+            # log data
+            record_data_clear_state(['code_completion_helpful', 'highlights_helpful', 'willing_to_pay', 'willing_to_pay_highlights', 'code_completion_distracting', 'highlights_distracting', 'time_spent'])
+            st.session_state.qa_page = 'frq'
+            st.rerun()
 
 def ai_usage_questions():
     if 'time_spent' not in st.session_state:
@@ -131,41 +133,39 @@ def ai_usage_questions():
 
     st.title("AI Usage Reflection Questions")
     st.subheader("Note: You cannot go back, please take your time answering these.")
+    options_frequency = ['Select an Option', 'Never', 'Rarely', 'Occasionally', 'Sometimes', 'Frequently', 'Usually', 'Always']
+    options_helpful = ['Select an Option', 'Very Unhelpful', 'Not Helpful', 'Sometimes', 'Neutral', 'Helpful', 'Very helpful']
 
-    st.write("How often do you use AI models (e.g. ChatGPT, DaLLE, CoPilot)?")
-    st.session_state.ai_frequency = st.radio("Options", ['Never', 'Rarely (once a year)', 'Occasionally (once a few months)', 'Sometimes (once a month)', 'Frequently (once a week)', 'Usually (once a few days)', 'Always (at least once a day)'], key='ai_frequency_radio')
-
-    st.write("How often did you use the AI model’s answer to help answer the question?")
-    st.session_state.ai_answer_usage = st.radio("Options", ['Never', 'Rarely', 'Occasionally', 'Sometimes', 'Frequently', 'Usually', 'Always'], key='ai_answer_usage_radio')
-
-    st.write("How helpful did you find the AI model's answer chain when trying to come to an answer?")
-    st.session_state.ai_answer_helpful = st.radio("Options", ['Very Unhelpful', 'Not Helpful', 'Sometimes', 'Neutral', 'Helpful', 'Very helpful'], key='ai_answer_helpful_radio')
-
-    st.write("How often did you use the AI model’s reasoning chain to help answer the question?")
-    st.session_state.ai_reasoning_chain_usage = st.radio("Options", ['Never', 'Rarely', 'Occasionally', 'Sometimes', 'Frequently', 'Usually', 'Always'], key='ai_reasoning_chain_usage_radio')
-
-    st.write("How helpful did you find the AI model's reasoning chain when trying to come to an answer?")
-    st.session_state.ai_reasoning_chain_helpful = st.radio("Options", ['Very Unhelpful', 'Not Helpful', 'Sometimes', 'Neutral', 'Helpful', 'Very helpful'], key='ai_reasoning_chain_helpful_radio')
-
-    st.write("How often did you use the interactions with the model  to help answer the question?")
-    st.session_state.interaction_usage = st.radio("Options", ['Never', 'Rarely', 'Occasionally', 'Sometimes', 'Frequently', 'Usually', 'Always'], key='interaction_usage_radio')
-
-    st.write("How helpful did you find the interactions with the model when trying to come to an answer?")
-    st.session_state.interaction_helpfulness = st.radio("Options", ['Very Unhelpful', 'Not Helpful', 'Sometimes', 'Neutral', 'Helpful', 'Very helpful'], key='interaction_helpfulness_radio')
-
-    st.write("How often did you use the AI model’s explanations to come to an answer?")
-    st.session_state.explanation_usage = st.radio("Options", ['Never', 'Rarely', 'Occasionally', 'Sometimes', 'Frequently', 'Usually', 'Always'], key='explanation_usage_radio')
-
-    st.write("How helpful did you find the AI model's explanations when trying to come to an answer?")
-    st.session_state.explanation_helpfulness = st.radio("Options", ['Very Unhelpful', 'Not Helpful', 'Sometimes', 'Neutral', 'Helpful', 'Very helpful'], key='explanation_helpfulness_radio')
+    st.session_state.ai_frequency = st.radio("How often do you use AI models (e.g. ChatGPT, DaLLE, CoPilot)?", ['Select an Option', 'Never', 'Rarely (once a year)', 'Occasionally (once a few months)', 'Sometimes (once a month)', 'Frequently (once a week)', 'Usually (once a few days)', 'Always (at least once a day)'], horizontal=True, key='ai_frequency_radio')
+    st.session_state.ai_answer_usage = st.radio("How often did you use the AI model’s answer to help answer the question?", options_frequency, horizontal=True, key='ai_answer_usage_radio')
+    st.session_state.ai_answer_helpful = st.radio("How helpful did you find the AI model's answer chain when trying to come to an answer?", options_helpful, horizontal=True, key='ai_answer_helpful_radio')
+    st.session_state.ai_reasoning_chain_usage = st.radio("How often did you use the AI model’s reasoning chain to help answer the question?", options_frequency, horizontal=True, key='ai_reasoning_chain_usage_radio')
+    st.session_state.ai_reasoning_chain_helpful = st.radio("How helpful did you find the AI model's reasoning chain when trying to come to an answer?", options_helpful, horizontal=True, key='ai_reasoning_chain_helpful_radio')
+    st.session_state.interaction_usage = st.radio("How often did you use the interactions with the model  to help answer the question?", options_frequency, horizontal=True, key='interaction_usage_radio')
+    st.session_state.interaction_helpfulness = st.radio("How helpful did you find the interactions with the model when trying to come to an answer?", options_helpful, horizontal=True, key='interaction_helpfulness_radio')
+    st.session_state.explanation_usage = st.radio("How often did you use the AI model’s explanations to come to an answer?", options_frequency, horizontal=True, key='explanation_usage_radio')
+    st.session_state.explanation_helpfulness = st.radio("How helpful did you find the AI model's explanations when trying to come to an answer?", options_helpful, horizontal=True, key='explanation_helpfulness_radio')
 
     if st.button("Next", key="ai_usage_questions_next"):
-        end_time = datetime.now()
-        st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
-        # log data
-        record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_answer_helpful', 'ai_reasoning_chain_usage', 'ai_reasoning_chain_helpful', 'interaction_usage', 'interaction_helpfulness', 'explanation_usage', 'explanation_helpfulness', 'time_spent'])
-        st.session_state.qa_page = 'interactions'
-        st.rerun()
+        if (
+            st.session_state.ai_frequency == 'Select an Option' or
+            st.session_state.ai_answer_usage == 'Select an Option' or
+            st.session_state.ai_answer_helpful == 'Select an Option' or
+            st.session_state.ai_reasoning_chain_usage == 'Select an Option' or
+            st.session_state.ai_reasoning_chain_helpful == 'Select an Option' or
+            st.session_state.interaction_usage == 'Select an Option' or
+            st.session_state.interaction_helpfulness == 'Select an Option' or
+            st.session_state.explanation_usage == 'Select an Option' or
+            st.session_state.explanation_helpfulness == 'Select an Option'
+        ):
+            st.error("Please make sure to select an option for all questions before submitting.")
+        else:
+            end_time = datetime.now()
+            st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
+            # log data
+            record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_answer_helpful', 'ai_reasoning_chain_usage', 'ai_reasoning_chain_helpful', 'interaction_usage', 'interaction_helpfulness', 'explanation_usage', 'explanation_helpfulness', 'time_spent'])
+            st.session_state.qa_page = 'interactions'
+            st.rerun()
 
 def tasks_demand_questions():
     if 'time_spent' not in st.session_state:
@@ -182,27 +182,32 @@ def tasks_demand_questions():
     st.session_state.pace = st.slider("How hurried or rushed were the pace of the tasks?", 0, 100, step=5, key="pace_slider")
     st.session_state.stress = st.slider("How insecure, discouraged, irritated, stressed, and annoyed were you?", 0, 100, step=5, key="stress_slider")
 
-    st.subheader("Answer the following in terms of your preferences (not related to the questions)")
-    st.write("I would prefer complex to simple problems.")
-    st.session_state.complex_to_simple = st.slider("1 = Strongly Disagree, 5 = Strongly Agree", 1, 5, step=1, key="complex_to_simple_slider")
-    st.write("I like to have the responsibility of handling a situation that requires a lot of thinking.")
-    st.session_state.thinking = st.slider("1 = Strongly Disagree, 5 = Strongly Agree", 1, 5, step=1,key="thinking_slider")
-    st.write("Thinking is not my idea of fun.")
-    st.session_state.thinking_fun = st.slider("1 = Strongly Disagree, 5 = Strongly Agree", 1, 5, step=1, key="thinking_fun_slider")
-    st.write("I would rather do something that requires little thought than something that is sure to challenge my thinking abilities.")
-    st.session_state.thought = st.slider("1 = Strongly Disagree, 5 = Strongly Agree", 1, 5, step=1, key="thought_slider")
-    st.write("I really enjoy a task that involves coming up with new solutions to problems.")
-    st.session_state.new_solutions = st.slider("1 = Strongly Disagree, 5 = Strongly Agree", 1, 5, step=1, key="new_solutions_slider")
-    st.write("I would prefer a task that is intellectual, difficult, and important to one that is somewhat important but does not require much thought.")
-    st.session_state.difficulty = st.slider("1 = Strongly Disagree, 5 = Strongly Agree", 1, 5, step=1, key="difficulty_slider")
+    st.subheader("Answer the following in terms of your preferences (not related to the main study)")  
+    options = ['Select an Option', 'Strongly Disagree', 'Disagree', 'Somewhat Disagree', 'Neutral', 'Somewhat Agree', 'Agree', 'Strongly Agree'] 
+    st.session_state.complex_to_simple = st.radio("I would prefer complex to simple problems.", options, horizontal=True, key="complex_to_simple_slider")
+    st.session_state.thinking = st.radio("I like to have the responsibility of handling a situation that requires a lot of thinking.", options, horizontal=True, key="thinking_slider")
+    st.session_state.thinking_fun = st.radio("Thinking is not my idea of fun.", options, horizontal=True, key="thinking_fun_slider")
+    st.session_state.thought = st.radio("I would rather do something that requires little thought than something that is sure to challenge my thinking abilities.", options, horizontal=True, key="thought_slider")
+    st.session_state.new_solutions = st.radio("I really enjoy a task that involves coming up with new solutions to problems.", options, horizontal=True, key="new_solutions_slider")
+    st.session_state.difficulty = st.radio("I would prefer a task that is intellectual, difficult, and important to one that is somewhat important but does not require much thought.", options, horizontal=True, key="difficulty_slider")
 
     if st.button("Next questions", key="tasks_demand_questions_next"):
-        end_time = datetime.now()
-        st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
-        # log data
-        record_data_clear_state( ['mental_demand', 'success', 'effort', 'pace', 'stress', 'complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'time_spent'])
-        st.session_state.qa_page = 'ai_usage'
-        st.rerun()
+        if (
+            st.session_state.complex_to_simple == 'Select an Option' or
+            st.session_state.thinking == 'Select an Option' or
+            st.session_state.thinking_fun == 'Select an Option' or
+            st.session_state.thought == 'Select an Option' or
+            st.session_state.new_solutions == 'Select an Option' or
+            st.session_state.difficulty == 'Select an Option'
+            ):
+            st.error("Please make sure to select an option for all questions before submitting.")
+        else:
+            end_time = datetime.now()
+            st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
+            # log data
+            record_data_clear_state( ['mental_demand', 'success', 'effort', 'pace', 'stress', 'complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'time_spent'])
+            st.session_state.qa_page = 'ai_usage'
+            st.rerun()
 
 def survey():
     st.title("Reflection Questions & Feedback")

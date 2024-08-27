@@ -13,6 +13,14 @@ def main():
         [data-testid="stSidebar"][aria-expanded="true"]{
             min-width: 600px;
         }
+        /* radio header */
+        div[class*="stRadio"] > label > div[data-testid="stMarkdownContainer"] > p {
+            font-size: 24px;
+        }
+        /* slider text */
+        div[class*="stSlider"] > label > div[data-testid="stMarkdownContainer"] > p {
+            font-size: 24px;
+        }
         """,
         unsafe_allow_html=True,
     )   
