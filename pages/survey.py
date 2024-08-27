@@ -1,31 +1,17 @@
 import streamlit as st
-import openai
-from openai import OpenAI
-import json
-import os
-import wikienv, wrappers
-import requests
-import pandas as pd
 from streamlit_float import *
-import re
-import gspread
-from google.oauth2.service_account import Credentials
-import toml
 from datetime import datetime
 import pages.utils.logger as logger
-import sys
 
-# TODO: change to horizontal and remove "default" radio button on streamlit to "default" option with checks
-
-def record_data_clear_state(keys_list = []):
+def record_data_clear_state(keys_list = [], header=False):
     # convert the data from dict to tuple
-    responses_dict = []
+    responses = []
     keys = keys_list
     for key in keys:
         if key in st.session_state:
             # will change this later, doing as sanity checker for now
-            responses_dict.append((key, st.session_state[key]))
-    logger.write_survey_response(responses_dict)
+            responses.append((key, st.session_state[key]))
+    logger.write_survey_response(responses, header)
     # Delete all keys in the list
     for key in keys:
         if key in st.session_state:
@@ -205,7 +191,7 @@ def tasks_demand_questions():
             end_time = datetime.now()
             st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
-            record_data_clear_state( ['mental_demand', 'success', 'effort', 'pace', 'stress', 'complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'time_spent'])
+            record_data_clear_state( ['mental_demand', 'success', 'effort', 'pace', 'stress', 'complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'time_spent'], header=True)
             st.session_state.qa_page = 'ai_usage'
             st.rerun()
 
