@@ -13,6 +13,7 @@ from google.oauth2.service_account import Credentials
 import toml
 import random
 from datetime import datetime
+import pages.utils.logger as logger
 # st.set_page_config(layout="wide")
 float_init(theme=True, include_unstable_primary=False)
 
@@ -213,6 +214,10 @@ def format_model_output_into_msgs_for_idx(idx):
 def display_right_column(env, idx, right_column, condition):
     # env = st.session_state['env']
     question = env.reset(idx=idx) # st.session_state[idx]['question'] # 
+    
+    if 'actions' not in st.session_state[idx]:
+        st.session_state[idx]['actions'] = []
+
     if condition == "A. human" or condition == "C. hai-answer" or condition == "D. hai-static-chain":
         # make session state dict per question
         if f"last_search_{idx}" not in st.session_state[idx]:
@@ -226,9 +231,9 @@ def display_right_column(env, idx, right_column, condition):
 
         right_column.subheader("Perform a Search or Lookup action:")
         search_query = right_column.text_input('Search', key=f"search {idx}")
-        # may need to incoporate a flag when text input changes
         if search_query != st.session_state[idx][f"last_search_{idx}"] and search_query != "":
             st.session_state[idx][f"last_search_{idx}"] = search_query
+            st.session_state[idx]['actions'].append(f"search[{search_query}]")
             obs, r, done, info = step(env, f"search[{search_query}]")
             right_column.write(obs)
             st.session_state[idx][f"step_number_{idx}"] += 1
@@ -236,6 +241,7 @@ def display_right_column(env, idx, right_column, condition):
         lookup_query = right_column.text_input('Lookup', key=f"lookup {idx}")
         if lookup_query != st.session_state[idx][f"last_lookup_{idx}"] and lookup_query != "":
             st.session_state[idx][f"last_lookup_{idx}"] = lookup_query
+            st.session_state[idx]['actions'].append(f"lookup[{lookup_query}]")
             obs, r, done, info = step(env, f"lookup[{lookup_query}]")
             right_column.write(obs)
             st.session_state[idx][f"step_number_{idx}"] += 1
@@ -257,6 +263,9 @@ def display_right_column(env, idx, right_column, condition):
         if st.session_state[idx]['submitted']:
             end_time = datetime.now()
             elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
+            st.session_state[idx]['actions'].append(f"finish[{answer}]")
+            # log data
+            logger.write_data_to_sheet([st.session_state.username, idx, st.session_state[idx][f"step_number_{idx}"], str(st.session_state[idx]['actions']), answer, st.session_state.condition, elapsed_time])
             obs, r, done, info = step(env, f"finish[{answer}]")
             st.session_state.user_data["last question idx done"] = idx
             # st.session_state['answer'] = answer
@@ -270,6 +279,7 @@ def display_right_column(env, idx, right_column, condition):
                     expl = st.session_state['train_id2explanation'][idx]
                     output += expl
                 right_column.write(f'{output}')
+            st.session_state[idx]['submitted'] = False # need to turn this back to false afterwards
     else:
         
         if condition.find("thought") > -1:

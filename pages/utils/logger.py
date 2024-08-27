@@ -14,11 +14,11 @@ import toml
 from datetime import datetime
 import pages.utils.logger as logger
 
-def write_to_sheet(data):
+def write_data_to_sheet(data):
     sheet = st.session_state['sheet']
     user_worksheet = st.session_state['user_worksheet']
     # write the data in the format of: user, quetion idx, step #, action, time?
-    sheet.worksheet('actions').append_row(data)
+    sheet.worksheet('all actions').append_row(data)
     user_worksheet.append_row(data)
     
 def write_to_user_sheet(data):
