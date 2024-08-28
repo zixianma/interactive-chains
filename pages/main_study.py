@@ -227,14 +227,14 @@ def display_right_column(env, idx, right_column, condition):
         right_column.subheader("Perform a Search or Lookup action:")
         search_query = right_column.text_input('Search', key=f"search {idx}")
         # may need to incoporate a flag when text input changes
-        if search_query != st.session_state[idx][f"last_search_{idx}"] and search_query != "":
+        if search_query != "": # search_query != st.session_state[idx][f"last_search_{idx}"] and 
             st.session_state[idx][f"last_search_{idx}"] = search_query
             obs, r, done, info = step(env, f"search[{search_query}]")
             right_column.write(obs)
             st.session_state[idx][f"step_number_{idx}"] += 1
 
         lookup_query = right_column.text_input('Lookup', key=f"lookup {idx}")
-        if lookup_query != st.session_state[idx][f"last_lookup_{idx}"] and lookup_query != "":
+        if lookup_query != "": # lookup_query != st.session_state[idx][f"last_lookup_{idx}"] and
             st.session_state[idx][f"last_lookup_{idx}"] = lookup_query
             obs, r, done, info = step(env, f"lookup[{lookup_query}]")
             right_column.write(obs)
