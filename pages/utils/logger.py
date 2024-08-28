@@ -43,6 +43,7 @@ def create_user_worksheet():
     except gspread.exceptions.WorksheetNotFound:
         # Create a new worksheet for the user if it doesn't exist
         worksheet = sheet.add_worksheet(title=st.session_state.username, rows=100, cols=20)
-        worksheet.append_row(['user','question idx', 'total steps', 'action space', 'answer', 'condition', 'time'])
+        header_list = ["user", "question idx", "total steps", "action space", "observations", "answer", "condition", "time"]
+        worksheet.append_row(header_list)
     return worksheet
 

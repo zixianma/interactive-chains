@@ -833,7 +833,7 @@ def main_study():
             # index=None,
     )
     # condition = "hai-regenerate" # random.choice(all_conditions) 
-    st.session_state.condition = condition
+    # st.session_state.condition = condition
     print(condition)
 
     if st.session_state.count < len(st.session_state['train_ids']):
