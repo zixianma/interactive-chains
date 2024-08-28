@@ -25,6 +25,7 @@ def record_data_clear_state(keys_list = []):
 def finished():
     st.title("Thank you for your time!")
     st.session_state.page = "main_study"
+    st.rerun()
     # st.subheader("Click below to complete the study.")
     # st.write("Insert link here.")
     
@@ -37,22 +38,25 @@ def free_form_questions():
     st.subheader("You must answer all of the questions here before clicking submit to be paid.")
     
     # Question 1: Age
+    st.markdown("#### What is your age?")
     st.session_state.age = st.text_input(
-        "What is your age?",
+        "Please enter your age:",
         value=st.session_state.get('age', ''),
         key='age_input'
     )
     
     # Question 2: Job Title
+    st.markdown("#### What is your job title?")
     st.session_state.job_title = st.text_input(
-        "What is your job title?",
+        "Please enter your job title:",
         value=st.session_state.get('job_title', ''),
         key='job_title_input'
     )
     
     # Question 3: Area of expertise
+    st.markdown("#### What are your areas of expertise?")
     st.session_state.areas_of_expertise = st.text_input(
-        "What are your areas of expertise?",
+        "Please enter your areas of expertise:",
         value=st.session_state.get('areas_of_expertise', ''),
         key='expertise_input'
     )
@@ -76,6 +80,7 @@ def free_form_questions():
                     record_data_clear_state(['age', 'job_title', 'areas_of_expertise'])
                     # Navigate to completion page
                     st.session_state.qa_page = 'complete'
+                    st.rerun()
             except ValueError:
                 st.error("Please enter a valid numeric age.")
 
@@ -87,16 +92,24 @@ def multiple_choice_questions():
     st.subheader("Note: You cannot go back, please take your time answering these.")
     st.subheader("You must answer all of the questions here before clicking submit to be paid.")
     
+    # Placeholder text for unselected options
+    gender_placeholder = "Select your gender"
+    race_ethnicity_placeholder = "Select your race/ethnicity"
+    ai_ml_placeholder = "Select your familiarity level with AI/ML"
+    
     # Question 1: Gender
+    st.markdown("#### Q1: What is your gender?")
     st.session_state.gender = st.radio(
-        "What is your gender?",
+        "Please select your gender:",
         options=[
+            gender_placeholder,
             "Woman",
             "Man",
             "Non-binary",
             "Prefer not to disclose",
             "Self-described"
         ],
+        horizontal=True,
         key='gender_radio'
     )
     
@@ -110,9 +123,11 @@ def multiple_choice_questions():
         st.session_state.gender_self_described = "" 
     
     # Question 2: Race/Ethnicity
+    st.markdown("#### Q2: What is your race/ethnicity?")
     st.session_state.race_ethnicity = st.radio(
-        "What is your race/ethnicity?",
+        "Please select your race/ethnicity:",
         options=[
+            race_ethnicity_placeholder,
             "American Indian or Alaska Native",
             "Asian",
             "Black or African American",
@@ -122,6 +137,7 @@ def multiple_choice_questions():
             "Prefer not to say",
             "Other"
         ],
+        horizontal=True,
         key='race_ethnicity_radio'
     )
     
@@ -135,9 +151,11 @@ def multiple_choice_questions():
         st.session_state.race_ethnicity_other = ""
         
     # Question 3: Familiarity with AI/ML
+    st.markdown("#### Q3: How familiar are you with Artificial Intelligence (AI)/Machine Learning (ML)?")
     st.session_state.ai_ml_familiarity = st.radio(
-        "How familiar are you with Artificial Intelligence (AI)/Machine Learning (ML)?",
+        "Please select your familiarity with AI/ML:",
             options=[
+                ai_ml_placeholder,
                 "Very unfamiliar (I've never heard about AI/ML.)",
                 "Unfamiliar (I've heard very little about AI/ML.)",
                 "Somewhat unfamiliar (I've heard about AI/ML, but I don't know how AI/ML works.)",
@@ -146,15 +164,22 @@ def multiple_choice_questions():
                 "Familiar (I know exactly how AI/ML works, and I've trained multiple AI/ML models end to end.)",
                 "Very familiar (I've earned a degree in AI/ML, or I'm very familiar with training AI/ML models end to end.)"
             ],
+            horizontal=True,
             key='ai_ml_familiarity_radio'
     )
     
     if st.button("Submit", key="submit_mcq"):
         # Check if the "Self-described" or "Other" field is filled if selected
-        if st.session_state.gender == "Self-described" and st.session_state.gender_self_described.strip() == '':
+        if st.session_state.gender == gender_placeholder:
+            st.error("Please select your gender.")
+        elif st.session_state.gender == "Self-described" and st.session_state.gender_self_described.strip() == '':
             st.error("Please describe your gender in the 'Self-described' field.")
+        elif st.session_state.race_ethnicity == race_ethnicity_placeholder:
+            st.error("Please select your race/ethnicity.")
         elif st.session_state.race_ethnicity == "Other" and st.session_state.race_ethnicity_other.strip() == '':
             st.error("Please specify your race/ethnicity in the 'Other' field.")
+        elif st.session_state.ai_ml_familiarity == ai_ml_placeholder:
+            st.error("Please select your familiarity level with AI/ML.")
         else:
             end_time = datetime.now()
             st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
@@ -167,6 +192,7 @@ def multiple_choice_questions():
                 'time_spent'
             ])
             st.session_state.qa_page = 'frq'
+            st.rerun()
     
 def demographics():
     st.title("Demographics Questions")
