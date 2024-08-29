@@ -65,8 +65,9 @@ def submit_consent(username_input):
 
             st.session_state.condition = "C. hai-answer" #assign_condition()
             # Open the Google Sheet by name based on condition
-            sheet_condition = st.session_state.condition.split(' ', 1)[1]
+            # sheet_condition = st.session_state.condition.split(' ', 1)[1]
             # print(f"after the substring: " + str(sheet_condition))
+            sheet_condition = 'hai-answer'
             sheet = client.open(sheet_condition)
             st.session_state['sheet'] = sheet
             # make sheet per user
@@ -74,7 +75,7 @@ def submit_consent(username_input):
         
             if 'user_worksheet' not in st.session_state:
                 st.session_state['user_worksheet'] = user_worksheet
-        st.session_state.page = "demographics"
+        st.session_state.page = "main_study"
 
 def login():
     # if 'username' not in st.session_state:
