@@ -14,11 +14,11 @@ import toml
 from datetime import datetime
 import pages.utils.logger as logger
 
-def write_to_sheet(data):
+def write_data_to_sheet(data):
     sheet = st.session_state['sheet']
     user_worksheet = st.session_state['user_worksheet']
     # write the data in the format of: user, quetion idx, step #, action, time?
-    sheet.worksheet('actions').append_row(data)
+    sheet.worksheet('all actions').append_row(data)
     user_worksheet.append_row(data)
     
 def write_to_user_sheet(data):
@@ -43,6 +43,7 @@ def create_user_worksheet():
     except gspread.exceptions.WorksheetNotFound:
         # Create a new worksheet for the user if it doesn't exist
         worksheet = sheet.add_worksheet(title=st.session_state.username, rows=100, cols=20)
-        worksheet.append_row(['user','question idx', 'total steps', 'action space', 'answer', 'condition', 'time'])
+        header_list = ["user", "question idx", "total steps", "action space", "observations", "answer", "condition", "time"]
+        worksheet.append_row(header_list)
     return worksheet
 

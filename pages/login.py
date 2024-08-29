@@ -3,6 +3,7 @@ import requests
 from streamlit_float import *
 from google.oauth2.service_account import Credentials
 import toml
+import random
 from pages.utils.logger import *
 import toml
 import gspread
@@ -26,6 +27,22 @@ def get_user_ip():
     except Exception as e:
         return {"error": str(e)}
 
+def assign_condition():
+    all_conditions = ["C. hai-answer", "D. hai-static-chain", "E. hai-human-thought", "F. hai-human-action", "G. hai-mixed", "H. hai-update", "I. hai-regenerate"]
+    if 'condition_counts' not in st.session_state:
+        st.session_state.condition_counts = {condition: 0 for condition in all_conditions}
+
+    # Find the condition with the minimum count
+    min_count = min(st.session_state.condition_counts.values())
+    balanced_conditions = [condition for condition, count in st.session_state.condition_counts.items() if count == min_count]
+
+    # Randomly choose a condition from the balanced list
+    chosen_condition = random.choice(balanced_conditions)
+    st.session_state.condition_counts[chosen_condition] += 1
+
+    # print(f"condition chosen: " + str(chosen_condition))
+
+    return chosen_condition
 
 def submit_consent(username_input):
     if not username_input or username_input == "":
@@ -46,8 +63,11 @@ def submit_consent(username_input):
             credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
             client = gspread.authorize(credentials)
 
-            # Open the Google Sheet by name
-            sheet = client.open('hai-answer') # TODO: should add condition here so it goes to correct Sheet
+            st.session_state.condition = assign_condition()
+            # Open the Google Sheet by name based on condition
+            sheet_condition = st.session_state.condition.split(' ', 1)[1]
+            # print(f"after the substring: " + str(sheet_condition))
+            sheet = client.open(sheet_condition)
             st.session_state['sheet'] = sheet
             # make sheet per user
             user_worksheet = create_user_worksheet()
