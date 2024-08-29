@@ -63,7 +63,7 @@ def submit_consent(username_input):
             credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
             client = gspread.authorize(credentials)
 
-            st.session_state.condition = assign_condition()
+            st.session_state.condition = "C. hai-answer" #assign_condition()
             # Open the Google Sheet by name based on condition
             sheet_condition = st.session_state.condition.split(' ', 1)[1]
             # print(f"after the substring: " + str(sheet_condition))
@@ -109,7 +109,7 @@ def login():
         # Submit button
         button = st.button("Submit", on_click=submit_consent, args=(username_input,))
 
-        if st.session_state.page == "main_study" or st.session_state['username_submitted']: #'username' in st.session_state and st.session_state.username != "" and 'sheet' in st.session_state and 'user_worksheet' in st.session_state: #  and 
+        if st.session_state.page != "login" or st.session_state['username_submitted']: #'username' in st.session_state and st.session_state.username != "" and 'sheet' in st.session_state and 'user_worksheet' in st.session_state: #  and 
             st.rerun()
 
     

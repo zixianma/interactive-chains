@@ -1,11 +1,7 @@
 from streamlit_float import *
-import re
-import gspread
-from google.oauth2.service_account import Credentials
-import toml
+import streamlit as st
 from datetime import datetime
 import pages.utils.logger as logger
-import sys
 
 def record_data_clear_state(keys_list = []):
     # convert the data from dict to tuple
@@ -21,21 +17,11 @@ def record_data_clear_state(keys_list = []):
         if key in st.session_state:
             del st.session_state[key]
 
-# Change this to get to the correct next page
-def finished():
-    st.title("Thank you for your time!")
-    st.session_state.page = "main_study"
-    st.rerun()
-    # st.subheader("Click below to complete the study.")
-    # st.write("Insert link here.")
-
 def questions():
     if 'time_spent' not in st.session_state:
         st.session_state.time_spent = datetime.now()
         
-    st.title("Demographic Questions")
-    st.subheader("Note: You cannot go back, please take your time answering these.")
-    st.subheader("You must answer all of the questions here before clicking submit to be paid.")
+    st.subheader("Note: You must answer all of the questions here before clicking submit to be paid. You cannot go back, please take your time answering these.")
     
     # Placeholder text for unselected options
     gender_placeholder = "Select your gender"
@@ -93,17 +79,17 @@ def questions():
         st.session_state.race_ethnicity_other = ""
     
     # Question 3: Age
-    # st.markdown("#### Q3: What is your age?")
+    st.markdown("#### Q3: What is your age?")
     st.session_state.age = st.text_input(
-        "Q3: What is your age?",
+        "",
         value=st.session_state.get('age', ''),
         key='age_input'
     )
     
     # Question 4: Job Title
-    # st.markdown("#### Q4: What is your job title?")
+    st.markdown("#### Q4: What is your job title?")
     st.session_state.job_title = st.text_input(
-        "Q4: What is your job title?",
+        "",
         value=st.session_state.get('job_title', ''),
         key='job_title_input'
     )
@@ -141,7 +127,7 @@ def questions():
                         'job_title',
                         'time_spent'
                     ])
-                    st.session_state.qa_page = 'complete'
+                    st.session_state.page = "main_study"
                     st.rerun()
             except ValueError:
                 st.error("Please enter a valid numeric age.")
@@ -150,14 +136,9 @@ def questions():
 def demographics():
     st.title("Demographics Questions")
 
-    if 'qa_page' not in st.session_state:
-        st.session_state.qa_page = 'questions'
-
     placeholder = st.empty()
 
     with placeholder.container():
-        if st.session_state.qa_page == 'questions':
-            questions()
-        elif st.session_state.qa_page =='complete':
-            finished()
+        questions()
+
     
