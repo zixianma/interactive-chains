@@ -235,15 +235,18 @@ def display_right_column(env, idx, right_column, condition):
             if search_query != st.session_state[idx].get(f"last_search_{idx}"):
                 st.session_state[idx][f"last_search_{idx}"] = search_query
                 st.session_state[idx]['actions'].append(f"search[{search_query}]")
+
             obs, r, done, info = step(env, f"search[{search_query}]")
             right_column.write(obs)
             st.session_state[idx]['observations'].append(obs)
 
         lookup_query = right_column.text_input('Lookup', key=f"lookup {idx}")
+
         if lookup_query:
             if lookup_query != st.session_state[idx].get(f"last_lookup_{idx}"):
                 st.session_state[idx][f"last_lookup_{idx}"] = lookup_query
                 st.session_state[idx]['actions'].append(f"lookup[{lookup_query}]")
+
             obs, r, done, info = step(env, f"lookup[{lookup_query}]")
             right_column.write(obs)
             st.session_state[idx]['observations'].append(obs)

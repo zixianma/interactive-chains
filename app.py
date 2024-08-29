@@ -4,6 +4,7 @@ st.set_page_config(layout="wide")
 from pages.login import login
 from pages.main_study import main_study
 from pages.survey import survey
+from pages.demographics import demographics
 
 def main():
 
@@ -32,6 +33,8 @@ def main():
     # Display the chosen page based on session state
     if st.session_state.page == "login":
         login()
+    elif st.session_state.page == "demographics":
+        demographics()
     elif st.session_state.page == 'main_study':
         main_study()
     elif st.session_state.page == 'survey':
