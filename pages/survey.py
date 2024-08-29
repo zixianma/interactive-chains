@@ -160,7 +160,7 @@ def tasks_demand_questions():
 
     st.subheader("Reflect on how you feel after answering all of the questions")
 
-    st.session_state.mental_demand = st.slider("How mentally demanding were the tasks", 0, 100, step=5, key="mental_slider")
+    st.session_state.mental_demand = st.slider("How mentally demanding were the tasks?", 0, 100, step=5, key="mental_slider")
     st.session_state.success = st.slider("How successful were you in accomplishing what you were asked to do?", 0, 100, step=5, key='success_slider')
     st.session_state.effort = st.slider("How hard did you have to work to accomplish your level of performance?", 0, 100, step=5,key="effort_slider")
     st.session_state.pace = st.slider("How hurried or rushed were the pace of the tasks?", 0, 100, step=5, key="pace_slider")
