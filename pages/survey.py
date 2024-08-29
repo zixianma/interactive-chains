@@ -27,9 +27,7 @@ def free_form_questions():
         st.session_state.time_spent = datetime.now()
 
     st.title("Final Questions & Feedback")
-    st.subheader("Note: You cannot go back, please take your time answering these.")
-
-    st.subheader("You must answer all of the questions here before clicking submit to be paid.")
+    st.subheader("Note:You must answer all of the questions here before clicking submit to be paid. You cannot go back, please take your time answering these.")
 
     # Use st.session_state.get to avoid overwriting existing text when rerunning
     st.session_state.strategy = st.text_area(
