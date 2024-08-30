@@ -27,22 +27,64 @@ def get_user_ip():
     except Exception as e:
         return {"error": str(e)}
 
-def assign_condition():
-    all_conditions = ["C. hai-answer", "D. hai-static-chain", "E. hai-human-thought", "F. hai-human-action", "G. hai-mixed", "H. hai-update", "I. hai-regenerate"]
-    if 'condition_counts' not in st.session_state:
-        st.session_state.condition_counts = {condition: 0 for condition in all_conditions}
-
+# Function to assign a condition based on the counts
+def assign_condition(condition_counts):
     # Find the condition with the minimum count
-    min_count = min(st.session_state.condition_counts.values())
-    balanced_conditions = [condition for condition, count in st.session_state.condition_counts.items() if count == min_count]
+    min_count = min(condition_counts.values())
+    balanced_conditions = [condition for condition, count in condition_counts.items() if count == min_count]
 
     # Randomly choose a condition from the balanced list
     chosen_condition = random.choice(balanced_conditions)
-    st.session_state.condition_counts[chosen_condition] += 1
-
-    # print(f"condition chosen: " + str(chosen_condition))
+    condition_counts[chosen_condition] += 1
 
     return chosen_condition
+
+# Retrieve condition counts from Google Sheets
+def get_condition_counts(client):
+    sheet = client.open("Condition Counts")
+    worksheet = sheet.worksheet("Pilot")
+    records = worksheet.get_all_records()
+
+    condition_counts = {record['Condition']: record['Count'] for record in records}
+    return condition_counts, worksheet
+
+# Update condition count in Google Sheets
+def update_condition_count(worksheet, condition, count):
+    cell = worksheet.find(condition)
+    worksheet.update_cell(cell.row, cell.col + 1, count)
+
+# Find a user by username and IP
+def find_user_row(client, location_data):
+    sheet = client.open("Condition Counts")
+    worksheet = sheet.worksheet("Pilot User Data")
+    records = worksheet.get_all_records()
+    for idx, record in enumerate(records, start=2):  # start=2 to account for header row
+        if record['Username'] == st.session_state.username and record['IP'] == location_data['ip']:
+            return idx, record
+    return None, None
+
+def update_pilot_user_data(client, location_data, seen=False, idx = -1):
+    sheet = client.open("Condition Counts")
+    worksheet = sheet.worksheet("Pilot User Data")
+    if seen:
+        # User exists, update their visit count and last visit time
+        visits = int(worksheet.cell(idx, 3).value) + 1  # Column 3 is 'Visits'
+        worksheet.update_cell(idx, 3, visits)
+        visit_times = worksheet.cell(idx, 4).value  # Column 4 is 'Visit Times'
+
+        # Convert visit_times string back to a list
+        if visit_times:
+            visit_times_list = visit_times.split(', ')
+        else:
+            visit_times_list = []
+
+        # Append the new visit time
+        visit_times_list.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        worksheet.update_cell(idx, 4, ', '.join(visit_times_list))
+    else:
+        # User does not exist, add a new row
+        new_row = [st.session_state.username, str(location_data['ip']), datetime.now().strftime('%Y-%m-%d %H:%M:%S'), st.session_state.condition, str(location_data)]
+        worksheet.append_row(new_row)
 
 def submit_consent(username_input):
     if not username_input or username_input == "":
@@ -62,19 +104,54 @@ def submit_consent(username_input):
             # Authenticate using the credentials from the TOML file
             credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
             client = gspread.authorize(credentials)
+            location_data = get_user_ip()
 
-            st.session_state.condition = "I. hai-regenerate" #assign_condition() C. hai-answer
-            # Open the Google Sheet by name based on condition
-            sheet_condition = st.session_state.condition.split(' ', 1)[1]
-            # print(f"after the substring: " + str(sheet_condition))
-            sheet = client.open(sheet_condition)
-            st.session_state['sheet'] = sheet
-            # make sheet per user
-            user_worksheet = create_user_worksheet()
-        
-            if 'user_worksheet' not in st.session_state:
-                st.session_state['user_worksheet'] = user_worksheet
-        st.session_state.page = "demographics"
+            # check if user exists prior, if so we re-route them to where they last were + keep same condition. otherwise update condition count + log
+            row, user_record = find_user_row(client, location_data)
+
+            if user_record:
+                # need to fetch the condition they were on and set it for them
+                # also need to get the question_idx
+                # update visit count?
+                update_pilot_user_data(client, location_data, seen=True, idx = row)
+                st.write("continuing where you left off: " + str(user_record['Condition']))
+                st.session_state.condition = user_record['Condition']
+                sheet_condition = st.session_state.condition.split(' ', 1)[1]
+                # now that we have condition, open the corresponding condition sheet to get last question idx
+                st.session_state['sheet'] = client.open(sheet_condition)
+                st.session_state['user_worksheet'] = st.session_state['sheet'].worksheet(st.session_state.username)
+                num_rows = len(st.session_state['user_worksheet'].get_all_values()) - 1
+                print(num_rows)
+                # we can compute this by taking the # of rows and subtract by 1 to include header to figure out # of questions?
+                st.session_state.last_question = num_rows
+            else:
+                # open sheet to get the count
+                condition_counts, worksheet = get_condition_counts(client)
+
+                # Assign a condition and update the count
+                assigned_condition = assign_condition(condition_counts)
+                update_condition_count(worksheet, assigned_condition, condition_counts[assigned_condition])
+
+                print(f"You have been assigned to: {assigned_condition}") # debugging purposes
+
+                st.session_state.condition = assigned_condition
+                # Open the Google Sheet by name based on condition
+                sheet_condition = st.session_state.condition.split(' ', 1)[1]
+                # print(f"after the substring: " + str(sheet_condition))
+                sheet = client.open(sheet_condition)
+                st.session_state['sheet'] = sheet
+
+                # record user in pilot user data
+                update_pilot_user_data(client, location_data)
+                
+                st.session_state.last_question_idx = -1
+
+                # make sheet per user
+                user_worksheet = create_user_worksheet()
+            
+                if 'user_worksheet' not in st.session_state:
+                    st.session_state['user_worksheet'] = user_worksheet
+        st.session_state.page = "main_study"
 
 def login():
     # if 'username' not in st.session_state:
@@ -111,7 +188,3 @@ def login():
 
         if st.session_state.page != "login" or st.session_state['username_submitted']: #'username' in st.session_state and st.session_state.username != "" and 'sheet' in st.session_state and 'user_worksheet' in st.session_state: #  and 
             st.rerun()
-
-    
-    
-

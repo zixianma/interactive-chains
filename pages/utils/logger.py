@@ -25,11 +25,11 @@ def write_to_user_sheet(data):
     sheet = st.session_state['sheet']
     sheet.worksheet('users').append_row(data)
 
-def write_survey_response(data, header=False):
+def write_survey_response(data, header=False, survey_type=""):
     print(st.session_state)
     user_worksheet = st.session_state['user_worksheet']
     if header:
-        user_worksheet.append_row(["SURVEY INFORMATION", '-', '-'])
+        user_worksheet.append_row([survey_type, '-', '-'])
     responses = []
     for tuple in data:
          responses.append(tuple[1])
