@@ -866,6 +866,9 @@ def main_study():
     
     if st.session_state.last_question != -1 and st.session_state.count == 0:
         st.session_state.count = st.session_state.last_question
+        if (st.session_state.count > len(test_ids)):
+            st.session_state.is_done = True
+            st.session_state.page = "survey"
 
     if st.session_state.count < len(st.session_state['train_ids']):
         st.title("📚 Training phase")
