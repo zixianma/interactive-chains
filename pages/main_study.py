@@ -228,20 +228,19 @@ def display_right_column(env, idx, right_column, condition):
     # env = st.session_state['env']
     question = env.reset(idx=idx) # st.session_state[idx]['question'] # 
     
+    # make session state dict per question
+    if f"last_search_{idx}" not in st.session_state[idx]:
+        st.session_state[idx][f"last_search_{idx}"] = None
+    if f"last_lookup_{idx}" not in st.session_state[idx]:
+        st.session_state[idx][f"last_lookup_{idx}"] = None
+    if f"start_time_{idx}" not in st.session_state[idx]:
+        st.session_state[idx][f"start_time_{idx}"] = datetime.now()
+    if 'observations' not in st.session_state[idx]:
+        st.session_state[idx]['observations'] = []
     if 'actions' not in st.session_state[idx]:
         st.session_state[idx]['actions'] = []
 
     if condition == "A. human" or condition == "C. hai-answer" or condition == "D. hai-static-chain":
-        # make session state dict per question
-        if f"last_search_{idx}" not in st.session_state[idx]:
-            st.session_state[idx][f"last_search_{idx}"] = None
-        if f"last_lookup_{idx}" not in st.session_state[idx]:
-            st.session_state[idx][f"last_lookup_{idx}"] = None
-        if f"start_time_{idx}" not in st.session_state[idx]:
-            st.session_state[idx][f"start_time_{idx}"] = datetime.now()
-        if 'observations' not in st.session_state[idx]:
-            st.session_state[idx]['observations'] = []
-
         # right_column.subheader("Perform a Search or Lookup action:")
         right_column.markdown("#### Perform a Search or Lookup action:")
        
@@ -631,6 +630,7 @@ def display_right_column(env, idx, right_column, condition):
                     else:
                         st.session_state[idx]["done"] = False
                         obs_str = f"Observation {i+1}: {obs_str}"
+                    st.session_state[idx]["observations"] = obs_str
 
                 right_column.chat_message("user", avatar="🌐").write(obs_str)
                 new_action_str = f"{action_label} {action_combined[0].upper() + action_combined[1:]}" # action_input
@@ -799,6 +799,11 @@ def display_right_column(env, idx, right_column, condition):
 
         submit = form.form_submit_button('Submit', on_click=click_submit)
         if st.session_state[idx]['submitted']:
+            end_time = datetime.now()
+            elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
+            st.session_state[idx]['actions'].append(f"finish[{answer}]")
+            # log data
+            logger.write_data_to_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
             obs, r, done, info = step(env, f"finish[{answer}]")
             st.session_state['answer'] = answer
             right_column.write(f'Submitted: {answer}')
@@ -812,6 +817,7 @@ def display_right_column(env, idx, right_column, condition):
                     expl = st.session_state['train_id2explanation'][idx]
                     output += expl
                 right_column.write(f'{output}')
+            st.session_state[idx]['submitted'] = False
 
     return right_column
 
@@ -1031,13 +1037,4 @@ def main_study():
                 st.session_state.count += 1
             st.session_state["next_clicked"] = False
             st.rerun()
-
-
-
-
-    
-
-
-
-
 
