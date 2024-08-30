@@ -144,7 +144,7 @@ def submit_consent(username_input):
                 # record user in pilot user data
                 update_pilot_user_data(client, location_data)
                 
-                st.session_state.last_question_idx = -1
+                st.session_state.last_question = -1
 
                 # make sheet per user
                 user_worksheet = create_user_worksheet()

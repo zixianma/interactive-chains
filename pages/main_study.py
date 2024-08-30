@@ -880,6 +880,8 @@ def main_study():
     # condition = "I. hai-regenerate" # random.choice(all_conditions) 
     # st.session_state.condition = condition
     print(st.session_state.condition)
+    # if 'last_question' not in st.session_state:
+    #     st.session_state.last_question = -1
     
     if st.session_state.last_question != -1 and st.session_state.count == 0:
         st.session_state.count = st.session_state.last_question
