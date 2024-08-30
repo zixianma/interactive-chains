@@ -96,7 +96,8 @@ def submit_consent(username_input):
 
         if 'sheet' not in st.session_state:
             toml_data = toml.load(".streamlit/secrets.toml")
-            credentials_data = toml_data["connections"]["gsheets"]
+            credentials_data = st.secrets.connections.gsheets
+            # credentials_data = toml_data["connections"]["gsheets"]
 
             # Define the scope for the Google Sheets API
             scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
