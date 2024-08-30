@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-from streamlit_float import *
+# from streamlit_float import *
 from google.oauth2.service_account import Credentials
 import toml
 import random

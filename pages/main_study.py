@@ -281,7 +281,7 @@ def display_right_column(env, idx, right_column, condition):
         def click_submit():
             st.session_state[idx]['submitted'] = True
 
-        submit = form.form_submit_button('Submit', on_click=click_submit)
+        submit = form.form_submit_button('Submit', on_click=click_submit,)
         if st.session_state[idx]['submitted']:
             end_time = datetime.now()
             elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
@@ -871,15 +871,15 @@ def main_study():
     # else:
     # "A. human", 
     all_conditions = ["C. hai-answer", "D. hai-static-chain", "E. hai-human-thought", "F. hai-human-action", "G. hai-mixed", "H. hai-update", "I. hai-regenerate"]
-    condition = st.radio(
-            "Condition",
-            all_conditions, # "hai-interact-chain", "hai-interact-chain-delayed", 
-            # captions=["A", "C", "D", "E", "F", "G"]
-            # index=None,
-    )
-    # condition = "I. hai-regenerate" # random.choice(all_conditions) 
-    st.session_state.condition = condition
-    print(st.session_state.condition)
+    # condition = st.radio(
+    #         "Condition",
+    #         all_conditions, # "hai-interact-chain", "hai-interact-chain-delayed", 
+    #         # captions=["A", "C", "D", "E", "F", "G"]
+    #         # index=None,
+    # )
+    # # condition = "I. hai-regenerate" # random.choice(all_conditions) 
+    # st.session_state.condition = condition
+    # print(st.session_state.condition)
     if 'last_question' not in st.session_state:
         st.session_state.last_question = -1
     
@@ -1024,6 +1024,7 @@ def main_study():
             st.session_state["next_clicked"] = False
         else:
             total_num = len(st.session_state['train_ids']) + len(st.session_state['test_ids'])
+            total_num = 5
             if st.session_state.count == total_num - 1:
                 # st.warning("You're at the end of all examples. There is no next example.", icon="⚠️")
                 st.session_state.page = "survey"

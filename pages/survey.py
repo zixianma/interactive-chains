@@ -205,7 +205,7 @@ def survey():
 
     # Control which set of questions to display
     with placeholder.container():
-        if st.session_state.is_done:
+        if 'is_done' in st.session_state and st.session_state.is_done:
             finished()
         elif st.session_state.qa_page == 'tasks_demand':
             tasks_demand_questions()
