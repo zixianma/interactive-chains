@@ -11,7 +11,7 @@ def record_data_clear_state(keys_list = []):
         if key in st.session_state:
             # will change this later, doing as sanity checker for now
             responses_dict.append((key, st.session_state[key]))
-    logger.write_survey_response(responses_dict)
+    logger.write_survey_response(responses_dict, header=True, survey_type='DEMOGRAPHICS') # this is assuming all of this is on one page.
     # Delete all keys in the list
     for key in keys:
         if key in st.session_state:

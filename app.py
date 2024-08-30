@@ -42,15 +42,25 @@ def main():
             width: 50% !important;
             margin-bottom: 20px; /* Adjust this value to control the space between sliders and other elements */
         }
-    /* Increase the font size of the slider's min and max values */
-    [data-testid="stTickBar"] > div {
-        font-size: 22px !important;
-    }
+        /* Increase the font size of the slider's min and max values */
+        [data-testid="stTickBar"] > div {
+            font-size: 22px !important;
+        }
 
-    /* Increase the font size of the current value displayed on the slider thumb */
-    .StyledThumbValue {
-        font-size: 22px !important; /* Adjust this value as needed */
-    }
+        /* Increase the font size of the current value displayed on the slider thumb */
+        .StyledThumbValue {
+            font-size: 22px !important;
+        }
+
+        /* increase thickness of slider */
+            [data-baseweb="slider"] > div > div > div {
+            height: 16px !important;  /* Adjust this value to increase thickness */
+        }
+
+        /* Increase the font size of the <p> tag inside the stTextArea */
+        .stTextArea label p {
+            font-size: 24px !important;
+        }
         """,
         unsafe_allow_html=True,
     )   

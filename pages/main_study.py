@@ -878,8 +878,14 @@ def main_study():
             # index=None,
     )
     # condition = "I. hai-regenerate" # random.choice(all_conditions) 
-    st.session_state.condition = condition
-    print(condition)
+    # st.session_state.condition = condition
+    print(st.session_state.condition)
+    
+    if st.session_state.last_question != -1 and st.session_state.count == 0:
+        st.session_state.count = st.session_state.last_question
+        if (st.session_state.count > len(test_ids)):
+            st.session_state.is_done = True
+            st.session_state.page = "survey"
 
     if st.session_state.count < len(st.session_state['train_ids']):
         st.title("📚 Training phase")
@@ -890,6 +896,7 @@ def main_study():
         st.title("📝 Study phase")
         st.markdown("###### You are now in the study phase, where you will answer 30 questions in total and be rewarded if you answer more questions correctly. You will NOT see if your answer is correct or not.")
         total_num = len(st.session_state['test_ids'])
+
         curr_pos = st.session_state.count + 1 - len(st.session_state.train_ids)
 
     with st.expander("**See task instruction and examples**"):
