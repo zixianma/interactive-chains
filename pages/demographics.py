@@ -21,7 +21,7 @@ def questions():
     if 'time_spent' not in st.session_state:
         st.session_state.time_spent = datetime.now()
         
-    st.subheader("Note: You must answer all of the questions here before clicking submit to be paid. You cannot go back, please take your time answering these.")
+    # st.subheader("Note: You must answer all of the questions here before clicking submit to be paid. You cannot go back, please take your time answering these.")
     
     # Placeholder text for unselected options
     gender_placeholder = "Select your gender"

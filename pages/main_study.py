@@ -133,8 +133,8 @@ def display_left_column(env, idx, left_column, condition):
     # left_column.subheader(question)
     # if 'question' not in st.session_state[idx]:
     #     st.session_state[idx]['question'] = question
-    left_column.subheader("AI model's output:")
     if condition == "C. hai-answer":
+        left_column.subheader("AI model's output:")
         # model_output = get_model_output(model_outputs, idx)
         model_output = st.session_state.model_outputs[idx]
         final_ans = extract_final_answer(model_output)
@@ -145,21 +145,24 @@ def display_left_column(env, idx, left_column, condition):
     elif condition != "A. human":
         # model_output = get_model_output(model_outputs, idx)
         model_output = st.session_state.model_outputs[idx]
-        
+        expander = left_column.expander("#### AI model's output", expanded=True)
         for i, step_str in enumerate(model_output):
-            step_container = left_column.chat_message("assistant")
+            step_container = expander.chat_message("assistant")
             # step_str = process_model_output(step_str, final=(i == len(model_output) -1))
             keywords = ['thought', 'action', 'observation']
             if i == len(model_output) - 1:
                 keywords = ['thought', 'action']
             for kw in keywords:
                 if kw == "observation":
-                    left_column.chat_message("user", avatar="🌐").write(step_str[kw])
+                    expander.chat_message("user", avatar="🌐").write(step_str[kw])
+                elif kw == "action":
+                    # step_container.write(step_str[kw])
+                    step_container.text_input("", step_str[kw], label_visibility="collapsed", disabled=True, key=f"display {kw} {i}")
                 else:
-                    step_container.write(step_str[kw])
+                    step_container.text_area("", step_str[kw], label_visibility="collapsed", disabled=True, key=f"display {kw} {i}")
             # left_column.button("Edit this step", key=f"update {i}")
 
-            left_column.divider()
+            expander.divider()
     return left_column
 
 @st.cache_data
@@ -239,7 +242,9 @@ def display_right_column(env, idx, right_column, condition):
         if 'observations' not in st.session_state[idx]:
             st.session_state[idx]['observations'] = []
 
-        right_column.subheader("Perform a Search or Lookup action:")
+        # right_column.subheader("Perform a Search or Lookup action:")
+        right_column.markdown("#### Perform a Search or Lookup action:")
+       
         search_query = right_column.text_input('Search', key=f"search {idx}")
         if search_query:
             if search_query != st.session_state[idx].get(f"last_search_{idx}"):
@@ -561,7 +566,8 @@ def display_right_column(env, idx, right_column, condition):
                 final = step_container.text_area("🤖", final_thought_action, label_visibility="collapsed", key=f"final answer", disabled=True)
             
         elif condition.find("regenerate") > -1:
-            right_column.subheader("Edit any thought or action and update AI's output:")
+            # right_column.subheader("Edit any thought or action and update AI's output:")
+            right_column.markdown("#### Edit any thought or action and update AI's output:")
             model_output =  st.session_state.model_outputs[idx][:-1]
             if 'curr_model_output' not in st.session_state[idx]:
                 st.session_state[idx]['curr_model_output'] = model_output
@@ -596,8 +602,10 @@ def display_right_column(env, idx, right_column, condition):
                 all_action_options = ["Search", "Lookup", "Finish"]
                 # else:
                 #     all_action_options = ["Search", "Lookup"]
-                
-                action_index = all_action_options.index(action_dict['option'][0].upper() + action_dict['option'][1:]) # 0 if action_dict['option'].lower() == "search" else 1
+                try:
+                    action_index = all_action_options.index(action_dict['option'][0].upper() + action_dict['option'][1:]) # 0 if action_dict['option'].lower() == "search" else 1
+                except:
+                    action_index = 0
                 action_str = action_dict['input']
                 
                 action_dict['label'] = f"Action {i+1}: "
@@ -819,6 +827,13 @@ def display_progress_bar(curr_pos, st):
     progress = st.text(f"You are at {curr_pos} / 30 questions.")
     return st
 
+@st.cache_data
+def load_examples():
+    examples_file = 'data/examples.json'
+    with open(examples_file, 'r') as f:
+        examples = json.load(f)
+    return examples
+
 def main_study():
     openai.api_key = os.environ["OPENAI_API_KEY"]
     openai_api_key = openai.api_key
@@ -838,9 +853,11 @@ def main_study():
     prompt_dict = load_prompts()
     webthink_prompt = prompt_dict['webthink_simple3']
     st.session_state['task_prompt'] = webthink_prompt
+    human_prompt = ""
+    st.session_state['human_task_prompt'] = human_prompt
 
     train_ids = [4050, 6996, 802, 4118, 1557, 5726,] # 3805
-    test_ids = [4278, 2646, 468, 2208, 280, 1391, 217, 2544, 565, 2226, 4627, 2033, 2836, 4859, 1781, 1955, 2019, 2498, 2711, 3234, 4341, 5376, 5965, 7096, 3477, 7203, 6158, 2424, 4525, 3196]
+    test_ids = [4278, 2646, 468, 2208, 280, 1391, 217, 2544, 565, 4627, 2033, 2836, 4859, 1781, 1955, 2019, 2498, 2711, 3234, 4341, 5376, 5965, 7096, 3477, 7203, 6158, 2424, 4525, 3196] # 2226,
     if 'train_ids' not in st.session_state:
         st.session_state['train_ids'] = train_ids
     if 'test_ids' not in st.session_state:
@@ -866,17 +883,81 @@ def main_study():
 
     if st.session_state.count < len(st.session_state['train_ids']):
         st.title("📚 Training phase")
-        st.text("During this training phase, you will get to try answering 6 questions. You will see whether your answer is correct or not after you submit it. ")
+        st.markdown("###### During this training phase, you will get to try answering 6 questions. You will see whether your answer is correct or not after you submit it. ")
         total_num = len(st.session_state['train_ids'])
         curr_pos = st.session_state.count + 1
     else:   
         st.title("📝 Study phase")
-        st.text("You are now in the study phase, where you will answer 30 questions in total and be rewarded if you answer more questions correctly. You will NOT see if your answer is correct or not.")
+        st.markdown("###### You are now in the study phase, where you will answer 30 questions in total and be rewarded if you answer more questions correctly. You will NOT see if your answer is correct or not.")
         total_num = len(st.session_state['test_ids'])
         curr_pos = st.session_state.count + 1 - len(st.session_state.train_ids)
 
-    with st.expander("See task instruction and examples"):
-        st.write(st.session_state['task_prompt'])
+    with st.expander("**See task instruction and examples**"):
+        # st.write(st.session_state['task_prompt'])
+        goal = st.markdown("In this study, you will decide with the help of an AI model if there is evidence in the **Observation** that SUPPORTS or REFUTES a **Claim**, or if there is NOT ENOUGH INFORMATION.")
+        definitions = st.markdown("""An **Observation** is some text returned by an **Action**, which includes *Search*, *Lookup* and *Finish*.""")
+                    
+        action_definitions = st.markdown('''
+        - The *Search* action searches for the document that's the most related to the keyword you enter. 
+        - The *Lookup* action finds a text in the last document found by Search or returns “no more results” if the text is not found. 
+        - The *Finish* action submits one of the three answers: SUPPORTS, REFUTES, or NOT ENOUGH INFO about the claim.''')
+        
+        if st.session_state.condition == "C. hai-answer":
+            left_inst = "On the left, you are given the AI model's suggested answer, which may be incorrect."
+            left_inst = st.markdown(left_inst)
+
+            right_inst = "On the right, you can perform either a Search or Lookup action to gather information about this claim and verify the AI's answer. "
+            right_inst = st.markdown(right_inst)
+        elif st.session_state.condition == "D. hai-static-chain":
+            left_inst = "On the left, you are given the AI model's suggested answer along with its reasoning chain, which may be incorrect. "
+            left_inst += "A reasoning chain is a list of thoughts, actions, and observations that help the model reason and reach its final answer. "
+            left_inst = st.markdown(left_inst)
+
+            right_inst = "On the right, you can perform either a Search or Lookup action to gather information about this claim and verify the AI's answer. "
+            right_inst = st.markdown(right_inst)
+            
+        elif st.session_state.condition == "I. hai-regenerate":
+            left_inst = "On the left, you are given the AI model's suggested answer along with its reasoning chain, which may be incorrect. "
+            left_inst += "A reasoning chain is a list of thoughts, actions, and observations that help the model reason and reach its final answer. "
+            left_inst = st.markdown(left_inst)
+
+            right_inst = st.markdown("On the right, you can edit the AI model's thought or action anywhere in the reasoning chain.")
+            right_inst_details = st.markdown(''' 
+            - If you edit a thought and submit it, the action will be automatically updated by the AI. 
+            - If you edit an action and submit it, the observation will be automatically updated. 
+            - If you edit AI's thought or action at step $i$, all the steps at $i+1$ and after will be gone. You can then “Update the AI model's output” to complete the reasoning chain and obtain a new answer. ''')
+
+        else:
+            raise NotImplementedError
+        
+        note = st.markdown(":red[Note that you should make your decision based ONLY on the **Observations** on this interface. You will reach wrong answers if you rely on information from Wikipedia or ChatGPT.]")
+        ex_str = st.markdown("You can find examples for SUPPORTS, REFUTES, and NOT ENOUGH INFO below.")
+        
+        examples = load_examples()
+        for k, ex in examples.items():
+            st.markdown(f"#### {k}")
+            model_output = ex['steps']
+            for i, step_str in enumerate(model_output):
+                step_container = st.chat_message("assistant")
+                
+                keywords = ['thought', 'action', 'observation']
+                if i == len(model_output) - 1:
+                    keywords = ['thought', 'action']
+
+
+                for kw in keywords:
+                    if st.session_state.condition == "C. hai-answer":
+                        content_str = step_str[kw]
+                    else:
+                        content_str = f"{kw[0].upper()+kw[1:]} {i+1}: " + step_str[kw]
+
+                    if kw == "observation":
+                        st.chat_message("user", avatar="🌐").write(content_str)
+                    elif kw == "action":
+                        step_container.text_input("", content_str, label_visibility="collapsed", disabled=True)
+                    else:
+                        step_container.text_area("", content_str, label_visibility="collapsed", disabled=True)
+            st.divider()
 
     all_cols = st.columns([2, 2, 2, 2, 2, 2])
     left_head = all_cols[0]
@@ -898,6 +979,7 @@ def main_study():
         st.session_state[idx]['question'] = question
 
     st.subheader(question)
+    warning = st.empty()
     st.divider()
     
     left_column, right_column = st.columns(2)
@@ -912,18 +994,21 @@ def main_study():
     }
     if prev:
         if st.session_state.count == 0:
-            st.warning("You're at the start of all examples. There is no previous example.", icon="⚠️")
+            warning.warning("You're at the start of all examples. There is no previous example.", icon="⚠️")
         else:
             st.session_state.count -= 1
         st.rerun()
     elif next:
-        total_num = len(st.session_state['train_ids']) + len(st.session_state['test_ids'])
-        if st.session_state.count == total_num - 1:
-            # st.warning("You're at the end of all examples. There is no next example.", icon="⚠️")
-            st.session_state.page = "survey"
+        if not st.session_state[idx]['submitted']:
+            warning.warning("You need to submit your answer before going to the next question.", icon="⚠️")
         else:
-            st.session_state.count += 1
-        st.rerun()
+            total_num = len(st.session_state['train_ids']) + len(st.session_state['test_ids'])
+            if st.session_state.count == total_num - 1:
+                # st.warning("You're at the end of all examples. There is no next example.", icon="⚠️")
+                st.session_state.page = "survey"
+            else:
+                st.session_state.count += 1
+            st.rerun()
 
 
 

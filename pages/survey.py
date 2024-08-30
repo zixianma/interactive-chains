@@ -27,7 +27,7 @@ def free_form_questions():
         st.session_state.time_spent = datetime.now()
 
     st.title("Final Questions & Feedback")
-    st.subheader("Note:You must answer all of the questions here before clicking submit to be paid. You cannot go back, please take your time answering these.")
+    st.subheader("Note: You cannot go back, please take your time answering these.")
 
     # Use st.session_state.get to avoid overwriting existing text when rerunning
     st.session_state.strategy = st.text_area(
@@ -156,7 +156,7 @@ def tasks_demand_questions():
         st.session_state.time_spent = datetime.now()
 
     st.title("Task Reflection Questions")
-    st.subheader("Note: You cannot go back, please take your time answering these.")
+    st.subheader("Note: You must answer all of the questions here before clicking submit to be paid.  You cannot go back, please take your time answering these.")
 
     st.subheader("Reflect on how you feel after answering all of the questions")
 
@@ -175,7 +175,7 @@ def tasks_demand_questions():
     st.session_state.new_solutions = st.radio("I really enjoy a task that involves coming up with new solutions to problems.", options, horizontal=True, key="new_solutions_slider")
     st.session_state.difficulty = st.radio("I would prefer a task that is intellectual, difficult, and important to one that is somewhat important but does not require much thought.", options, horizontal=True, key="difficulty_slider")
 
-    if st.button("Next questions", key="tasks_demand_questions_next"):
+    if st.button("Next", key="tasks_demand_questions_next"):
         if (
             st.session_state.complex_to_simple == 'Select an Option' or
             st.session_state.thinking == 'Select an Option' or

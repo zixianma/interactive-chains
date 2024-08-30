@@ -5,6 +5,7 @@ from pages.login import login
 from pages.main_study import main_study
 from pages.survey import survey
 from pages.demographics import demographics
+from pages.instruction import instruction
 
 def main():
 
@@ -30,6 +31,10 @@ def main():
         .stTextInput [disabled=""]{
         -webkit-text-fill-color: black;
         }
+        /* text area */
+        .stTextArea [disabled=""]{
+        -webkit-text-fill-color: black;
+        }
         .stRadio {
             margin-bottom: 20px; /* Adjust this value to control the space between sliders and other elements */
         }
@@ -52,11 +57,14 @@ def main():
 
     # Initialize the session state page if not already set
     if 'page' not in st.session_state:
-        st.session_state.page = 'login'
+        # st.session_state.page = 'login'
+        st.session_state.page = "main_study" # "instruction" 
 
     # Display the chosen page based on session state
     if st.session_state.page == "login":
         login()
+    elif st.session_state.page == "instruction":
+        instruction()
     elif st.session_state.page == 'main_study':
         main_study()
     elif st.session_state.page == 'demographics':
