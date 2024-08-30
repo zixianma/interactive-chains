@@ -3,7 +3,7 @@ from streamlit_float import *
 from datetime import datetime
 import pages.utils.logger as logger
 
-def record_data_clear_state(keys_list = [], header=False):
+def record_data_clear_state(keys_list = [], header=False, survey_type = ""):
     # convert the data from dict to tuple
     responses = []
     keys = keys_list
@@ -11,7 +11,7 @@ def record_data_clear_state(keys_list = [], header=False):
         if key in st.session_state:
             # will change this later, doing as sanity checker for now
             responses.append((key, st.session_state[key]))
-    logger.write_survey_response(responses, header)
+    logger.write_survey_response(responses, header, survey_type)
     # Delete all keys in the list
     for key in keys:
         if key in st.session_state:
@@ -189,7 +189,7 @@ def tasks_demand_questions():
             end_time = datetime.now()
             st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
-            record_data_clear_state( ['mental_demand', 'success', 'effort', 'pace', 'stress', 'complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'time_spent'], header=True)
+            record_data_clear_state( ['mental_demand', 'success', 'effort', 'pace', 'stress', 'complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'time_spent'], header=True, survey_type="FEEDBACK")
             st.session_state.qa_page = 'ai_usage'
             st.rerun()
 
