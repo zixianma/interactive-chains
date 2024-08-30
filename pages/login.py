@@ -114,7 +114,8 @@ def submit_consent(username_input):
                 # also need to get the question_idx
                 # update visit count?
                 update_pilot_user_data(client, location_data, seen=True, idx = row)
-                st.write("continuing where you left off: " + str(user_record['Condition']))
+                # st.write("continuing where you left off: " + str(user_record['Condition']))
+                print("continuing where you left off: " + str(user_record['Condition']))
                 st.session_state.condition = user_record['Condition']
                 sheet_condition = st.session_state.condition.split(' ', 1)[1]
                 # now that we have condition, open the corresponding condition sheet to get last question idx
@@ -129,7 +130,7 @@ def submit_consent(username_input):
                 condition_counts, worksheet = get_condition_counts(client)
 
                 # Assign a condition and update the count
-                assigned_condition = assign_condition(condition_counts)
+                assigned_condition = "C. hai-answer" # assign_condition(condition_counts)
                 update_condition_count(worksheet, assigned_condition, condition_counts[assigned_condition])
 
                 print(f"You have been assigned to: {assigned_condition}") # debugging purposes
@@ -151,7 +152,7 @@ def submit_consent(username_input):
             
                 if 'user_worksheet' not in st.session_state:
                     st.session_state['user_worksheet'] = user_worksheet
-        st.session_state.page = "main_study"
+        st.session_state.page = "instruction" #"main_study"
 
 def login():
     # if 'username' not in st.session_state:

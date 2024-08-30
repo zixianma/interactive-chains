@@ -63,12 +63,12 @@ def main():
         }
         """,
         unsafe_allow_html=True,
-    )   
+    ) 
 
     # Initialize the session state page if not already set
     if 'page' not in st.session_state:
         st.session_state.page = 'login'
-        # st.session_state.page = "main_study" # "instruction" 
+        # st.session_state.page =  "main_study" #
 
     # Display the chosen page based on session state
     if st.session_state.page == "login":

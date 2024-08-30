@@ -252,7 +252,8 @@ def display_right_column(env, idx, right_column, condition):
                 st.session_state[idx]['actions'].append(f"search[{search_query}]")
 
             obs, r, done, info = step(env, f"search[{search_query}]")
-            right_column.write(obs)
+            # right_column.write(obs)
+            right_column.chat_message("user", avatar="🌐").write(obs)
             st.session_state[idx]['observations'].append(obs)
 
         lookup_query = right_column.text_input('Lookup', key=f"lookup {idx}")
@@ -263,7 +264,8 @@ def display_right_column(env, idx, right_column, condition):
                 st.session_state[idx]['actions'].append(f"lookup[{lookup_query}]")
 
             obs, r, done, info = step(env, f"lookup[{lookup_query}]")
-            right_column.write(obs)
+            # right_column.write(obs)
+            right_column.chat_message("user", avatar="🌐").write(obs)
             st.session_state[idx]['observations'].append(obs)
 
         form = right_column.form(key='user-form')
@@ -299,7 +301,7 @@ def display_right_column(env, idx, right_column, condition):
                     expl = st.session_state['train_id2explanation'][idx]
                     output += expl
                 right_column.write(f'{output}')
-            st.session_state[idx]['submitted'] = False # need to turn this back to false afterwards
+            # st.session_state[idx]['submitted'] = False # need to turn this back to false afterwards
     else:
         
         if condition.find("thought") > -1:
@@ -792,8 +794,6 @@ def display_right_column(env, idx, right_column, condition):
             index=None,
         )
 
-        if "submitted" not in st.session_state[idx]:
-            st.session_state[idx]['submitted'] = False
         def click_submit():
             st.session_state[idx]['submitted'] = True
 
@@ -878,10 +878,10 @@ def main_study():
             # index=None,
     )
     # condition = "I. hai-regenerate" # random.choice(all_conditions) 
-    # st.session_state.condition = condition
+    st.session_state.condition = condition
     print(st.session_state.condition)
-    # if 'last_question' not in st.session_state:
-    #     st.session_state.last_question = -1
+    if 'last_question' not in st.session_state:
+        st.session_state.last_question = -1
     
     if st.session_state.last_question != -1 and st.session_state.count == 0:
         st.session_state.count = st.session_state.last_question
@@ -901,7 +901,7 @@ def main_study():
 
         curr_pos = st.session_state.count + 1 - len(st.session_state.train_ids)
 
-    with st.expander("**See task instruction and examples**"):
+    with st.expander("**See task instruction**"):
         # st.write(st.session_state['task_prompt'])
         goal = st.markdown("In this study, you will decide with the help of an AI model if there is evidence in the **Observation** that SUPPORTS or REFUTES a **Claim**, or if there is NOT ENOUGH INFORMATION.")
         definitions = st.markdown("""An **Observation** is some text returned by an **Action**, which includes *Search*, *Lookup* and *Finish*.""")
@@ -940,49 +940,60 @@ def main_study():
             raise NotImplementedError
         
         note = st.markdown(":red[Note that you should make your decision based ONLY on the **Observations** on this interface. You will reach wrong answers if you rely on information from Wikipedia or ChatGPT.]")
-        ex_str = st.markdown("You can find examples for SUPPORTS, REFUTES, and NOT ENOUGH INFO below.")
+        # ex_str = st.markdown("You can find examples for SUPPORTS, REFUTES, and NOT ENOUGH INFO below.")
         
-        examples = load_examples()
-        for k, ex in examples.items():
-            st.markdown(f"#### {k}")
-            model_output = ex['steps']
-            for i, step_str in enumerate(model_output):
-                step_container = st.chat_message("assistant")
+        # examples = load_examples()
+        # for k, ex in examples.items():
+        #     st.markdown(f"#### {k}")
+        #     model_output = ex['steps']
+        #     for i, step_str in enumerate(model_output):
+        #         step_container = st.chat_message("assistant")
                 
-                keywords = ['thought', 'action', 'observation']
-                if i == len(model_output) - 1:
-                    keywords = ['thought', 'action']
+        #         keywords = ['thought', 'action', 'observation']
+        #         if i == len(model_output) - 1:
+        #             keywords = ['thought', 'action']
 
 
-                for kw in keywords:
-                    if st.session_state.condition == "C. hai-answer":
-                        content_str = step_str[kw]
-                    else:
-                        content_str = f"{kw[0].upper()+kw[1:]} {i+1}: " + step_str[kw]
+        #         for kw in keywords:
+        #             if st.session_state.condition == "C. hai-answer":
+        #                 content_str = step_str[kw]
+        #             else:
+        #                 content_str = f"{kw[0].upper()+kw[1:]} {i+1}: " + step_str[kw]
 
-                    if kw == "observation":
-                        st.chat_message("user", avatar="🌐").write(content_str)
-                    elif kw == "action":
-                        step_container.text_input("", content_str, label_visibility="collapsed", disabled=True)
-                    else:
-                        step_container.text_area("", content_str, label_visibility="collapsed", disabled=True)
-            st.divider()
+        #             if kw == "observation":
+        #                 st.chat_message("user", avatar="🌐").write(content_str)
+        #             elif kw == "action":
+        #                 step_container.text_input("", content_str, label_visibility="collapsed", disabled=True)
+        #             else:
+        #                 step_container.text_area("", content_str, label_visibility="collapsed", disabled=True)
+        #     st.divider()
 
     all_cols = st.columns([2, 2, 2, 2, 2, 2])
     left_head = all_cols[0]
     right_head = all_cols[-1]
     # left_head, _, _, right_head = left_column.columns([3, 3, 3, 3])
     prev = left_head.button("Prev", use_container_width=True)
-    next = right_head.button("Next", use_container_width=True)
+
+    if "next_clicked" not in st.session_state:
+        st.session_state["next_clicked"] = False
+
+    def click_next():
+        st.session_state["next_clicked"] = True
+
+    next = right_head.button("Next", use_container_width=True, on_click=click_next)
 
     st.text(f"You are at {curr_pos} / {total_num} questions.")
 
     idx = all_ids[st.session_state.count]
+    
     question = env.reset(idx=idx)
     if idx not in st.session_state:
         st.session_state[idx] = {}
         st.session_state[idx]["done"] = False
         st.session_state[idx]["turn_id"] = 0
+    
+    if "submitted" not in st.session_state[idx]:
+        st.session_state[idx]['submitted'] = False
 
     if 'question' not in st.session_state[idx]:
         st.session_state[idx]['question'] = question
@@ -1007,9 +1018,10 @@ def main_study():
         else:
             st.session_state.count -= 1
         st.rerun()
-    elif next:
+    elif st.session_state["next_clicked"]:
         if not st.session_state[idx]['submitted']:
             warning.warning("You need to submit your answer before going to the next question.", icon="⚠️")
+            st.session_state["next_clicked"] = False
         else:
             total_num = len(st.session_state['train_ids']) + len(st.session_state['test_ids'])
             if st.session_state.count == total_num - 1:
@@ -1017,6 +1029,7 @@ def main_study():
                 st.session_state.page = "survey"
             else:
                 st.session_state.count += 1
+            st.session_state["next_clicked"] = False
             st.rerun()
 
 

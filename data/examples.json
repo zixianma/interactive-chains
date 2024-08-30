@@ -31,7 +31,7 @@
         ]
     },
     "NOT ENOUGH INFO": {
-        "claim": "laim: Beautiful reached number two on the Billboard Hot 100 in 2003.", 
+        "claim": "Claim: Beautiful reached number two on the Billboard Hot 100 in 2003.", 
         "steps": [
             {
                 "thought": "I need to search the song Beautiful and find if it reached number two on the Billboard Hot 100 in 2003.",

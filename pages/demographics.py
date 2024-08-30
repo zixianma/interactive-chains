@@ -127,7 +127,7 @@ def questions():
                         'job_title',
                         'time_spent'
                     ])
-                    st.session_state.page = "main_study"
+                    st.session_state.page = "instruction"
                     st.rerun()
             except ValueError:
                 st.error("Please enter a valid numeric age.")
