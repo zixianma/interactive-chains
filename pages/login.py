@@ -83,7 +83,7 @@ def update_pilot_user_data(client, location_data, seen=False, idx = -1):
         worksheet.update_cell(idx, 4, ', '.join(visit_times_list))
     else:
         # User does not exist, add a new row
-        new_row = [st.session_state.username, str(location_data['ip']), datetime.now().strftime('%Y-%m-%d %H:%M:%S'), st.session_state.condition, str(location_data)]
+        new_row = [st.session_state.username, str(location_data['ip']), 1, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), st.session_state.condition, str(location_data)]
         worksheet.append_row(new_row)
 
 def submit_consent(username_input):
