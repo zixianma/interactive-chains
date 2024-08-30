@@ -1,17 +1,12 @@
 altair==5.4.0
-annotated-types @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_1fa2djihwb/croot/annotated-types_1709542925772/work
-anyio @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_a17a7759g2/croot/anyio_1706220182417/work
 attrs==24.2.0
 beautifulsoup4==4.12.3
 blinker==1.8.2
 bs4==0.0.2
 cachetools==5.4.0
-certifi @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_70oty9s9jh/croot/certifi_1720453497032/work/certifi
 charset-normalizer==3.3.2
 click==8.1.7
 cloudpickle==3.0.0
-distro @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_ddkyz0575y/croot/distro_1714488254309/work
-exceptiongroup @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_b2258scr33/croot/exceptiongroup_1706031391815/work
 gitdb==4.0.11
 GitPython==3.1.43
 google-auth==2.34.0
@@ -19,10 +14,6 @@ google-auth-oauthlib==1.2.1
 gspread==6.1.2
 gym==0.26.2
 gym-notices==0.0.8
-h11 @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_110bmw2coo/croot/h11_1706652289620/work
-httpcore @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_fcxiho9nv7/croot/httpcore_1706728465004/work
-httpx @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_cc4egw1482/croot/httpx_1723474826664/work
-idna @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_a12xpo84t2/croot/idna_1714398852854/work
 Jinja2==3.1.4
 jsonschema==4.23.0
 jsonschema-specifications==2023.12.1
@@ -32,7 +23,6 @@ mdurl==0.1.2
 narwhals==1.4.2
 numpy==2.0.1
 oauthlib==3.2.2
-openai @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_483jsek28v/croot/openai_1721839128644/work
 packaging==24.1
 pandas==2.2.2
 pillow==10.4.0
@@ -40,8 +30,6 @@ protobuf==5.27.3
 pyarrow==17.0.0
 pyasn1==0.6.0
 pyasn1_modules==0.4.0
-pydantic @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_0ai8cvgm2c/croot/pydantic_1709577986211/work
-pydantic_core @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_06smitnu98/croot/pydantic-core_1709573985903/work
 pydeck==0.9.1
 Pygments==2.18.0
 python-dateutil==2.9.0.post0
@@ -54,14 +42,11 @@ rpds-py==0.20.0
 rsa==4.9
 six==1.16.0
 smmap==5.0.1
-sniffio @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_1573pknjrg/croot/sniffio_1705431298885/work
 soupsieve==2.6
 streamlit==1.37.1
 streamlit-float==0.3.5
 tenacity==8.5.0
 toml==0.10.2
 tornado==6.4.1
-tqdm @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_f76_dxtcsh/croot/tqdm_1716395948224/work
-typing_extensions @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_93dg13ilv4/croot/typing_extensions_1715268840722/work
 tzdata==2024.1
 urllib3==2.2.2
