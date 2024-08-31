@@ -835,8 +835,7 @@ def load_examples():
     return examples
 
 def main_study():
-    openai.api_key = os.environ["OPENAI_API_KEY"]
-    openai_api_key = openai.api_key
+    openai.api_key = st.secrets.openai_api_key.key # os.environ["OPENAI_API_KEY"]
     env = wikienv.WikiEnv()
     env = wrappers.FeverWrapper(env, split="dev")
     env = wrappers.LoggingWrapper(env)
