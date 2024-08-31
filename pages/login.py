@@ -130,7 +130,7 @@ def submit_consent(username_input):
                 condition_counts, worksheet = get_condition_counts(client)
 
                 # Assign a condition and update the count
-                assigned_condition = "C. hai-answer" # assign_condition(condition_counts)
+                assigned_condition = assign_condition(condition_counts)
                 update_condition_count(worksheet, assigned_condition, condition_counts[assigned_condition])
 
                 print(f"You have been assigned to: {assigned_condition}") # debugging purposes
