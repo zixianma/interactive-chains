@@ -95,7 +95,7 @@ def submit_consent(username_input):
         # st.session_state['username_submitted'] = True
 
         if 'sheet' not in st.session_state:
-            toml_data = toml.load(".streamlit/secrets.toml")
+            toml_data = st.secrets # toml.load(".streamlit/secrets.toml")
             credentials_data = toml_data["connections"]["gsheets"]
 
             # Define the scope for the Google Sheets API
@@ -130,7 +130,7 @@ def submit_consent(username_input):
                 condition_counts, worksheet = get_condition_counts(client)
 
                 # Assign a condition and update the count
-                assigned_condition = "C. hai-answer" # assign_condition(condition_counts)
+                assigned_condition = assign_condition(condition_counts)
                 update_condition_count(worksheet, assigned_condition, condition_counts[assigned_condition])
 
                 print(f"You have been assigned to: {assigned_condition}") # debugging purposes

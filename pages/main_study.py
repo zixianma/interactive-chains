@@ -1,5 +1,6 @@
 import streamlit as st
 import openai
+from openai import OpenAI
 import json
 import os
 import wikienv, wrappers
@@ -49,7 +50,7 @@ def step(env, action):
 
 # @st.cache_data
 def llm(messages, stop=["\n"]):
-    client = OpenAI()
+    client = OpenAI(api_key=st.secrets.openai_api_key.key)
 
     response = client.chat.completions.create(
       model="gpt-4o",
@@ -840,8 +841,6 @@ def load_examples():
     return examples
 
 def main_study():
-    openai.api_key = os.environ["OPENAI_API_KEY"]
-    openai_api_key = openai.api_key
     env = wikienv.WikiEnv()
     env = wrappers.FeverWrapper(env, split="dev")
     env = wrappers.LoggingWrapper(env)
@@ -868,22 +867,16 @@ def main_study():
     if 'test_ids' not in st.session_state:
         st.session_state['test_ids'] = test_ids
     all_ids = train_ids + test_ids
-    # list(model_outputs.keys()) 
-    
-    # uncomment this for deployment
-    # if 'condition' in st.session_state:
-    #     condition = st.session_state.condition
-    # else:
-    # "A. human", 
-    all_conditions = ["C. hai-answer", "D. hai-static-chain", "E. hai-human-thought", "F. hai-human-action", "G. hai-mixed", "H. hai-update", "I. hai-regenerate"]
-    # condition = st.radio(
-    #         "Condition",
-    #         all_conditions, # "hai-interact-chain", "hai-interact-chain-delayed", 
-    #         # captions=["A", "C", "D", "E", "F", "G"]
-    #         # index=None,
-    # )
-    # # condition = "I. hai-regenerate" # random.choice(all_conditions) 
-    # st.session_state.condition = condition
+
+    all_conditions = ["C. hai-answer", "D. hai-static-chain", "I. hai-regenerate"] # "E. hai-human-thought", "F. hai-human-action", "G. hai-mixed", "H. hai-update", 
+    condition = st.radio(
+            "Condition",
+            all_conditions, # "hai-interact-chain", "hai-interact-chain-delayed", 
+            # captions=["A", "C", "D", "E", "F", "G"]
+            # index=None,
+    )
+    # condition = "I. hai-regenerate" # random.choice(all_conditions) 
+    st.session_state.condition = condition
     # print(st.session_state.condition)
     if 'last_question' not in st.session_state:
         st.session_state.last_question = -1
