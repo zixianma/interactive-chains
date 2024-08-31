@@ -50,7 +50,7 @@ def step(env, action):
 
 # @st.cache_data
 def llm(messages, stop=["\n"]):
-    client = OpenAI()
+    client = OpenAI(api_key=st.secrets.openai_api_key.key)
 
     response = client.chat.completions.create(
       model="gpt-4o",
@@ -835,7 +835,6 @@ def load_examples():
     return examples
 
 def main_study():
-    openai.api_key = st.secrets.openai_api_key.key # os.environ["OPENAI_API_KEY"]
     env = wikienv.WikiEnv()
     env = wrappers.FeverWrapper(env, split="dev")
     env = wrappers.LoggingWrapper(env)
