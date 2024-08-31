@@ -28,9 +28,9 @@ def questions():
     race_ethnicity_placeholder = "Select your race/ethnicity"
     
     # Question 1: Gender
-    # st.markdown("#### Q1: What is your gender?")
+    st.markdown("#### Q1: What is your gender?")
     st.session_state.gender = st.radio(
-        "Q1: What is your gender?",
+        "",
         options=[
             gender_placeholder,
             "Woman",
@@ -52,9 +52,9 @@ def questions():
         st.session_state.gender_self_described = "" 
     
     # Question 2: Race/Ethnicity
-    # st.markdown("#### Q2: What is your race/ethnicity?")
+    st.markdown("#### Q2: What is your race/ethnicity?")
     st.session_state.race_ethnicity = st.radio(
-        "Q2: What is your race/ethnicity?",
+        "",
         options=[
             race_ethnicity_placeholder,
             "American Indian or Alaska Native",
@@ -79,17 +79,17 @@ def questions():
         st.session_state.race_ethnicity_other = ""
     
     # Question 3: Age
-    # st.markdown("#### Q3: What is your age?")
+    st.markdown("#### Q3: What is your age?")
     st.session_state.age = st.text_input(
-        "Q3: What is your age?",
+        "",
         value=st.session_state.get('age', ''),
         key='age_input'
     )
     
     # Question 4: Job Title
-    # st.markdown("#### Q4: What is your job title?")
+    st.markdown("#### Q4: What is your job title?")
     st.session_state.job_title = st.text_input(
-        "Q4: What is your job title?",
+        "",
         value=st.session_state.get('job_title', ''),
         key='job_title_input'
     )
