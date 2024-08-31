@@ -1,5 +1,6 @@
 import streamlit as st
 import openai
+from openai import OpenAI
 import json
 import os
 import wikienv, wrappers
@@ -49,7 +50,7 @@ def step(env, action):
 
 # @st.cache_data
 def llm(messages, stop=["\n"]):
-    client = openai.OpenAI()
+    client = OpenAI()
 
     response = client.chat.completions.create(
       model="gpt-4o",
