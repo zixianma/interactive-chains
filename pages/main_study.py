@@ -49,7 +49,7 @@ def step(env, action):
 
 # @st.cache_data
 def llm(messages, stop=["\n"]):
-    client = OpenAI()
+    client = openai.OpenAI()
 
     response = client.chat.completions.create(
       model="gpt-4o",
