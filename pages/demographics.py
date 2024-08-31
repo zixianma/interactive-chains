@@ -79,17 +79,17 @@ def questions():
         st.session_state.race_ethnicity_other = ""
     
     # Question 3: Age
-    st.markdown("#### Q3: What is your age?")
+    # st.markdown("#### Q3: What is your age?")
     st.session_state.age = st.text_input(
-        "",
+        "Q3: What is your age?",
         value=st.session_state.get('age', ''),
         key='age_input'
     )
     
     # Question 4: Job Title
-    st.markdown("#### Q4: What is your job title?")
+    # st.markdown("#### Q4: What is your job title?")
     st.session_state.job_title = st.text_input(
-        "",
+        "Q4: What is your job title?",
         value=st.session_state.get('job_title', ''),
         key='job_title_input'
     )
