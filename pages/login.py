@@ -95,7 +95,7 @@ def submit_consent(username_input):
         # st.session_state['username_submitted'] = True
 
         if 'sheet' not in st.session_state:
-            toml_data = toml.load(".streamlit/secrets.toml")
+            toml_data = st.secrets # toml.load(".streamlit/secrets.toml")
             credentials_data = toml_data["connections"]["gsheets"]
 
             # Define the scope for the Google Sheets API
