@@ -14,7 +14,6 @@ def main():
         '''
         <!-- Hotjar Tracking Code for streamlit app -->
         <script>
-            console.log('Hotjar script is loading...');
             (function(h,o,t,j,a,r){
                 h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
                 h._hjSettings={hjid:5118622,hjsv:6};
@@ -23,7 +22,6 @@ def main():
                 r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
                 a.appendChild(r);
             })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
-            console.log('Hotjar script initialized');
         </script>
         ''',
         height=0,
