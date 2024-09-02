@@ -4,13 +4,6 @@ from streamlit_float import *
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
-
-def write_data_to_sheet(data):
-    sheet = st.session_state['sheet']
-    user_worksheet = st.session_state['user_worksheet']
-    # write the data in the format of: user, quetion idx, step #, action, time?
-    sheet.worksheet('all actions').append_row(data)
-    user_worksheet.append_row(data)
     
 def write_to_user_sheet(data):
     sheet = st.session_state['user_worksheet']
@@ -37,7 +30,7 @@ def create_user_worksheet():
         # Create a new worksheet for the user if it doesn't exist
         worksheet = sheet.add_worksheet(title=st.session_state.username, rows=100, cols=20)
         if st.session_state.condition.find("regenerate") > -1:
-            header_list = ["user", "question idx", "total steps", "changed thoughts", "changed actions", "model output/action space", "answer", "condition", "time"]
+            header_list = ["user", "question idx", "Action space", "Number of steps in action space", "Generate AI output buttin clicks","changed thoughts", "changed actions", "model output/action space", "answer", "condition", "time"]
         else:
             header_list = ["user", "question idx", "total steps", "action space", "observations", "answer", "condition", "time"]
         worksheet.append_row(header_list)

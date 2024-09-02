@@ -267,7 +267,7 @@ def display_right_column(env, idx, right_column, condition):
             elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
             st.session_state[idx]['actions'].append(f"finish[{answer}]")
             # log data
-            logger.write_data_to_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
+            logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
             obs, r, done, info = step(env, f"finish[{answer}]")
             st.session_state.user_data["last question idx done"] = idx
             # st.session_state['answer'] = answer
@@ -566,9 +566,11 @@ def display_right_column(env, idx, right_column, condition):
             if "ai_output_clicks" not in st.session_state[idx]:
                 st.session_state[idx]["ai_output_clicks"] = 0
 
+            if "current_changed_thoughts" not in st.session_state[idx]:
+                st.session_state[idx]['current_changed_thoughts'] = []
+            if "current_changed_actions" not in st.session_state[idx]:
+                st.session_state[idx]['current_changed_actions'] = []
             new_model_output = []
-            changed_thought = []
-            changed_action = []
             for i, step_dict in enumerate(st.session_state[idx]['curr_model_output']):
                 obs_str = step_dict['observation'] 
                 thought_str = step_dict['thought'] 
@@ -586,8 +588,9 @@ def display_right_column(env, idx, right_column, condition):
                     print("TRUE2")
                 if thought := thought_input and thought_input != step_dict['thought']: # potential bug here?
                     print('made it to correct if')
+                    st.session_state[idx]["actions"].append(f"Changed thought {i + 1} to: {thought_input}")
                     # lets log thought changed for this index
-                    changed_thought.append(thought_input)
+                    st.session_state[idx]['current_changed_thoughts'].append(f"Changed thought {i + 1} to: {thought_input}")
                     # st.session_state[idx]["generate_next_step"] = False
                     curr_msgs = [{"role": "user", "content": st.session_state['task_prompt'] + st.session_state[idx]['question']}]
                     curr_msgs += [{"role": "assistant", "content": "\n".join([step_dict['thought'], step_dict['action'], step_dict['observation']])} for step_dict in model_output[:i]]
@@ -596,7 +599,7 @@ def display_right_column(env, idx, right_column, condition):
                     action_dict = parse_action_into_parts(next_action)
                     # break
                 else:
-                    changed_thought.append("")
+                    st.session_state[idx]['current_changed_thoughts'].append("")
                 action_cols = step_container.columns([2, 2, 8])
                 
                 # action_label = action_cols[0].write('<div style="height: 30px; margin-left: 64px;">' + f"Action {i+1}:" + '</div>', unsafe_allow_html=True)
@@ -623,7 +626,8 @@ def display_right_column(env, idx, right_column, condition):
                 if action := action_input and action_combined != action_formatted: # action := action_input and  action := action_combined and 
                     
                     action = f"{action_option[0].lower() + action_option[1:]}[{action_input}]" # action_combined
-                    changed_action.append(f"{action_option.lower()}: {action_input}")
+                    st.session_state[idx]['current_changed_actions'].append(f"Changed action {i + 1} to: {action_option.lower()}: {action_input}")
+                    st.session_state[idx]["actions"].append(f"Changed action {i + 1} to: {action_option.lower()}: {action_input}")
                     obs, r, done, info = step(env, action)
                     obs_str = obs.replace('\\n', '')   
                     if done:
@@ -633,7 +637,7 @@ def display_right_column(env, idx, right_column, condition):
                         st.session_state[idx]["done"] = False
                         obs_str = f"Observation {i+1}: {obs_str}"
                 else:
-                    changed_action.append("")
+                    st.session_state[idx]['current_changed_actions'].append("")
                 right_column.chat_message("user", avatar="🌐").write(obs_str)
                 new_action_str = f"{action_label} {action_combined[0].upper() + action_combined[1:]}" # action_input
                 new_model_output.append({"thought": thought_input, "action": new_action_str, "observation": f"{obs_str}"})
@@ -641,7 +645,7 @@ def display_right_column(env, idx, right_column, condition):
                 if thought_input != step_dict['thought'] or action_combined != action_formatted: # action_input != step_dict['action']:
                     # st.session_state[idx]["generate_next_step"] = False
                     break
-            #TODO: code below may be prone to race conditions?
+
             st.session_state[idx]['curr_model_output'] = new_model_output
             print(f"model output: {model_output}")
             # print(f"thoughts in session state: {st.session_state[idx]['changed_thoughts'][st.session_state[idx]['ai_output_clicks']]}")
@@ -652,11 +656,13 @@ def display_right_column(env, idx, right_column, condition):
                 output_clicks = st.session_state[idx]["ai_output_clicks"]
                 print(f'value of output clicks: {output_clicks}')
                 # Update session state in a single function call
-                st.session_state[idx]["changed_thoughts"][output_clicks] = changed_thought
+                st.session_state[idx]["changed_thoughts"][output_clicks] = st.session_state[idx]['current_changed_thoughts']
                 print(f"thoughts in session state: {st.session_state[idx]['changed_thoughts']}")
-                st.session_state[idx]["changed_actions"][output_clicks] = changed_action
+                st.session_state[idx]["changed_actions"][output_clicks] = st.session_state[idx]['current_changed_actions']
                 st.session_state[idx]['model_output_per_run'][output_clicks] = new_model_output
                 st.session_state[idx][f"generate_next_step"] = True
+                st.session_state[idx]['current_changed_thoughts'] = []
+                st.session_state[idx]['current_changed_action'] = []
                 st.session_state[idx]["ai_output_clicks"] += 1
             
             generate = right_column.button("Update AI's output", key=f"generate {num_steps+1}", on_click=click_button)
@@ -706,7 +712,7 @@ def display_right_column(env, idx, right_column, condition):
                             break
                     # turn off generate flag after a new output is generated
                     st.session_state[idx][f"generate_next_step"] = False
-                st.session_state[idx]["actions"] = st.session_state[idx]['curr_msgs'] = curr_msgs
+                st.session_state[idx]['curr_msgs'] = curr_msgs
                 st.rerun()
 
         elif condition.find("control") > -1:
@@ -819,7 +825,7 @@ def display_right_column(env, idx, right_column, condition):
             st.session_state[idx]['actions'].append(f"finish[{answer}]")
             # log data
             if st.session_state.condition.find("regenerate") > -1:
-                logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['changed_thoughts']), str(st.session_state[idx]['changed_actions']), str(st.session_state[idx]['model_output_per_run']), answer, st.session_state.condition, elapsed_time])
+                logger.write_to_user_sheet([st.session_state.username, idx, str(st.session_state[idx]['actions']), len(st.session_state[idx]['actions']), st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['changed_thoughts']), str(st.session_state[idx]['changed_actions']), str(st.session_state[idx]['model_output_per_run']), answer, st.session_state.condition, elapsed_time])
             else:
                 logger.write_data_to_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
             obs, r, done, info = step(env, f"finish[{answer}]")
