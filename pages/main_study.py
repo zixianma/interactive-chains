@@ -13,6 +13,7 @@ from google.oauth2.service_account import Credentials
 import toml
 import random
 from datetime import datetime
+import time
 import pages.utils.logger as logger
 # st.set_page_config(layout="wide")
 float_init(theme=True, include_unstable_primary=False)
@@ -548,6 +549,7 @@ def display_right_column(env, idx, right_column, condition):
                 final = step_container.text_area("🤖", final_thought_action, label_visibility="collapsed", key=f"final answer", disabled=True)
             
         elif condition.find("regenerate") > -1:
+            COOLDOWN_TIME = 8 # ADJUST HERE
             # right_column.subheader("Edit any thought or action and update AI's output:")
             right_column.markdown("#### Edit any thought or action and update AI's output:")
             model_output =  st.session_state.model_outputs[idx][:-1]
@@ -561,6 +563,8 @@ def display_right_column(env, idx, right_column, condition):
                 st.session_state[idx]["model_output_per_run"] = {0: st.session_state[idx]['curr_model_output']}
             if "ai_output_clicks" not in st.session_state[idx]:
                 st.session_state[idx]["ai_output_clicks"] = 0
+            if "last_ai_button_click_time" not in st.session_state[idx]:
+                st.session_state[idx]["last_ai_button_click_time"] = 0
 
             new_model_output = []
             for i, step_dict in enumerate(st.session_state[idx]['curr_model_output']):
@@ -632,10 +636,17 @@ def display_right_column(env, idx, right_column, condition):
             num_steps = len(st.session_state[idx]['curr_model_output'])
 
             def click_button():
-                st.session_state[idx][f"generate_next_step"] = True
-                st.session_state[idx]["ai_output_clicks"] += 1
+                current_time = time.time()
+                if current_time - st.session_state[idx]["last_ai_button_click_time"] >= COOLDOWN_TIME:
+                    st.session_state[idx][f"generate_next_step"] = True
+                    st.session_state[idx]["ai_output_clicks"] += 1
+                    st.session_state[idx]["last_ai_button_click_time"] = current_time
+                else:
+                    st.warning("Please do not spam this button.")
             
-            generate = right_column.button("Update AI's output", key=f"generate {num_steps+1}", on_click=click_button)
+            current_time = time.time()
+            disable_button = current_time - st.session_state[idx]["last_ai_button_click_time"] < COOLDOWN_TIME or st.session_state[idx]["submitted"]
+            generate = right_column.button("Update AI's output", key=f"generate {num_steps+1}", on_click=click_button, disabled=disable_button)
             curr_msgs = format_model_output_into_msgs_for_idx(idx)
             if "curr_msgs" not in st.session_state[idx]:
                 st.session_state[idx]['curr_msgs'] = curr_msgs
