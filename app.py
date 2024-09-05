@@ -8,26 +8,30 @@ from pages.demographics import demographics
 from pages.instruction import instruction
 import streamlit.components.v1 as components
 
+CLARITY_SCRIPT = """
+<script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "nxtbql5obv");
+</script>
+"""
+
 def main():
     
-    hotjar_script = """
+    clarity_injection_script = f"""
     <script>
-        (function() {
-            var script = document.createElement('script');
-            script.type = 'text/javascript';
-            script.async = true;
-            script.src = 'https://static.hotjar.com/c/hotjar-5124090.js?sv=6';
-            document.getElementsByTagName('head')[0].appendChild(script);
-
-            window.hj = window.hj || function() {(hj.q = hj.q || []).push(arguments)};
-            window._hjSettings = {hjid: 5124090, hjsv: 6};
-            hj('trigger', 'page_load');
-        })();
+        (function() {{
+            var clarityScript = document.createElement('script');
+            clarityScript.type = 'text/javascript';
+            clarityScript.async = true;
+            clarityScript.innerHTML = `{CLARITY_SCRIPT}`;
+            document.getElementsByTagName('head')[0].appendChild(clarityScript);
+        }})();
     </script>
     """
-
-    # Inject the Hotjar script into the Streamlit app
-    components.html(hotjar_script, height=0, width=0)
+    components.html(clarity_injection_script, height=0, width=0)
 
     st.markdown(
         """
