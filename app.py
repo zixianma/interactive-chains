@@ -20,7 +20,7 @@ def main():
     </script>
     """
 
-    # Inject the Hotjar script into the <head> using Streamlit components
+    # Inject the Hotjar script using Streamlit components
     components.html(hotjar_injection_script, height=0, width=0)
 
     st.markdown(
