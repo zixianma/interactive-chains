@@ -206,7 +206,7 @@ def format_model_output_into_msgs_for_idx(idx):
 
 def display_right_column(env, idx, right_column, condition):
     def click_submit(answer):
-        if answer is None:
+        if st.session_state[f'{st.session_state.condition}_answer_{idx}'] is None: # answer
             right_column.warning("Please select an answer before submitting.")
         else:
             st.session_state[idx]['answer'] = answer
