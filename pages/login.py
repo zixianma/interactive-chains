@@ -152,7 +152,7 @@ def submit_consent(username_input):
             
                 if 'user_worksheet' not in st.session_state:
                     st.session_state['user_worksheet'] = user_worksheet
-        st.session_state.page = "instruction" #"main_study"
+        st.session_state.page = "survey" # "instruction" #"main_study"
 
 def login():
     # if 'username' not in st.session_state:

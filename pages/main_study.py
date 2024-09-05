@@ -862,7 +862,7 @@ def main_study():
         st.session_state['test_ids'] = test_ids
     all_ids = train_ids + test_ids
 
-    all_conditions = ["C. hai-answer", "D. hai-static-chain", "I. hai-regenerate"] # "E. hai-human-thought", "F. hai-human-action", "G. hai-mixed", "H. hai-update", 
+    all_conditions = ["C. hai-answer", "D. hai-static-chain", "E. hai-human-thought", "F. hai-human-action", "G. hai-mixed", "H. hai-update", "I. hai-regenerate"] #  
     condition = st.radio(
             "Condition",
             all_conditions, # "hai-interact-chain", "hai-interact-chain-delayed", 
@@ -932,33 +932,33 @@ def main_study():
             raise NotImplementedError
         
         note = st.markdown(":red[Note that you should make your decision based ONLY on the **Observations** on this interface. You will reach wrong answers if you rely on information from Wikipedia or ChatGPT.]")
-        # ex_str = st.markdown("You can find examples for SUPPORTS, REFUTES, and NOT ENOUGH INFO below.")
+        ex_str = st.markdown("You can find examples for SUPPORTS, REFUTES, and NOT ENOUGH INFO below.")
         
-        # examples = load_examples()
-        # for k, ex in examples.items():
-        #     st.markdown(f"#### {k}")
-        #     model_output = ex['steps']
-        #     for i, step_str in enumerate(model_output):
-        #         step_container = st.chat_message("assistant")
+        examples = load_examples()
+        for k, ex in examples.items():
+            st.markdown(f"#### {k}")
+            model_output = ex['steps']
+            for i, step_str in enumerate(model_output):
+                step_container = st.chat_message("assistant")
                 
-        #         keywords = ['thought', 'action', 'observation']
-        #         if i == len(model_output) - 1:
-        #             keywords = ['thought', 'action']
+                keywords = ['thought', 'action', 'observation']
+                if i == len(model_output) - 1:
+                    keywords = ['thought', 'action']
 
 
-        #         for kw in keywords:
-        #             if st.session_state.condition == "C. hai-answer":
-        #                 content_str = step_str[kw]
-        #             else:
-        #                 content_str = f"{kw[0].upper()+kw[1:]} {i+1}: " + step_str[kw]
+                for kw in keywords:
+                    if st.session_state.condition == "C. hai-answer":
+                        content_str = step_str[kw]
+                    else:
+                        content_str = f"{kw[0].upper()+kw[1:]} {i+1}: " + step_str[kw]
 
-        #             if kw == "observation":
-        #                 st.chat_message("user", avatar="🌐").write(content_str)
-        #             elif kw == "action":
-        #                 step_container.text_input("", content_str, label_visibility="collapsed", disabled=True)
-        #             else:
-        #                 step_container.text_area("", content_str, label_visibility="collapsed", disabled=True)
-        #     st.divider()
+                    if kw == "observation":
+                        st.chat_message("user", avatar="🌐").write(content_str)
+                    elif kw == "action":
+                        step_container.text_input("", content_str, label_visibility="collapsed", disabled=True)
+                    else:
+                        step_container.text_area("", content_str, label_visibility="collapsed", disabled=True)
+            st.divider()
 
     all_cols = st.columns([2, 2, 2, 2, 2, 2])
     left_head = all_cols[0]

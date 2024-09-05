@@ -31,27 +31,32 @@ def free_form_questions():
 
     # Use st.session_state.get to avoid overwriting existing text when rerunning
     st.session_state.strategy = st.text_area(
-        "What was your strategy when it came to resolving the questions?",
+        ":red[*]What was your strategy for answering the questions?",
         value=st.session_state.get('strategy', ''), key='strategy_frq'
     )
-
-    st.session_state.error_finding = st.text_area(
-        "Did you find any errors within the AI model’s reasoning, if so, how did you find the errors?",
-        value=st.session_state.get('error_finding', ''), key='error_finding_frq'
-    )
+    if st.session_state.condition.find("hai-answer") == -1:
+        st.session_state.error_finding = st.text_area(
+            ":red[*]Did you find any errors in the AI model's reasoning chain? If so, how did you find the errors?",
+            value=st.session_state.get('error_finding', ''), key='error_finding_frq'
+        )
+    else:
+        st.session_state.error_finding = "None"
 
     st.session_state.ai_model_usage = st.text_area(
-        "How did you use the AI model to help you answer the question? Did you use the answer? Chains? Interactions?",
+        ":red[*]How did you use the AI model to help you answer the questions?",
         value=st.session_state.get('ai_model_usage', ''), key='ai_model_usage_frq'
     )
+    if st.session_state.condition.find("hai-regenerate") > -1:
+        st.session_state.ai_model_interaction_usage = st.text_area(
+            ":red[*]How did you interact with the AI model? Was anything confusing or demanding? If so, what was it and why?",
+            value=st.session_state.get('ai_model_interaction_usage', ''), key='ai_model_interaction_usage_frq'
+        )
+    else:
+        st.session_state.ai_model_interaction_usage = "None"
 
-    st.session_state.ai_model_interaction_usage = st.text_area(
-        "In the interactive case: How did you interact with the model/thought/action? What was confusing? Were any parts of the interaction were demanding? Please also provide a why.",
-        value=st.session_state.get('ai_model_interaction_usage', ''), key='ai_model_interaction_usage_frq'
-    )
 
     st.session_state.misc_comments = st.text_area(
-        "Any other comments or remarks regarding the study?",
+        "[Optional] Any other comments or remarks regarding the study?",
         value=st.session_state.get('misc_comments', ''), key='misc_comments_frq'
     )
 
@@ -61,7 +66,7 @@ def free_form_questions():
                 st.session_state.error_finding.strip() == '',
                 st.session_state.ai_model_usage.strip() == '',
                 st.session_state.ai_model_interaction_usage.strip() == '',
-                st.session_state.misc_comments.strip() == ''
+                # st.session_state.misc_comments.strip() == ''
             ]):
             st.error("Please fill in all the text boxes before submitting.")
         else:
@@ -81,26 +86,45 @@ def interaction_questions():
     st.subheader("Note: You cannot go back, please take your time answering these.")
 
     options = ['Select an Option', 'Strongly Disagree', 'Disagree', 'Somewhat Disagree', 'Neutral', 'Somewhat Agree', 'Agree', 'Strongly Agree'] 
-    st.subheader("Rate the following statements regarding the interactions")
-    st.session_state.code_completion_helpful = st.radio("I found the AI’s code completions helpful as a starting point.", options, horizontal=True, key='code_completion_helpful_radio')
+    st.subheader("Rate the following statements")
+
+    st.session_state.answer_helpful = st.radio("I found it helpful to **read the AI model's answer** when answering the question.", options, horizontal=True, key='answer_helpful_radio')
     # condition based
-    st.write("I found the AI’s highlights helpful in determining what to edit")
-    st.session_state.highlights_helpful = st.radio("I found the AI’s highlights helpful in determining what to edit", options, horizontal=True, key='highlights_helpful_radio')
-    st.session_state.willing_to_pay = st.radio("I would be willing to pay to access the AI’s code completions.", options, horizontal=True, key='willing_to_pay_radio')
-    # condition based
-    st.session_state.willing_to_pay_highlights = st.radio("I would be willing to pay to access the AI’s highlights.", options, horizontal=True, key='willing_to_pay_highlights_radio')
-    st.session_state.code_completion_distracting = st.radio("I found the AI’s code completions distracting.", options, horizontal=True, key='code_completion_distracting_radio')
-    # condition based
-    st.session_state.highlights_distracting = st.radio("I found the AI’s highlights distracting.", options, horizontal=True, key='highlights_distracting_radio')
+    if st.session_state.condition.find("hai-answer") == -1:
+        # st.write("I found the AI's highlights helpful in determining what to edit")
+        st.session_state.chain_helpful = st.radio("I found it helpful to **read the AI model's reasoning chain** when answering the question.", options, horizontal=True, key='chain_helpful_radio')
+    else:
+        st.session_state.chain_helpful = None
+    st.session_state.search_helpful = st.radio("I found **Search** helpful when answering the question.", options, horizontal=True, key='search_helpful_radio')
+    st.session_state.lookup_helpful = st.radio("I found **Lookup** helpful when answering the question.", options, horizontal=True, key='lookup_helpful_radio')
+    if st.session_state.condition.find("hai-regenerate") > -1:
+        st.session_state.interaction_helpful = st.radio("I found it helpful to **interact with the AI model** when answering the question.", options, horizontal=True, key='interact_helpful_radio')
+        st.session_state.chain_edit_helpful = st.radio("I found it helpful to **edit the AI model's reasoning chain** when answering the question.", options, horizontal=True, key='edit_chain_helpful_radio')
+        st.session_state.thought_edit_helpful = st.radio("I found it helpful to **edit the AI model's thought(s)** when answering the question.", options, horizontal=True, key='edit_thought_helpful_radio')
+        st.session_state.action_edit_helpful = st.radio("I found it helpful to **edit the AI model's action(s)** when answering the question.", options, horizontal=True, key='edit_action_helpful_radio')
+        st.session_state.update_output_helpful = st.radio("I found it helpful to **update the AI model's output** when answering the question.", options, horizontal=True, key='update_helpful_radio')
+    else:
+        st.session_state.interaction_helpful = None
+        st.session_state.chain_edit_helpful = None
+        st.session_state.thought_edit_helpful = None
+        st.session_state.action_edit_helpful  = None
+        st.session_state.update_output_helpful = None
+    # st.session_state.willing_to_pay = st.radio("I would be willing to pay to access the AI’s code completions.", options, horizontal=True, key='willing_to_pay_radio')
+    # st.session_state.willing_to_pay_highlights = st.radio("I would be willing to pay to access the AI’s highlights.", options, horizontal=True, key='willing_to_pay_highlights_radio')
+    # st.session_state.code_completion_distracting = st.radio("I found the AI’s code completions distracting.", options, horizontal=True, key='code_completion_distracting_radio')
+    # st.session_state.highlights_distracting = st.radio("I found the AI’s highlights distracting.", options, horizontal=True, key='highlights_distracting_radio')
 
     if st.button("Next", key="interaction_questions_next"):
         if (
-            st.session_state.code_completion_helpful == 'Select an Option' or
-            st.session_state.highlights_helpful == 'Select an Option' or
-            st.session_state.willing_to_pay == 'Select an Option' or
-            st.session_state.willing_to_pay_highlights == 'Select an Option' or
-            st.session_state.code_completion_distracting == 'Select an Option' or
-            st.session_state.highlights_distracting == 'Select an Option'
+            st.session_state.answer_helpful == 'Select an Option' or
+            st.session_state.chain_helpful == 'Select an Option' or
+            st.session_state.search_helpful == 'Select an Option' or
+            st.session_state.lookup_helpful == 'Select an Option' or
+            st.session_state.interaction_helpful == 'Select an Option' or
+            st.session_state.chain_edit_helpful == 'Select an Option' or
+            st.session_state.thought_edit_helpful == 'Select an Option' or
+            st.session_state.action_edit_helpful == 'Select an Option' or
+            st.session_state.update_output_helpful == 'Select an Option'
         ):
             st.error("Please make sure to select an option for all questions before submitting.")
         else:
@@ -117,30 +141,38 @@ def ai_usage_questions():
 
     st.title("AI Usage Reflection Questions")
     st.subheader("Note: You cannot go back, please take your time answering these.")
-    options_frequency = ['Select an Option', 'Never', 'Rarely', 'Occasionally', 'Sometimes', 'Frequently', 'Usually', 'Always']
-    options_helpful = ['Select an Option', 'Very Unhelpful', 'Not Helpful', 'Sometimes', 'Neutral', 'Helpful', 'Very helpful']
+    options_frequency = ['Select an Option', 'Never', 'Rarely (10%)', 'Occasionally (30%)', 'Sometimes (50%)', 'Frequently (70%)', 'Usually (90%)', 'Always']
+    # options_helpful = ['Select an Option', 'Very Unhelpful', 'Not Helpful', 'Sometimes', 'Neutral', 'Helpful', 'Very helpful']
 
     st.session_state.ai_frequency = st.radio("How often do you use AI models (e.g. ChatGPT, DaLLE, CoPilot)?", ['Select an Option', 'Never', 'Rarely (once a year)', 'Occasionally (once a few months)', 'Sometimes (once a month)', 'Frequently (once a week)', 'Usually (once a few days)', 'Always (at least once a day)'], horizontal=True, key='ai_frequency_radio')
-    st.session_state.ai_answer_usage = st.radio("How often did you use the AI model’s answer to help answer the question?", options_frequency, horizontal=True, key='ai_answer_usage_radio')
-    st.session_state.ai_answer_helpful = st.radio("How helpful did you find the AI model's answer chain when trying to come to an answer?", options_helpful, horizontal=True, key='ai_answer_helpful_radio')
-    st.session_state.ai_reasoning_chain_usage = st.radio("How often did you use the AI model’s reasoning chain to help answer the question?", options_frequency, horizontal=True, key='ai_reasoning_chain_usage_radio')
-    st.session_state.ai_reasoning_chain_helpful = st.radio("How helpful did you find the AI model's reasoning chain when trying to come to an answer?", options_helpful, horizontal=True, key='ai_reasoning_chain_helpful_radio')
-    st.session_state.interaction_usage = st.radio("How often did you use the interactions with the model  to help answer the question?", options_frequency, horizontal=True, key='interaction_usage_radio')
-    st.session_state.interaction_helpfulness = st.radio("How helpful did you find the interactions with the model when trying to come to an answer?", options_helpful, horizontal=True, key='interaction_helpfulness_radio')
-    st.session_state.explanation_usage = st.radio("How often did you use the AI model’s explanations to come to an answer?", options_frequency, horizontal=True, key='explanation_usage_radio')
-    st.session_state.explanation_helpfulness = st.radio("How helpful did you find the AI model's explanations when trying to come to an answer?", options_helpful, horizontal=True, key='explanation_helpfulness_radio')
+    st.session_state.ai_answer_usage = st.radio("How often did you use the AI model's answer to help answer the question?", options_frequency, horizontal=True, key='ai_answer_usage_radio')
+    # st.session_state.ai_answer_helpful = st.radio("How helpful did you find the AI model's answer chain when trying to come to an answer?", options_helpful, horizontal=True, key='ai_answer_helpful_radio')
+    if st.session_state.condition.find("hai-answer") == -1:
+        st.session_state.ai_reasoning_chain_usage = st.radio("How often did you use the AI model's reasoning chain to help answer the question?", options_frequency, horizontal=True, key='ai_reasoning_chain_usage_radio')
+    else:
+        st.session_state.ai_reasoning_chain_usage = None
+    # st.session_state.ai_reasoning_chain_helpful = st.radio("How helpful did you find the AI model's reasoning chain when trying to come to an answer?", options_helpful, horizontal=True, key='ai_reasoning_chain_helpful_radio')
+    if st.session_state.condition.find("regenerate") > -1:
+        st.session_state.interaction_usage = st.radio("How often did you interact with the AI model to help answer the question?", options_frequency, horizontal=True, key='interaction_usage_radio')
+        st.session_state.human_action = None
+    else:
+        st.session_state.interaction_usage = None
+        st.session_state.human_action = st.radio("How often did you perform a Search or Lookup action to help answer the question?", options_frequency, horizontal=True, key='human_action_radio')
+    # st.session_state.interaction_helpfulness = st.radio("How helpful did you find the interactions with the model when trying to come to an answer?", options_helpful, horizontal=True, key='interaction_helpfulness_radio')
+    # st.session_state.explanation_usage = st.radio("How often did you use the AI model's explanations to come to an answer?", options_frequency, horizontal=True, key='explanation_usage_radio')
+    # st.session_state.explanation_helpfulness = st.radio("How helpful did you find the AI model's explanations when trying to come to an answer?", options_helpful, horizontal=True, key='explanation_helpfulness_radio')
 
     if st.button("Next", key="ai_usage_questions_next"):
         if (
             st.session_state.ai_frequency == 'Select an Option' or
             st.session_state.ai_answer_usage == 'Select an Option' or
-            st.session_state.ai_answer_helpful == 'Select an Option' or
+            # st.session_state.ai_answer_helpful == 'Select an Option' or
             st.session_state.ai_reasoning_chain_usage == 'Select an Option' or
-            st.session_state.ai_reasoning_chain_helpful == 'Select an Option' or
+            # st.session_state.ai_reasoning_chain_helpful == 'Select an Option' or
             st.session_state.interaction_usage == 'Select an Option' or
-            st.session_state.interaction_helpfulness == 'Select an Option' or
-            st.session_state.explanation_usage == 'Select an Option' or
-            st.session_state.explanation_helpfulness == 'Select an Option'
+            # st.session_state.interaction_helpfulness == 'Select an Option' or
+            st.session_state.human_action == 'Select an Option' # or
+            # st.session_state.explanation_helpfulness == 'Select an Option'
         ):
             st.error("Please make sure to select an option for all questions before submitting.")
         else:
@@ -157,16 +189,8 @@ def tasks_demand_questions():
 
     st.title("Task Reflection Questions")
     st.subheader("Note: You must answer all of the questions here before clicking submit to be paid.  You cannot go back, please take your time answering these.")
-
-    st.subheader("Reflect on how you feel after answering all of the questions")
-
-    st.session_state.mental_demand = st.slider("How mentally demanding were the tasks?", 0, 100, step=5, key="mental_slider")
-    st.session_state.success = st.slider("How successful were you in accomplishing what you were asked to do?", 0, 100, step=5, key='success_slider')
-    st.session_state.effort = st.slider("How hard did you have to work to accomplish your level of performance?", 0, 100, step=5,key="effort_slider")
-    st.session_state.pace = st.slider("How hurried or rushed were the pace of the tasks?", 0, 100, step=5, key="pace_slider")
-    st.session_state.stress = st.slider("How insecure, discouraged, irritated, stressed, and annoyed were you?", 0, 100, step=5, key="stress_slider")
-
-    st.subheader("Answer the following in terms of your preferences (not related to the main study)")  
+    
+    st.subheader("Answer the following in terms of your general preferences (NOT related to the questions you just did)")  
     options = ['Select an Option', 'Strongly Disagree', 'Disagree', 'Somewhat Disagree', 'Neutral', 'Somewhat Agree', 'Agree', 'Strongly Agree'] 
     st.session_state.complex_to_simple = st.radio("I would prefer complex to simple problems.", options, horizontal=True, key="complex_to_simple_slider")
     st.session_state.thinking = st.radio("I like to have the responsibility of handling a situation that requires a lot of thinking.", options, horizontal=True, key="thinking_slider")
@@ -175,6 +199,14 @@ def tasks_demand_questions():
     st.session_state.new_solutions = st.radio("I really enjoy a task that involves coming up with new solutions to problems.", options, horizontal=True, key="new_solutions_slider")
     st.session_state.difficulty = st.radio("I would prefer a task that is intellectual, difficult, and important to one that is somewhat important but does not require much thought.", options, horizontal=True, key="difficulty_slider")
 
+    st.subheader("Reflect on how you feel after answering all of the questions")
+    st.session_state.mental_demand = st.slider("How mentally demanding were the tasks?", 0, 100, step=5, key="mental_slider")
+    st.session_state.success = st.slider("How successful were you in accomplishing what you were asked to do?", 0, 100, step=5, key='success_slider')
+    st.session_state.effort = st.slider("How hard did you have to work to accomplish your level of performance?", 0, 100, step=5,key="effort_slider")
+    st.session_state.pace = st.slider("How hurried or rushed were the pace of the tasks?", 0, 100, step=5, key="pace_slider")
+    st.session_state.stress = st.slider("How insecure, discouraged, irritated, stressed, and annoyed were you?", 0, 100, step=5, key="stress_slider")
+
+    
     if st.button("Next", key="tasks_demand_questions_next"):
         if (
             st.session_state.complex_to_simple == 'Select an Option' or
@@ -194,7 +226,7 @@ def tasks_demand_questions():
             st.rerun()
 
 def survey():
-    st.title("Reflection Questions & Feedback")
+    # st.title("Reflection Questions & Feedback")
 
     # Initialize the page in session state if not already set
     if 'qa_page' not in st.session_state:
