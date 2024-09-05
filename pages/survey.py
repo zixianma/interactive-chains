@@ -2,6 +2,67 @@ import streamlit as st
 from streamlit_float import *
 from datetime import datetime
 import pages.utils.logger as logger
+import gspread
+from google.oauth2.service_account import Credentials
+
+def check_user_data():
+    toml_data = st.secrets # toml.load(".streamlit/secrets.toml")
+    credentials_data = toml_data["connections"]["gsheets"]
+
+    # Define the scope for the Google Sheets API
+    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+
+    # Authenticate using the credentials from the TOML file
+    credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
+    client = gspread.authorize(credentials)
+    sheet = client.open("Condition Counts")
+    # user_data = sheet.worksheet("Pilot User Data")
+    survey_tracker = sheet.worksheet("Survey Tracker")
+
+    usernames = survey_tracker.col_values(1)
+
+    if st.session_state.username in usernames:
+        row_idx = usernames.index(st.session_state.username) + 1
+        user_record = survey_tracker.row_values(row_idx)
+
+        for i in range(1, len(user_record)):
+            print(f'User record for index {i} is {user_record[i]}')
+            if user_record[i].lower() != 'complete':
+                print(f"index that is starting for survey: {i}")
+                return i
+        return -1
+    else:
+        return 1
+
+
+def update_user_data(page_finished = "", column_idx = -1):
+    toml_data = st.secrets # toml.load(".streamlit/secrets.toml")
+    credentials_data = toml_data["connections"]["gsheets"]
+
+    # Define the scope for the Google Sheets API
+    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+
+    # Authenticate using the credentials from the TOML file
+    credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
+    client = gspread.authorize(credentials)
+    sheet = client.open("Condition Counts")
+    user_data = sheet.worksheet("Pilot User Data")
+    survey_tracker = sheet.worksheet("Survey Tracker")
+
+    usernames = survey_tracker.col_values(1)
+
+    if st.session_state.username in usernames:
+        # just update the col based on what they finished
+        row_idx = usernames.index(st.session_state.username) + 1
+        survey_tracker.update_cell(row_idx, column_idx, page_finished)
+        print(f"updated user {st.session_state.username} with finishing survey page {page_finished} in column {column_idx}")
+    else:
+        new_row = [st.session_state.username, 'complete', 'no', 'no', 'no']
+        survey_tracker.append_row(new_row)
+        print(f"created user {st.session_state.username} with finishing survey page {page_finished} in column {column_idx}")
+
+def count_words(text):
+    return len(text.split())
 
 def record_data_clear_state(keys_list = [], header=False, survey_type = ""):
     # convert the data from dict to tuple
@@ -69,13 +130,22 @@ def free_form_questions():
                 # st.session_state.misc_comments.strip() == ''
             ]):
             st.error("Please answer all the required questions before submitting.")
+        elif count_words(st.session_state.strategy) < 15:
+            st.error("Please write at least 15 words for your strategy.")
+        elif st.session_state.condition.find("hai-answer") == -1 and count_words(st.session_state.error_finding) < 15:
+            st.error("Please write at least 15 words regarding errors.")
+        elif count_words(st.session_state.ai_model_usage) < 15:
+            st.error("Please write at least 15 words for how you used the AI model.")
+        elif st.session_state.condition.find("hai-regenerate") > -1 and count_words(st.session_state.ai_model_interaction_usage) < 15:
+            st.error("Please write at least 15 words regarding how you interacted with the model.")
         else:
             end_time = datetime.now()
             st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
             # submit data
             record_data_clear_state(['strategy', 'error_finding', 'ai_model_usage', 'ai_model_interaction_usage', 'misc_comments', 'time_spent'])
+            update_user_data("complete", 5)
             # create clickable link so worker can be paid
-            st.session_state.qa_page = 'complete'
+            st.session_state.last_progress = -1
             st.rerun()
 
 def interaction_questions():
@@ -132,7 +202,8 @@ def interaction_questions():
             st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
             record_data_clear_state(['code_completion_helpful', 'highlights_helpful', 'willing_to_pay', 'willing_to_pay_highlights', 'code_completion_distracting', 'highlights_distracting', 'time_spent'])
-            st.session_state.qa_page = 'frq'
+            update_user_data("complete", 4)
+            st.session_state.last_progress = 4
             st.rerun()
 
 def ai_usage_questions():
@@ -180,7 +251,8 @@ def ai_usage_questions():
             st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
             record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_answer_helpful', 'ai_reasoning_chain_usage', 'ai_reasoning_chain_helpful', 'interaction_usage', 'interaction_helpfulness', 'explanation_usage', 'explanation_helpfulness', 'time_spent'])
-            st.session_state.qa_page = 'interactions'
+            update_user_data("complete", 3)
+            st.session_state.last_progress = 3
             st.rerun()
 
 def tasks_demand_questions():
@@ -222,7 +294,8 @@ def tasks_demand_questions():
             st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
             record_data_clear_state( ['mental_demand', 'success', 'effort', 'pace', 'stress', 'complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'time_spent'], header=True, survey_type="FEEDBACK")
-            st.session_state.qa_page = 'ai_usage'
+            update_user_data() # since this is the first call, we can have this be parameterless
+            st.session_state.last_progress = 2
             st.rerun()
 
 def survey():
@@ -231,21 +304,23 @@ def survey():
     # Initialize the page in session state if not already set
     if 'qa_page' not in st.session_state:
         st.session_state.qa_page = 'tasks_demand'
+    
+    if 'last_progress' not in st.session_state:
+        st.session_state.last_progress = check_user_data()
+        print(f'sanity check: {st.session_state.last_progress}')
 
     # Create a placeholder for dynamic content
     placeholder = st.empty()
 
     # Control which set of questions to display
     with placeholder.container():
-        if 'is_done' in st.session_state and st.session_state.is_done:
+        if st.session_state.last_progress == -1:
             finished()
-        elif st.session_state.qa_page == 'tasks_demand':
+        elif st.session_state.last_progress == 1:
             tasks_demand_questions()
-        elif st.session_state.qa_page == 'ai_usage':
+        elif st.session_state.last_progress == 2:
             ai_usage_questions()
-        elif st.session_state.qa_page == 'interactions':
+        elif st.session_state.last_progress == 3:
             interaction_questions()
-        elif st.session_state.qa_page == 'frq':
+        elif st.session_state.last_progress == 4:
             free_form_questions()
-        elif st.session_state.qa_page =='complete':
-            finished()
