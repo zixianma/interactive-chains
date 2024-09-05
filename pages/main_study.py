@@ -173,13 +173,14 @@ def format_model_output_into_msgs_for_idx(idx):
 
 
 def display_right_column(env, idx, right_column, condition):     
-    def click_submit(answer):
+    def click_submit():
         if st.session_state[f'{st.session_state.condition}_answer_{idx}'] is None: # answer
             right_column.warning("Please select an answer before submitting.")
         else:
-            st.session_state[idx]['answer'] = answer
             st.session_state[idx]['submitted'] = True
-            st.session_state[idx]['disabled_submit'] = True       
+
+    def click_next():
+        st.session_state["next_clicked"] = True
     # env = st.session_state['env']
     question = env.reset(idx=idx) # st.session_state[idx]['question'] # 
     
@@ -224,21 +225,13 @@ def display_right_column(env, idx, right_column, condition):
 
         form = right_column.form(key='user-form')
         answer = form.radio(
-            "Select and submit your final answer (You can only submit once):",
+            "Select and submit your final answer:",
             ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"],
             index=None,
             key=f"{st.session_state.condition}_answer_{idx}" # this is so the radio button clears it last saved answer because this is saved in session_state
         )
-        
-        if "submitted" not in st.session_state[idx]:
-            st.session_state[idx]['submitted'] = False
-        if "disabled_submit" not in st.session_state[idx]:
-            st.session_state[idx]['disabled_submit'] = False
-        # def click_submit():
-        #     st.session_state[idx]['submitted'] = True
-        #     st.session_state[idx]['disabled_submit'] = True
 
-        submit = form.form_submit_button('Submit', on_click=click_submit, args=(answer, ), disabled = st.session_state[idx]['disabled_submit'])
+        submit = form.form_submit_button('Submit', on_click=click_submit, type="primary")
         if st.session_state[idx]['submitted']:
             end_time = datetime.now()
             elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
@@ -258,7 +251,8 @@ def display_right_column(env, idx, right_column, condition):
                     expl = st.session_state['train_id2explanation'][idx]
                     output += expl
                 right_column.write(f'{output}')
-            st.session_state[idx]['submitted'] = False
+            # st.session_state[idx]['submitted'] = False
+        next = right_column.button("Next question", on_click=click_next)
     else:
         if condition.find("regenerate") > -1:
             COOLDOWN_TIME = 8 # ADJUST HERE
@@ -418,18 +412,19 @@ def display_right_column(env, idx, right_column, condition):
                 st.session_state[idx]['model_output_per_run'][st.session_state[idx]["ai_output_clicks"]] = st.session_state[idx]['curr_model_output']
                 st.session_state[idx]['curr_msgs'] = curr_msgs
                 st.rerun()
+            next = right_column.button("Next", use_container_width=True, on_click=click_next)
         else:
             raise NotImplementedError
             
         form = right_column.form(key='user-form')
         answer = form.radio(
-            "Select and submit your final answer (You can only submit once):",
+            "Select and submit your final answer:",
             ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"],
             index=None,
             key=f'{st.session_state.condition}_answer_{idx}'
         )
 
-        submit = form.form_submit_button('Submit', on_click=click_submit, args=(answer, ), disabled = st.session_state[idx]['disabled_submit'])
+        submit = form.form_submit_button('Submit', on_click=click_submit, type="primary")
         if st.session_state[idx]['submitted']:
             end_time = datetime.now()
             elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
@@ -452,7 +447,7 @@ def display_right_column(env, idx, right_column, condition):
                     expl = st.session_state['train_id2explanation'][idx]
                     output += expl
                 right_column.write(f'{output}')
-            st.session_state[idx]['submitted'] = False
+            # st.session_state[idx]['submitted'] = False
 
     return right_column
 
@@ -584,18 +579,15 @@ def main_study():
             st.divider()
 
     all_cols = st.columns([2, 2, 2, 2, 2, 2])
-    left_head = all_cols[0]
-    right_head = all_cols[-1]
+    # left_head = all_cols[0]
+    # right_head = all_cols[-1]
     # left_head, _, _, right_head = left_column.columns([3, 3, 3, 3])
-    prev = left_head.button("Prev", use_container_width=True)
+    # prev = left_head.button("Prev", use_container_width=True)
 
     if "next_clicked" not in st.session_state:
         st.session_state["next_clicked"] = False
 
-    def click_next():
-        st.session_state["next_clicked"] = True
-
-    next = right_head.button("Next", use_container_width=True, on_click=click_next)
+    # next = right_head.button("Next", use_container_width=True, on_click=click_next)
 
     st.text(f"You are at {curr_pos} / {total_num} questions.")
 
@@ -609,8 +601,6 @@ def main_study():
     
     if "submitted" not in st.session_state[idx]:
         st.session_state[idx]['submitted'] = False
-    if "disabled_submit" not in st.session_state[idx]:
-        st.session_state[idx]['disabled_submit'] = False
     if 'question' not in st.session_state[idx]:
         st.session_state[idx]['question'] = question
 
@@ -628,14 +618,14 @@ def main_study():
         5726: "The correct action is Search[Emma Watson], which yields the result below that supports the claim: Emma Charlotte Duerre Watson (born 15 April 1990) is an English actress. Known for her roles in both blockbusters and independent films, she has received a selection of accolades, including a Young Artist Award and three MTV Movie Awards. Watson has been ranked among the world's highest-paid actresses by Forbes and Vanity Fair, and was named one of the 100 most influential people in the world by Time magazine in 2015.[1][2][3]. Watson attended the Dragon School and trained in acting at the Oxford branch of Stagecoach Theatre Arts. As a child, she rose to stardom after landing her first professional acting role as Hermione Granger in the Harry Potter film series, having previously acted only in school plays.",  
         1557: "The correct answer is NOT ENOUGH INFO, because the wiki page about folklore does not mention anything about pratfalls: \nFolklore is the body of expressive culture shared by a particular group of people, culture or subculture.[1] This includes oral traditions such as tales, myths, legends,[a] proverbs, poems, jokes, and other oral traditions.[3][4] This also includes material culture, such as traditional building styles common to the group. Folklore also encompasses customary lore, taking actions for folk beliefs, and the forms and rituals of celebrations such as Christmas, weddings, folk dances, and initiation rites.[3]. Each one of these, either singly or in combination, is considered a folklore artifact or traditional cultural expression. Just as essential as the form, folklore also encompasses the transmission of these artifacts from one region to another or from one generation to the next. Folklore is not something one can typically gain from a formal school curriculum or study in the fine arts."
     }
-    if prev:
-        if st.session_state.count == 0:
-            warning.warning("You're at the start of all examples. There is no previous example.", icon="⚠️")
-        else:
-            st.session_state.count -= 1
-        st.rerun()
-    elif st.session_state["next_clicked"]:
-        if not st.session_state[idx]['disabled_submit']:
+    # if prev:
+    #     if st.session_state.count == 0:
+    #         warning.warning("You're at the start of all examples. There is no previous example.", icon="⚠️")
+    #     else:
+    #         st.session_state.count -= 1
+    #     st.rerun()
+    if st.session_state["next_clicked"]:
+        if not st.session_state[idx]['submitted']:
             warning.warning("You need to submit your answer before going to the next question.", icon="⚠️")
             st.session_state["next_clicked"] = False
         else:
