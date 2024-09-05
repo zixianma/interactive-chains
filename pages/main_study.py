@@ -254,7 +254,7 @@ def display_right_column(env, idx, right_column, condition):
             # st.session_state[idx]['submitted'] = False
         next = right_column.button("Next question", on_click=click_next)
     else:
-        if condition.find("regenerate") > -1:
+        if condition == "I. hai-regenerate":
             COOLDOWN_TIME = 8 # ADJUST HERE
             # right_column.subheader("Edit any thought or action and update AI's output:")
             right_column.markdown("#### Edit any thought or action and update AI's output:")
@@ -290,7 +290,7 @@ def display_right_column(env, idx, right_column, condition):
                 thought_input = step_container.text_area("", thought_str, label_visibility="collapsed", key=f"thought {i}")
                 thought_key = f"Changed thought {i + 1} to: {thought_input}"
 
-                if thought := thought_input and thought_input != step_dict['thought'] and thought_key not in st.session_state[idx]["thought_changed"]:
+                if thought := thought_input and thought_input != step_dict['thought']: # and thought_key not in st.session_state[idx]["thought_changed"]:
                     st.session_state[idx]["thought_changed"][thought_key] = True
                     st.session_state[idx]["changes"] += 1
                     # st.session_state[idx]["actions"].append(thought_key)
@@ -325,7 +325,7 @@ def display_right_column(env, idx, right_column, condition):
                 action_formatted = format_action_str(step_dict['action'])
                 # print(step_dict['action'], action_formatted, action_combined)
                 action_key = f"Changed action {i + 1} to: {action_option.lower()}: {action_input}"
-                if action := action_input and action_combined != action_formatted and action_key not in st.session_state[idx]["action_changed"]: # action := action_input and  action := action_combined and 
+                if action := action_input and action_combined != action_formatted: #and action_key not in st.session_state[idx]["action_changed"]: # action := action_input and  action := action_combined and 
                     st.session_state[idx]["changes"] += 1
                     st.session_state[idx]["action_changed"][action_key] = True
                     # st.session_state[idx]["actions"].append(action_key)
@@ -412,43 +412,41 @@ def display_right_column(env, idx, right_column, condition):
                 st.session_state[idx]['model_output_per_run'][st.session_state[idx]["ai_output_clicks"]] = st.session_state[idx]['curr_model_output']
                 st.session_state[idx]['curr_msgs'] = curr_msgs
                 st.rerun()
-            next = right_column.button("Next", use_container_width=True, on_click=click_next)
+            form = right_column.form(key='user-form')
+            answer = form.radio(
+                "Select and submit your final answer:",
+                ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"],
+                index=None,
+                key=f'{st.session_state.condition}_answer_{idx}'
+            )
+
+            submit = form.form_submit_button('Submit', on_click=click_submit, type="primary")
+            if st.session_state[idx]['submitted']:
+                end_time = datetime.now()
+                elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
+                st.session_state[idx]['actions'].append(f"finish[{answer}]")
+                # log data
+                if st.session_state.condition.find("regenerate") > -1:
+                    logger.write_to_user_sheet([st.session_state.username, idx, str(st.session_state[idx]['actions']), len(st.session_state[idx]['actions']), st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), answer, st.session_state.condition, elapsed_time])
+                else:
+                    logger.write_data_to_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
+                obs, r, done, info = step(env, f"finish[{answer}]")
+                st.session_state['answer'] = answer
+                right_column.write(f'Submitted: {answer}')
+                # right_column.write(f'{obs}')
+                if idx in st.session_state['train_ids']:
+                    if r == 1:
+                        output = "Your answer is right! :)"
+                    else:
+                        output = f"Your answer is wrong :( The correct answer is {info['gt_answer']}.\n"
+                    if idx in st.session_state['train_id2explanation']:
+                        expl = st.session_state['train_id2explanation'][idx]
+                        output += expl
+                    right_column.write(f'{output}')
+                # st.session_state[idx]['submitted'] = False
+                next = right_column.button("Next question", on_click=click_next)
         else:
             raise NotImplementedError
-            
-        form = right_column.form(key='user-form')
-        answer = form.radio(
-            "Select and submit your final answer:",
-            ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"],
-            index=None,
-            key=f'{st.session_state.condition}_answer_{idx}'
-        )
-
-        submit = form.form_submit_button('Submit', on_click=click_submit, type="primary")
-        if st.session_state[idx]['submitted']:
-            end_time = datetime.now()
-            elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
-            st.session_state[idx]['actions'].append(f"finish[{answer}]")
-            # log data
-            if st.session_state.condition.find("regenerate") > -1:
-                logger.write_to_user_sheet([st.session_state.username, idx, str(st.session_state[idx]['actions']), len(st.session_state[idx]['actions']), st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), answer, st.session_state.condition, elapsed_time])
-            else:
-                logger.write_data_to_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
-            obs, r, done, info = step(env, f"finish[{answer}]")
-            st.session_state['answer'] = answer
-            right_column.write(f'Submitted: {answer}')
-            # right_column.write(f'{obs}')
-            if idx in st.session_state['train_ids']:
-                if r == 1:
-                    output = "Your answer is right! :)"
-                else:
-                    output = f"Your answer is wrong :( The correct answer is {info['gt_answer']}.\n"
-                if idx in st.session_state['train_id2explanation']:
-                    expl = st.session_state['train_id2explanation'][idx]
-                    output += expl
-                right_column.write(f'{output}')
-            # st.session_state[idx]['submitted'] = False
-
     return right_column
 
 def main_study():
