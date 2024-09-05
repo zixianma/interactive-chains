@@ -1,5 +1,4 @@
 import streamlit as st
-from hotjar import load_hotjar
 
 st.set_page_config(layout="wide")
 
@@ -11,8 +10,6 @@ from pages.instruction import instruction
 import streamlit.components.v1 as components
 
 def main():
-
-    load_hotjar()
     
     st.markdown(
         """
