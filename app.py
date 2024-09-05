@@ -8,30 +8,7 @@ from pages.demographics import demographics
 from pages.instruction import instruction
 import streamlit.components.v1 as components
 
-CLARITY_SCRIPT = """
-<script type="text/javascript">
-    (function(c,l,a,r,i,t,y){
-        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-    })(window, document, "clarity", "script", "nxtbql5obv");
-</script>
-"""
-
 def main():
-    
-    clarity_injection_script = f"""
-    <script>
-        (function() {{
-            var clarityScript = document.createElement('script');
-            clarityScript.type = 'text/javascript';
-            clarityScript.async = true;
-            clarityScript.innerHTML = `{CLARITY_SCRIPT}`;
-            document.getElementsByTagName('head')[0].appendChild(clarityScript);
-        }})();
-    </script>
-    """
-    components.html(clarity_injection_script, height=0, width=0)
 
     st.markdown(
         """
