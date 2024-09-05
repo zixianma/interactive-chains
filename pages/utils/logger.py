@@ -30,7 +30,7 @@ def create_user_worksheet():
         # Create a new worksheet for the user if it doesn't exist
         worksheet = sheet.add_worksheet(title=st.session_state.username, rows=100, cols=20)
         if st.session_state.condition.find("regenerate") > -1:
-            header_list = ["user", "question idx", "Number of changes", "Generate AI output button clicks", "model output", "answer", "condition", "time"]
+            header_list = ["user", "question idx", "Number of Generate AI output button clicks", "model output", "answer", "condition", "time"]
         else:
             header_list = ["user", "question idx", "total steps", "action space", "observations", "answer", "condition", "time"]
         worksheet.append_row(header_list)
