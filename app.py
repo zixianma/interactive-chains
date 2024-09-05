@@ -1,4 +1,5 @@
 import streamlit as st
+
 st.set_page_config(layout="wide")
 
 from pages.login import login
@@ -6,9 +7,10 @@ from pages.main_study import main_study
 from pages.survey import survey
 from pages.demographics import demographics
 from pages.instruction import instruction
+import streamlit.components.v1 as components
 
 def main():
-
+    
     st.markdown(
         """
         <style>

@@ -13,31 +13,11 @@ from google.oauth2.service_account import Credentials
 import toml
 import random
 from datetime import datetime
+import time
 import pages.utils.logger as logger
+
 # st.set_page_config(layout="wide")
 float_init(theme=True, include_unstable_primary=False)
-
-def get_user_ip():
-    try:
-        ip = requests.get('https://api64.ipify.org?format=json').json()["ip"]
-        response = requests.get(f'https://ipinfo.io/{ip}/json')
-        data = response.json()
-        location = {
-            'ip': data.get('ip'),
-            'city': data.get('city'),
-            'region': data.get('region'),
-            'country': data.get('country'),
-            'loc': data.get('loc'),  # Latitude and Longitude
-            'org': data.get('org'),
-            'timezone': data.get('timezone')
-        }
-        return location
-    except Exception as e:
-        return {"error": str(e)}
-
-def submit_username():
-    if st.session_state.username_input:
-        st.session_state.username = st.session_state.username_input
 
 # @st.cache_data
 def step(env, action):
@@ -228,20 +208,19 @@ def display_right_column(env, idx, right_column, condition):
     # env = st.session_state['env']
     question = env.reset(idx=idx) # st.session_state[idx]['question'] # 
     
+    # make session state dict per question
+    if f"last_search_{idx}" not in st.session_state[idx]:
+        st.session_state[idx][f"last_search_{idx}"] = None
+    if f"last_lookup_{idx}" not in st.session_state[idx]:
+        st.session_state[idx][f"last_lookup_{idx}"] = None
+    if f"start_time_{idx}" not in st.session_state[idx]:
+        st.session_state[idx][f"start_time_{idx}"] = datetime.now()
+    if 'observations' not in st.session_state[idx]:
+        st.session_state[idx]['observations'] = []
     if 'actions' not in st.session_state[idx]:
         st.session_state[idx]['actions'] = []
 
     if condition == "A. human" or condition == "C. hai-answer" or condition == "D. hai-static-chain":
-        # make session state dict per question
-        if f"last_search_{idx}" not in st.session_state[idx]:
-            st.session_state[idx][f"last_search_{idx}"] = None
-        if f"last_lookup_{idx}" not in st.session_state[idx]:
-            st.session_state[idx][f"last_lookup_{idx}"] = None
-        if f"start_time_{idx}" not in st.session_state[idx]:
-            st.session_state[idx][f"start_time_{idx}"] = datetime.now()
-        if 'observations' not in st.session_state[idx]:
-            st.session_state[idx]['observations'] = []
-
         # right_column.subheader("Perform a Search or Lookup action:")
         right_column.markdown("#### Perform a Search or Lookup action:")
        
@@ -278,16 +257,19 @@ def display_right_column(env, idx, right_column, condition):
         
         if "submitted" not in st.session_state[idx]:
             st.session_state[idx]['submitted'] = False
+        if "disabled_submit" not in st.session_state[idx]:
+            st.session_state[idx]['disabled_submit'] = False
         def click_submit():
             st.session_state[idx]['submitted'] = True
+            st.session_state[idx]['disabled_submit'] = True
 
-        submit = form.form_submit_button('Submit', on_click=click_submit,)
+        submit = form.form_submit_button('Submit', on_click=click_submit, disabled = st.session_state[idx]['disabled_submit'])
         if st.session_state[idx]['submitted']:
             end_time = datetime.now()
             elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
             st.session_state[idx]['actions'].append(f"finish[{answer}]")
             # log data
-            logger.write_data_to_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
+            logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
             obs, r, done, info = step(env, f"finish[{answer}]")
             st.session_state.user_data["last question idx done"] = idx
             # st.session_state['answer'] = answer
@@ -301,7 +283,7 @@ def display_right_column(env, idx, right_column, condition):
                     expl = st.session_state['train_id2explanation'][idx]
                     output += expl
                 right_column.write(f'{output}')
-            # st.session_state[idx]['submitted'] = False # need to turn this back to false afterwards
+            st.session_state[idx]['submitted'] = False
     else:
         
         if condition.find("thought") > -1:
@@ -568,6 +550,7 @@ def display_right_column(env, idx, right_column, condition):
                 final = step_container.text_area("🤖", final_thought_action, label_visibility="collapsed", key=f"final answer", disabled=True)
             
         elif condition.find("regenerate") > -1:
+            COOLDOWN_TIME = 8 # ADJUST HERE
             # right_column.subheader("Edit any thought or action and update AI's output:")
             right_column.markdown("#### Edit any thought or action and update AI's output:")
             model_output =  st.session_state.model_outputs[idx][:-1]
@@ -577,6 +560,12 @@ def display_right_column(env, idx, right_column, condition):
                 st.session_state[idx]['curr_num_steps'] = len(model_output)
             if "generate_next_step" not in st.session_state[idx]:
                 st.session_state[idx]["generate_next_step"] = False
+            if "model_output_per_run" not in st.session_state[idx]:
+                st.session_state[idx]["model_output_per_run"] = {0: st.session_state[idx]['curr_model_output']}
+            if "ai_output_clicks" not in st.session_state[idx]:
+                st.session_state[idx]["ai_output_clicks"] = 0
+            if "last_ai_button_click_time" not in st.session_state[idx]:
+                st.session_state[idx]["last_ai_button_click_time"] = 0
 
             new_model_output = []
             for i, step_dict in enumerate(st.session_state[idx]['curr_model_output']):
@@ -588,7 +577,10 @@ def display_right_column(env, idx, right_column, condition):
                 step_container = right_column.chat_message("assistant")
                 
                 thought_input = step_container.text_area("", thought_str, label_visibility="collapsed", key=f"thought {i}")
-                if thought := thought_input and thought_input != step_dict['thought']: 
+
+                if thought := thought_input and thought_input != step_dict['thought']:
+                    st.session_state[idx]["actions"].append(f"Changed thought {i + 1} to: {thought_input}")
+                    # lets log thought changed for this index
                     # st.session_state[idx]["generate_next_step"] = False
                     curr_msgs = [{"role": "user", "content": st.session_state['task_prompt'] + st.session_state[idx]['question']}]
                     curr_msgs += [{"role": "assistant", "content": "\n".join([step_dict['thought'], step_dict['action'], step_dict['observation']])} for step_dict in model_output[:i]]
@@ -622,7 +614,7 @@ def display_right_column(env, idx, right_column, condition):
                 if action := action_input and action_combined != action_formatted: # action := action_input and  action := action_combined and 
                     
                     action = f"{action_option[0].lower() + action_option[1:]}[{action_input}]" # action_combined
-                    
+                    st.session_state[idx]["actions"].append(f"Changed action {i + 1} to: {action_option.lower()}: {action_input}")
                     obs, r, done, info = step(env, action)
                     obs_str = obs.replace('\\n', '')   
                     if done:
@@ -631,7 +623,6 @@ def display_right_column(env, idx, right_column, condition):
                     else:
                         st.session_state[idx]["done"] = False
                         obs_str = f"Observation {i+1}: {obs_str}"
-
                 right_column.chat_message("user", avatar="🌐").write(obs_str)
                 new_action_str = f"{action_label} {action_combined[0].upper() + action_combined[1:]}" # action_input
                 new_model_output.append({"thought": thought_input, "action": new_action_str, "observation": f"{obs_str}"})
@@ -639,14 +630,24 @@ def display_right_column(env, idx, right_column, condition):
                 if thought_input != step_dict['thought'] or action_combined != action_formatted: # action_input != step_dict['action']:
                     # st.session_state[idx]["generate_next_step"] = False
                     break
-            
+
             st.session_state[idx]['curr_model_output'] = new_model_output
+            print(f"model output: {model_output}")
+            # print(f"thoughts in session state: {st.session_state[idx]['changed_thoughts'][st.session_state[idx]['ai_output_clicks']]}")
             num_steps = len(st.session_state[idx]['curr_model_output'])
 
             def click_button():
-                st.session_state[idx][f"generate_next_step"] = True
+                current_time = time.time()
+                if current_time - st.session_state[idx]["last_ai_button_click_time"] >= COOLDOWN_TIME:
+                    st.session_state[idx][f"generate_next_step"] = True
+                    st.session_state[idx]["ai_output_clicks"] += 1
+                    st.session_state[idx]["last_ai_button_click_time"] = current_time
+                else:
+                    st.warning("Please do not spam this button.")
             
-            generate = right_column.button("Update AI's output", key=f"generate {num_steps+1}", on_click=click_button)
+            current_time = time.time()
+            disable_button = current_time - st.session_state[idx]["last_ai_button_click_time"] < COOLDOWN_TIME or st.session_state[idx]["submitted"]
+            generate = right_column.button("Update AI's output", key=f"generate {num_steps+1}", on_click=click_button, disabled=disable_button)
             curr_msgs = format_model_output_into_msgs_for_idx(idx)
             if "curr_msgs" not in st.session_state[idx]:
                 st.session_state[idx]['curr_msgs'] = curr_msgs
@@ -693,6 +694,7 @@ def display_right_column(env, idx, right_column, condition):
                             break
                     # turn off generate flag after a new output is generated
                     st.session_state[idx][f"generate_next_step"] = False
+                st.session_state[idx]['model_output_per_run'][st.session_state[idx]["ai_output_clicks"]] = st.session_state[idx]['curr_model_output']
                 st.session_state[idx]['curr_msgs'] = curr_msgs
                 st.rerun()
 
@@ -792,13 +794,23 @@ def display_right_column(env, idx, right_column, condition):
             "Select your final answer",
             ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"],
             index=None,
+            key=f'question_{idx}_{st.session_state.condition}'
         )
 
         def click_submit():
             st.session_state[idx]['submitted'] = True
+            st.session_state[idx]['disabled_submit'] = True
 
-        submit = form.form_submit_button('Submit', on_click=click_submit)
+        submit = form.form_submit_button('Submit', on_click=click_submit, disabled = st.session_state[idx]['disabled_submit'])
         if st.session_state[idx]['submitted']:
+            end_time = datetime.now()
+            elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
+            st.session_state[idx]['actions'].append(f"finish[{answer}]")
+            # log data
+            if st.session_state.condition.find("regenerate") > -1:
+                logger.write_to_user_sheet([st.session_state.username, idx, str(st.session_state[idx]['actions']), len(st.session_state[idx]['actions']), st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), answer, st.session_state.condition, elapsed_time])
+            else:
+                logger.write_data_to_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
             obs, r, done, info = step(env, f"finish[{answer}]")
             st.session_state['answer'] = answer
             right_column.write(f'Submitted: {answer}')
@@ -812,6 +824,7 @@ def display_right_column(env, idx, right_column, condition):
                     expl = st.session_state['train_id2explanation'][idx]
                     output += expl
                 right_column.write(f'{output}')
+            st.session_state[idx]['submitted'] = False
 
     return right_column
 
@@ -835,6 +848,7 @@ def load_examples():
     return examples
 
 def main_study():
+    
     env = wikienv.WikiEnv()
     env = wrappers.FeverWrapper(env, split="dev")
     env = wrappers.LoggingWrapper(env)
@@ -986,7 +1000,8 @@ def main_study():
     
     if "submitted" not in st.session_state[idx]:
         st.session_state[idx]['submitted'] = False
-
+    if "disabled_submit" not in st.session_state[idx]:
+        st.session_state[idx]['disabled_submit'] = False
     if 'question' not in st.session_state[idx]:
         st.session_state[idx]['question'] = question
 
@@ -1011,7 +1026,7 @@ def main_study():
             st.session_state.count -= 1
         st.rerun()
     elif st.session_state["next_clicked"]:
-        if not st.session_state[idx]['submitted']:
+        if not st.session_state[idx]['disabled_submit']:
             warning.warning("You need to submit your answer before going to the next question.", icon="⚠️")
             st.session_state["next_clicked"] = False
         else:
@@ -1024,13 +1039,4 @@ def main_study():
                 st.session_state.count += 1
             st.session_state["next_clicked"] = False
             st.rerun()
-
-
-
-
-    
-
-
-
-
 
