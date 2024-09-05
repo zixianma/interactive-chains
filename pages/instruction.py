@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import time
+from hotjar import load_hotjar
 
 @st.cache_data
 def load_examples():
@@ -10,6 +11,8 @@ def load_examples():
     return examples
 
 def instruction():
+    load_hotjar()
+
     st.title("Task Instruction")
     st.subheader("Please take at least 2 minutes to read the task instructions below carefully before proceeding.")
     st.text("A Next button will show up at the bottom after 2 minutes for you to go to the next page.")

@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_float import *
 from datetime import datetime
 import pages.utils.logger as logger
+from hotjar import load_hotjar
 
 def record_data_clear_state(keys_list = [], header=False, survey_type = ""):
     # convert the data from dict to tuple
@@ -194,6 +195,7 @@ def tasks_demand_questions():
             st.rerun()
 
 def survey():
+    load_hotjar()
     st.title("Reflection Questions & Feedback")
 
     # Initialize the page in session state if not already set

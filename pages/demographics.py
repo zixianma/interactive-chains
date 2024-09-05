@@ -2,6 +2,7 @@ from streamlit_float import *
 import streamlit as st
 from datetime import datetime
 import pages.utils.logger as logger
+from hotjar import load_hotjar
 
 def record_data_clear_state(keys_list = []):
     # convert the data from dict to tuple
@@ -18,6 +19,8 @@ def record_data_clear_state(keys_list = []):
             del st.session_state[key]
 
 def questions():
+    load_hotjar()
+    
     if 'time_spent' not in st.session_state:
         st.session_state.time_spent = datetime.now()
         
