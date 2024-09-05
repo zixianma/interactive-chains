@@ -4,17 +4,12 @@ from streamlit_float import *
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
-
-def write_data_to_sheet(data):
-    sheet = st.session_state['sheet']
-    user_worksheet = st.session_state['user_worksheet']
-    # write the data in the format of: user, quetion idx, step #, action, time?
-    sheet.worksheet('all actions').append_row(data)
-    user_worksheet.append_row(data)
     
 def write_to_user_sheet(data):
-    sheet = st.session_state['sheet']
-    sheet.worksheet('users').append_row(data)
+    sheet = st.session_state['user_worksheet']
+    sheet.append_row(data)
+    user_data_sheet = st.session_state['sheet']
+    user_data_sheet.worksheet('all actions').append_row(data)
 
 def write_survey_response(data, header=False, survey_type=""):
     print(st.session_state)
@@ -34,7 +29,10 @@ def create_user_worksheet():
     except gspread.exceptions.WorksheetNotFound:
         # Create a new worksheet for the user if it doesn't exist
         worksheet = sheet.add_worksheet(title=st.session_state.username, rows=100, cols=20)
-        header_list = ["user", "question idx", "total steps", "action space", "observations", "answer", "condition", "time"]
+        if st.session_state.condition.find("regenerate") > -1:
+            header_list = ["user", "question idx", "Action space", "Number of steps in action space", "Generate AI output button clicks", "model output", "answer", "condition", "time"]
+        else:
+            header_list = ["user", "question idx", "total steps", "action space", "observations", "answer", "condition", "time"]
         worksheet.append_row(header_list)
     return worksheet
 
