@@ -205,6 +205,14 @@ def format_model_output_into_msgs_for_idx(idx):
 
 
 def display_right_column(env, idx, right_column, condition):
+    def click_submit(answer):
+        if answer is None:
+            right_column.warning("Please select an answer before submitting.")
+        else:
+            st.session_state[idx]['answer'] = answer
+            st.session_state[idx]['submitted'] = True
+            st.session_state[idx]['disabled_submit'] = True
+            
     # env = st.session_state['env']
     question = env.reset(idx=idx) # st.session_state[idx]['question'] # 
     
@@ -249,21 +257,21 @@ def display_right_column(env, idx, right_column, condition):
 
         form = right_column.form(key='user-form')
         answer = form.radio(
-            "Select your final answer",
+            "Select and submit your final answer (You can only submit once):",
             ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"],
             index=None,
-            key=f'answer_{idx}' # this is so the radio button clears it last saved answer because this is saved in session_state
+            key=f"{st.session_state.condition}_answer_{idx}" # this is so the radio button clears it last saved answer because this is saved in session_state
         )
         
         if "submitted" not in st.session_state[idx]:
             st.session_state[idx]['submitted'] = False
         if "disabled_submit" not in st.session_state[idx]:
             st.session_state[idx]['disabled_submit'] = False
-        def click_submit():
-            st.session_state[idx]['submitted'] = True
-            st.session_state[idx]['disabled_submit'] = True
+        # def click_submit():
+        #     st.session_state[idx]['submitted'] = True
+        #     st.session_state[idx]['disabled_submit'] = True
 
-        submit = form.form_submit_button('Submit', on_click=click_submit, disabled = st.session_state[idx]['disabled_submit'])
+        submit = form.form_submit_button('Submit', on_click=click_submit, args=(answer, ), disabled = st.session_state[idx]['disabled_submit'])
         if st.session_state[idx]['submitted']:
             end_time = datetime.now()
             elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
@@ -791,17 +799,13 @@ def display_right_column(env, idx, right_column, condition):
             
         form = right_column.form(key='user-form')
         answer = form.radio(
-            "Select your final answer",
+            "Select and submit your final answer (You can only submit once):",
             ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"],
             index=None,
-            key=f'question_{idx}_{st.session_state.condition}'
+            key=f'{st.session_state.condition}_answer_{idx}'
         )
 
-        def click_submit():
-            st.session_state[idx]['submitted'] = True
-            st.session_state[idx]['disabled_submit'] = True
-
-        submit = form.form_submit_button('Submit', on_click=click_submit, disabled = st.session_state[idx]['disabled_submit'])
+        submit = form.form_submit_button('Submit', on_click=click_submit, args=(answer, ), disabled = st.session_state[idx]['disabled_submit'])
         if st.session_state[idx]['submitted']:
             end_time = datetime.now()
             elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
@@ -876,12 +880,12 @@ def main_study():
         st.session_state['test_ids'] = test_ids
     all_ids = train_ids + test_ids
 
-    all_conditions = ["C. hai-answer", "D. hai-static-chain", "E. hai-human-thought", "F. hai-human-action", "G. hai-mixed", "H. hai-update", "I. hai-regenerate"] #  
+    all_conditions = ["C. hai-answer", "D. hai-static-chain", "I. hai-regenerate"] #  "E. hai-human-thought", "F. hai-human-action", "G. hai-mixed", "H. hai-update",
     condition = st.radio(
             "Condition",
             all_conditions, # "hai-interact-chain", "hai-interact-chain-delayed", 
             # captions=["A", "C", "D", "E", "F", "G"]
-            # index=None,
+            index=all_conditions.index(st.session_state.condition),
     )
     # condition = "I. hai-regenerate" # random.choice(all_conditions) 
     st.session_state.condition = condition

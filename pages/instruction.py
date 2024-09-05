@@ -96,8 +96,9 @@ def instruction():
         st.session_state['instruction_done'] = True
         
     if not st.session_state['instruction_done']:
-        N = 2*10
-        for secs in range(N,0,-1):
+        N = 2*10 # 120
+        for secs in range(N+1,0,-1):
+            secs = secs - 1
             mm, ss = secs//60, secs%60
             ph.metric("", f"{mm:02d}:{ss:02d}")
             time.sleep(1)

@@ -68,7 +68,7 @@ def free_form_questions():
                 st.session_state.ai_model_interaction_usage.strip() == '',
                 # st.session_state.misc_comments.strip() == ''
             ]):
-            st.error("Please fill in all the text boxes before submitting.")
+            st.error("Please answer all the required questions before submitting.")
         else:
             end_time = datetime.now()
             st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
