@@ -9,6 +9,19 @@ from pages.instruction import instruction
 import streamlit.components.v1 as components
 
 def main():
+    
+    hotjar_injection_script = """
+    <script>
+        (function() {
+            var scriptElement = document.createElement('script');
+            scriptElement.innerHTML = "(function(h,o,t,j,a,r){h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};h._hjSettings={hjid:5124090,hjsv:6};a=o.getElementsByTagName('head')[0];r=o.createElement('script');r.async=1;r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;a.appendChild(r);})(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');";
+            document.getElementsByTagName('head')[0].appendChild(scriptElement);
+        })();
+    </script>
+    """
+
+    # Inject the Hotjar script into the <head> using Streamlit components
+    components.html(hotjar_injection_script, height=0, width=0)
 
     st.markdown(
         """
