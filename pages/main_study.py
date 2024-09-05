@@ -204,7 +204,14 @@ def format_model_output_into_msgs_for_idx(idx):
     return curr_msgs
 
 
-def display_right_column(env, idx, right_column, condition):            
+def display_right_column(env, idx, right_column, condition):     
+    def click_submit(answer):
+        if answer is None:
+            right_column.warning("Please select an answer before submitting.")
+        else:
+            st.session_state[idx]['answer'] = answer
+            st.session_state[idx]['submitted'] = True
+            st.session_state[idx]['disabled_submit'] = True       
     # env = st.session_state['env']
     question = env.reset(idx=idx) # st.session_state[idx]['question'] # 
     
@@ -259,33 +266,31 @@ def display_right_column(env, idx, right_column, condition):
             st.session_state[idx]['submitted'] = False
         if "disabled_submit" not in st.session_state[idx]:
             st.session_state[idx]['disabled_submit'] = False
+        # def click_submit():
+        #     st.session_state[idx]['submitted'] = True
+        #     st.session_state[idx]['disabled_submit'] = True
 
-        submit = form.form_submit_button('Submit', disabled = st.session_state[idx]['disabled_submit'])
-        if submit:
-            if answer is not None:
-                end_time = datetime.now()
-                st.session_state[idx]['submitted'] = True
-                st.session_state[idx]['disabled_submit'] = True
-                elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
-                st.session_state[idx]['actions'].append(f"finish[{answer}]")
-                # log data
-                logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
-                obs, r, done, info = step(env, f"finish[{answer}]")
-                st.session_state.user_data["last question idx done"] = idx
-                # st.session_state['answer'] = answer
-                right_column.write(f'Submitted: {answer}')
-                if idx in st.session_state['train_ids']:
-                    if r == 1:
-                        output = "Your answer is right! :)\n"
-                    else:
-                        output = f"Your answer is wrong :( The correct answer is {info['gt_answer']}.\n"
-                    if idx in st.session_state['train_id2explanation']:
-                        expl = st.session_state['train_id2explanation'][idx]
-                        output += expl
-                    right_column.write(f'{output}')
-                    st.rerun()
-            else:
-                right_column.warning("Please select an answer before submitting.")
+        submit = form.form_submit_button('Submit', on_click=click_submit, args=(answer, ), disabled = st.session_state[idx]['disabled_submit'])
+        if st.session_state[idx]['submitted']:
+            end_time = datetime.now()
+            elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
+            st.session_state[idx]['actions'].append(f"finish[{answer}]")
+            # log data
+            logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
+            obs, r, done, info = step(env, f"finish[{answer}]")
+            st.session_state.user_data["last question idx done"] = idx
+            # st.session_state['answer'] = answer
+            right_column.write(f'Submitted: {answer}')
+            if idx in st.session_state['train_ids']:
+                if r == 1:
+                    output = "Your answer is right! :)\n"
+                else:
+                    output = f"Your answer is wrong :( The correct answer is {info['gt_answer']}.\n"
+                if idx in st.session_state['train_id2explanation']:
+                    expl = st.session_state['train_id2explanation'][idx]
+                    output += expl
+                right_column.write(f'{output}')
+            st.session_state[idx]['submitted'] = False
     else:
         
         if condition.find("thought") > -1:
@@ -809,35 +814,30 @@ def display_right_column(env, idx, right_column, condition):
             key=f'{st.session_state.condition}_answer_{idx}'
         )
 
-        submit = form.form_submit_button('Submit', disabled = st.session_state[idx]['disabled_submit'])
-        if submit:
-            if answer is not None:
-                end_time = datetime.now()
-                elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
-                st.session_state[idx]['submitted'] = True
-                st.session_state[idx]['disabled_submit'] = True
-                st.session_state[idx]['actions'].append(f"finish[{answer}]")
-                # log data
-                if st.session_state.condition.find("regenerate") > -1:
-                    logger.write_to_user_sheet([st.session_state.username, idx, st.session_state[idx]["changes"], st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), answer, st.session_state.condition, elapsed_time])
-                else:
-                    logger.write_data_to_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
-                obs, r, done, info = step(env, f"finish[{answer}]")
-                st.session_state['answer'] = answer
-                right_column.write(f'Submitted: {answer}')
-                # right_column.write(f'{obs}')
-                if idx in st.session_state['train_ids']:
-                    if r == 1:
-                        output = "Your answer is right! :)"
-                    else:
-                        output = f"Your answer is wrong :( The correct answer is {info['gt_answer']}.\n"
-                    if idx in st.session_state['train_id2explanation']:
-                        expl = st.session_state['train_id2explanation'][idx]
-                        output += expl
-                    right_column.write(f'{output}')
-                st.rerun()
+        submit = form.form_submit_button('Submit', on_click=click_submit, args=(answer, ), disabled = st.session_state[idx]['disabled_submit'])
+        if st.session_state[idx]['submitted']:
+            end_time = datetime.now()
+            elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
+            st.session_state[idx]['actions'].append(f"finish[{answer}]")
+            # log data
+            if st.session_state.condition.find("regenerate") > -1:
+                logger.write_to_user_sheet([st.session_state.username, idx, str(st.session_state[idx]['actions']), len(st.session_state[idx]['actions']), st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), answer, st.session_state.condition, elapsed_time])
             else:
-                right_column.warning("Please select an answer before submitting.")
+                logger.write_data_to_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
+            obs, r, done, info = step(env, f"finish[{answer}]")
+            st.session_state['answer'] = answer
+            right_column.write(f'Submitted: {answer}')
+            # right_column.write(f'{obs}')
+            if idx in st.session_state['train_ids']:
+                if r == 1:
+                    output = "Your answer is right! :)"
+                else:
+                    output = f"Your answer is wrong :( The correct answer is {info['gt_answer']}.\n"
+                if idx in st.session_state['train_id2explanation']:
+                    expl = st.session_state['train_id2explanation'][idx]
+                    output += expl
+                right_column.write(f'{output}')
+            st.session_state[idx]['submitted'] = False
 
     return right_column
 
@@ -1039,7 +1039,7 @@ def main_study():
             st.session_state.count -= 1
         st.rerun()
     elif st.session_state["next_clicked"]:
-        if not st.session_state[idx]['submitted']:
+        if not st.session_state[idx]['disabled_submit']:
             warning.warning("You need to submit your answer before going to the next question.", icon="⚠️")
             st.session_state["next_clicked"] = False
         else:
