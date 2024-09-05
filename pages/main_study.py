@@ -204,15 +204,14 @@ def format_model_output_into_msgs_for_idx(idx):
     return curr_msgs
 
 
-def display_right_column(env, idx, right_column, condition):
+def display_right_column(env, idx, right_column, condition):     
     def click_submit(answer):
         if st.session_state[f'{st.session_state.condition}_answer_{idx}'] is None: # answer
             right_column.warning("Please select an answer before submitting.")
         else:
             st.session_state[idx]['answer'] = answer
             st.session_state[idx]['submitted'] = True
-            st.session_state[idx]['disabled_submit'] = True
-            
+            st.session_state[idx]['disabled_submit'] = True       
     # env = st.session_state['env']
     question = env.reset(idx=idx) # st.session_state[idx]['question'] # 
     
@@ -574,6 +573,12 @@ def display_right_column(env, idx, right_column, condition):
                 st.session_state[idx]["ai_output_clicks"] = 0
             if "last_ai_button_click_time" not in st.session_state[idx]:
                 st.session_state[idx]["last_ai_button_click_time"] = 0
+            if "changes" not in st.session_state[idx]:
+                st.session_state[idx]["changes"] = 0
+            if "thought_changed" not in st.session_state[idx]:
+                st.session_state[idx]["thought_changed"] = {}
+            if "action_changed" not in st.session_state[idx]:
+                st.session_state[idx]["action_changed"] = {}
 
             new_model_output = []
             for i, step_dict in enumerate(st.session_state[idx]['curr_model_output']):
@@ -585,10 +590,12 @@ def display_right_column(env, idx, right_column, condition):
                 step_container = right_column.chat_message("assistant")
                 
                 thought_input = step_container.text_area("", thought_str, label_visibility="collapsed", key=f"thought {i}")
+                thought_key = f"Changed thought {i + 1} to: {thought_input}"
 
-                if thought := thought_input and thought_input != step_dict['thought']:
-                    st.session_state[idx]["actions"].append(f"Changed thought {i + 1} to: {thought_input}")
-                    # lets log thought changed for this index
+                if thought := thought_input and thought_input != step_dict['thought'] and thought_key not in st.session_state[idx]["thought_changed"]:
+                    st.session_state[idx]["thought_changed"][thought_key] = True
+                    st.session_state[idx]["changes"] += 1
+                    # st.session_state[idx]["actions"].append(thought_key)
                     # st.session_state[idx]["generate_next_step"] = False
                     curr_msgs = [{"role": "user", "content": st.session_state['task_prompt'] + st.session_state[idx]['question']}]
                     curr_msgs += [{"role": "assistant", "content": "\n".join([step_dict['thought'], step_dict['action'], step_dict['observation']])} for step_dict in model_output[:i]]
@@ -619,10 +626,12 @@ def display_right_column(env, idx, right_column, condition):
                 action_combined = f"{action_option[0].lower() + action_option[1:]}[{action_input}]"
                 action_formatted = format_action_str(step_dict['action'])
                 # print(step_dict['action'], action_formatted, action_combined)
-                if action := action_input and action_combined != action_formatted: # action := action_input and  action := action_combined and 
-                    
+                action_key = f"Changed action {i + 1} to: {action_option.lower()}: {action_input}"
+                if action := action_input and action_combined != action_formatted and action_key not in st.session_state[idx]["action_changed"]: # action := action_input and  action := action_combined and 
+                    st.session_state[idx]["changes"] += 1
+                    st.session_state[idx]["action_changed"][action_key] = True
+                    # st.session_state[idx]["actions"].append(action_key)
                     action = f"{action_option[0].lower() + action_option[1:]}[{action_input}]" # action_combined
-                    st.session_state[idx]["actions"].append(f"Changed action {i + 1} to: {action_option.lower()}: {action_input}")
                     obs, r, done, info = step(env, action)
                     obs_str = obs.replace('\\n', '')   
                     if done:
