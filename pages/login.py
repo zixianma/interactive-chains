@@ -8,7 +8,6 @@ from pages.utils.logger import *
 import toml
 import gspread
 from google.oauth2.service_account import Credentials
-from hotjar import load_hotjar
 
 def get_user_ip():
     try:
@@ -158,8 +157,6 @@ def submit_consent(username_input):
 def login():
     # if 'username' not in st.session_state:
     #     st.session_state.username = ''
-    
-    load_hotjar()
 
     if 'username' not in st.session_state or st.session_state.username == '': 
 

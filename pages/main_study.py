@@ -14,7 +14,6 @@ import toml
 import random
 from datetime import datetime
 import pages.utils.logger as logger
-from hotjar import load_hotjar
 
 # st.set_page_config(layout="wide")
 float_init(theme=True, include_unstable_primary=False)
@@ -837,8 +836,6 @@ def load_examples():
     return examples
 
 def main_study():
-    
-    load_hotjar()
     
     env = wikienv.WikiEnv()
     env = wrappers.FeverWrapper(env, split="dev")
