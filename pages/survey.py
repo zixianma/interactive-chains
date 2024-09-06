@@ -115,6 +115,7 @@ def video_submission():
         except Exception as e:
             print("Error with the video save: {e}")
 
+
 def free_form_questions():
     if 'time_spent' not in st.session_state:
         st.session_state.time_spent = datetime.now()
@@ -292,7 +293,7 @@ def tasks_demand_questions():
         st.session_state.time_spent = datetime.now()
 
     st.title("Task Reflection Questions")
-    st.subheader("Note: You must answer all of the questions here before clicking submit to be paid.  You cannot go back, please take your time answering these.")
+    st.subheader("Note: You must answer all of the questions here to be paid. You cannot go back, please take your time answering these.")
     
     st.subheader("Answer the following in terms of your general preferences (NOT related to the questions you just did)")  
     options = ['Select an Option', 'Strongly Disagree', 'Disagree', 'Somewhat Disagree', 'Neutral', 'Somewhat Agree', 'Agree', 'Strongly Agree'] 
