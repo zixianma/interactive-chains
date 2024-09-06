@@ -181,20 +181,21 @@ def display_right_column(env, idx, right_column, condition):
 
     def click_next():
         st.session_state["next_clicked"] = True
+
+    # make session state dict per question
+    if f"last_search_{idx}" not in st.session_state[idx]:
+        st.session_state[idx][f"last_search_{idx}"] = None
+    if f"last_lookup_{idx}" not in st.session_state[idx]:
+        st.session_state[idx][f"last_lookup_{idx}"] = None
+    if f"start_time_{idx}" not in st.session_state[idx]:
+        st.session_state[idx][f"start_time_{idx}"] = datetime.now()
+    if 'observations' not in st.session_state[idx]:
+        st.session_state[idx]['observations'] = []
+    if 'actions' not in st.session_state[idx]:
+        st.session_state[idx]['actions'] = []
     # env = st.session_state['env']
     question = env.reset(idx=idx) # st.session_state[idx]['question'] # 
     if condition == "A. human" or condition == "C. hai-answer" or condition == "D. hai-static-chain":
-        # make session state dict per question
-        if f"last_search_{idx}" not in st.session_state[idx]:
-            st.session_state[idx][f"last_search_{idx}"] = None
-        if f"last_lookup_{idx}" not in st.session_state[idx]:
-            st.session_state[idx][f"last_lookup_{idx}"] = None
-        if f"start_time_{idx}" not in st.session_state[idx]:
-            st.session_state[idx][f"start_time_{idx}"] = datetime.now()
-        if 'observations' not in st.session_state[idx]:
-            st.session_state[idx]['observations'] = []
-        if 'actions' not in st.session_state[idx]:
-            st.session_state[idx]['actions'] = []
         # right_column.subheader("Perform a Search or Lookup action:")
         right_column.markdown("#### Perform a Search or Lookup action:")
        
@@ -232,10 +233,9 @@ def display_right_column(env, idx, right_column, condition):
         submit = form.form_submit_button('Submit', on_click=click_submit, type="primary")
         if st.session_state[idx]['submitted']:
             end_time = datetime.now()
-            elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
+            st.session_state[idx]["elapsed_time"] = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
             st.session_state[idx]['actions'].append(f"finish[{answer}]")
-            # log data
-            logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
+            st.session_state['answer'] = answer
             obs, r, done, info = step(env, f"finish[{answer}]")
             st.session_state.user_data["last question idx done"] = idx
             # st.session_state['answer'] = answer
@@ -411,13 +411,8 @@ def display_right_column(env, idx, right_column, condition):
             submit = form.form_submit_button('Submit', on_click=click_submit, type="primary")
             if st.session_state[idx]['submitted']:
                 end_time = datetime.now()
-                elapsed_time = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
+                st.session_state[idx]["elapsed_time"] = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
                 st.session_state[idx]['actions'].append(f"finish[{answer}]")
-                # log data
-                if st.session_state.condition.find("regenerate") > -1:
-                    logger.write_to_user_sheet([st.session_state.username, idx, str(st.session_state[idx]['actions']), len(st.session_state[idx]['actions']), st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), answer, st.session_state.condition, elapsed_time])
-                else:
-                    logger.write_data_to_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), answer, st.session_state.condition, elapsed_time])
                 obs, r, done, info = step(env, f"finish[{answer}]")
                 st.session_state['answer'] = answer
                 right_column.write(f'Submitted: {answer}')
@@ -476,11 +471,11 @@ def main_study():
     # condition = "I. hai-regenerate" # random.choice(all_conditions) 
     st.session_state.condition = condition
     # print(st.session_state.condition)
-    if 'last_question' not in st.session_state:
-        st.session_state.last_question = -1
+    if 'questions_done' not in st.session_state:
+        st.session_state.questions_done = -1
     
-    if st.session_state.last_question != -1 and st.session_state.count == 0:
-        st.session_state.count = st.session_state.last_question
+    if st.session_state.questions_done != -1 and st.session_state.count == 0:
+        st.session_state.count = st.session_state.questions_done
         if (st.session_state.count > len(test_ids)):
             st.session_state.page = "survey"
 
@@ -620,6 +615,11 @@ def main_study():
                 st.session_state.page = "survey"
             else:
                 st.session_state.count += 1
+                if st.session_state.condition.find("regenerate") > -1:
+                    logger.write_to_user_sheet([st.session_state.username, idx, st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
+                else:
+                    logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
+
             st.session_state["next_clicked"] = False
             st.rerun()
 
