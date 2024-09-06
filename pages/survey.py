@@ -81,14 +81,14 @@ def record_data_clear_state(keys_list = [], header=False, survey_type = ""):
 
 def finished():
     st.title("Thank you for your time!")
-    st.subheader("You will be compensated after we review your answers and footage.")
-    st.write("Insert link here for people to indicate they are finished?")
+    st.subheader("You will be compensated after we review your answers and footage. Click the link below to complete the study.")
+    st.write("https://app.prolific.com/submissions/complete?cc=C1IZ4VLN")
 
 def video_submission():
     st.title("Mandatory Video Upload")
 
     # File uploader that only accepts video files
-    uploaded_video = st.file_uploader("Upload a video file", type=["mp4", "mov", "avi"])
+    uploaded_video = st.file_uploader("Upload a video file", type=["webm"]) # "mp4", "mov", "avi", 
 
     # Ensure the user uploads a video before enabling the submit button
     if uploaded_video is None:
@@ -125,24 +125,24 @@ def free_form_questions():
 
     # Use st.session_state.get to avoid overwriting existing text when rerunning
     st.session_state.strategy = st.text_area(
-        ":red[*]What was your strategy for answering the questions?",
+        ":red[*]What was your strategy for answering the questions? (Please answer this question with at least 10 words.)",
         value=st.session_state.get('strategy', ''), key='strategy_frq'
+    )
+    st.session_state.ai_model_usage = st.text_area(
+        ":red[*]How did you use the AI model to help you answer the questions? (Please answer this question with at least 10 words.)",
+        value=st.session_state.get('ai_model_usage', ''), key='ai_model_usage_frq'
     )
     if st.session_state.condition.find("hai-answer") == -1:
         st.session_state.error_finding = st.text_area(
-            ":red[*]Did you find any errors in the AI model's reasoning chain? If so, how did you find the errors?",
+            ":red[*]What did you think of the AI model's reasoning chains? Did you find them accurate and helpful? If not, what errors did you find in them? (Please answer this question with at least 10 words.)",
             value=st.session_state.get('error_finding', ''), key='error_finding_frq'
         )
     else:
         st.session_state.error_finding = "None"
 
-    st.session_state.ai_model_usage = st.text_area(
-        ":red[*]How did you use the AI model to help you answer the questions?",
-        value=st.session_state.get('ai_model_usage', ''), key='ai_model_usage_frq'
-    )
     if st.session_state.condition.find("hai-regenerate") > -1:
         st.session_state.ai_model_interaction_usage = st.text_area(
-            ":red[*]How did you interact with the AI model? Was anything confusing or demanding? If so, what was it and why?",
+            ":red[*]How did you interact with the AI model? Was anything confusing or demanding? If so, what was it and why? (Please answer this question with at least 10 words.)",
             value=st.session_state.get('ai_model_interaction_usage', ''), key='ai_model_interaction_usage_frq'
         )
     else:
@@ -163,14 +163,14 @@ def free_form_questions():
                 # st.session_state.misc_comments.strip() == ''
             ]):
             st.error("Please answer all the required questions before submitting.")
-        elif count_words(st.session_state.strategy) < 15:
-            st.error("Please write at least 15 words for your strategy.")
-        elif st.session_state.condition.find("hai-answer") == -1 and count_words(st.session_state.error_finding) < 15:
-            st.error("Please write at least 15 words regarding errors.")
-        elif count_words(st.session_state.ai_model_usage) < 15:
-            st.error("Please write at least 15 words for how you used the AI model.")
-        elif st.session_state.condition.find("hai-regenerate") > -1 and count_words(st.session_state.ai_model_interaction_usage) < 15:
-            st.error("Please write at least 15 words regarding how you interacted with the model.")
+        elif count_words(st.session_state.strategy) < 10:
+            st.error("Please write at least 10 words for your strategy.")
+        elif st.session_state.condition.find("hai-answer") == -1 and count_words(st.session_state.error_finding) < 10:
+            st.error("Please write at least 10 words regarding errors.")
+        elif count_words(st.session_state.ai_model_usage) < 10:
+            st.error("Please write at least 10 words for how you used the AI model.")
+        elif st.session_state.condition.find("hai-regenerate") > -1 and count_words(st.session_state.ai_model_interaction_usage) < 10:
+            st.error("Please write at least 10 words regarding how you interacted with the model.")
         else:
             end_time = datetime.now()
             st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
@@ -249,19 +249,21 @@ def ai_usage_questions():
     # options_helpful = ['Select an Option', 'Very Unhelpful', 'Not Helpful', 'Sometimes', 'Neutral', 'Helpful', 'Very helpful']
 
     st.session_state.ai_frequency = st.radio("How often do you use AI models (e.g. ChatGPT, DaLLE, CoPilot)?", ['Select an Option', 'Never', 'Rarely (once a year)', 'Occasionally (once a few months)', 'Sometimes (once a month)', 'Frequently (once a week)', 'Usually (once a few days)', 'Always (at least once a day)'], horizontal=True, key='ai_frequency_radio')
-    st.session_state.ai_answer_usage = st.radio("How often did you use the AI model's answer to help answer the question?", options_frequency, horizontal=True, key='ai_answer_usage_radio')
+    st.session_state.ai_answer_usage = st.radio("How often did you use the **AI model's answer** to help answer the question?", options_frequency, horizontal=True, key='ai_answer_usage_radio')
     # st.session_state.ai_answer_helpful = st.radio("How helpful did you find the AI model's answer chain when trying to come to an answer?", options_helpful, horizontal=True, key='ai_answer_helpful_radio')
     if st.session_state.condition.find("hai-answer") == -1:
-        st.session_state.ai_reasoning_chain_usage = st.radio("How often did you use the AI model's reasoning chain to help answer the question?", options_frequency, horizontal=True, key='ai_reasoning_chain_usage_radio')
+        st.session_state.ai_reasoning_chain_usage = st.radio("How often did you use the **AI model's reasoning chain** to help answer the question?", options_frequency, horizontal=True, key='ai_reasoning_chain_usage_radio')
     else:
         st.session_state.ai_reasoning_chain_usage = None
     # st.session_state.ai_reasoning_chain_helpful = st.radio("How helpful did you find the AI model's reasoning chain when trying to come to an answer?", options_helpful, horizontal=True, key='ai_reasoning_chain_helpful_radio')
     if st.session_state.condition.find("regenerate") > -1:
-        st.session_state.interaction_usage = st.radio("How often did you interact with the AI model to help answer the question?", options_frequency, horizontal=True, key='interaction_usage_radio')
-        st.session_state.human_action = None
+        st.session_state.interaction_usage = st.radio("How often did you **interact with the AI model** to help answer the question?", options_frequency, horizontal=True, key='interaction_usage_radio')
+        st.session_state.human_search = None
+        st.session_state.human_lookup = None
     else:
         st.session_state.interaction_usage = None
-        st.session_state.human_action = st.radio("How often did you perform a Search or Lookup action to help answer the question?", options_frequency, horizontal=True, key='human_action_radio')
+        st.session_state.human_search = st.radio("How often did you perform a **Search** action to help answer the question?", options_frequency, horizontal=True, key='human_search_radio')
+        st.session_state.human_lookup = st.radio("How often did you perform a **Lookup** action to help answer the question?", options_frequency, horizontal=True, key='human_lookup_radio')
     # st.session_state.interaction_helpfulness = st.radio("How helpful did you find the interactions with the model when trying to come to an answer?", options_helpful, horizontal=True, key='interaction_helpfulness_radio')
     # st.session_state.explanation_usage = st.radio("How often did you use the AI model's explanations to come to an answer?", options_frequency, horizontal=True, key='explanation_usage_radio')
     # st.session_state.explanation_helpfulness = st.radio("How helpful did you find the AI model's explanations when trying to come to an answer?", options_helpful, horizontal=True, key='explanation_helpfulness_radio')
@@ -275,7 +277,8 @@ def ai_usage_questions():
             # st.session_state.ai_reasoning_chain_helpful == 'Select an Option' or
             st.session_state.interaction_usage == 'Select an Option' or
             # st.session_state.interaction_helpfulness == 'Select an Option' or
-            st.session_state.human_action == 'Select an Option' # or
+            st.session_state.human_search == 'Select an Option' or
+            st.session_state.human_lookup == 'Select an Option'
             # st.session_state.explanation_helpfulness == 'Select an Option'
         ):
             st.error("Please make sure to select an option for all questions before submitting.")

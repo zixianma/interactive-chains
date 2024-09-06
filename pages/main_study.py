@@ -482,7 +482,7 @@ def main_study():
     if st.session_state.questions_done != -1 and st.session_state.count == 0:
         st.session_state.count = st.session_state.questions_done
         if (st.session_state.count > len(test_ids)):
-            st.session_state.page = "survey"
+            st.session_state.page = "end_tutorial" #"survey"
 
     if st.session_state.count < len(st.session_state['train_ids']):
         st.title("📚 Training phase")
@@ -629,7 +629,7 @@ def main_study():
             total_num = len(st.session_state['train_ids']) + len(st.session_state['test_ids'])
             if st.session_state.count == total_num - 1:
                 # st.warning("You're at the end of all examples. There is no next example.", icon="⚠️")
-                st.session_state.page = "survey"
+                st.session_state.page = "end_tutorial" #"survey"
             else:
                 st.session_state.count += 1
                 if st.session_state.condition.find("regenerate") > -1:
