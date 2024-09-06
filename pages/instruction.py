@@ -91,17 +91,21 @@ def instruction():
         expander.divider()
     if "instruction_done" not in st.session_state:
         st.session_state["instruction_done"] = False
-
+    if "remaining_time" not in st.session_state:
+        st.session_state["remaining_time"] = 5
+    
     def click_next():
         st.session_state['instruction_done'] = True
         
     if not st.session_state['instruction_done']:
-        N = 120
+        N = st.session_state["remaining_time"]
         for secs in range(N+1,0,-1):
             secs = secs - 1
+            st.session_state["remaining_time"] -= 1
             mm, ss = secs//60, secs%60
             ph.metric("", f"{mm:02d}:{ss:02d}")
             time.sleep(1)
+    print(st.session_state["remaining_time"])
     next = st.button("Next", on_click=click_next)
     if st.session_state['instruction_done']:
         st.session_state.page = "tutorial" #"main_study"
