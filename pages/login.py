@@ -121,10 +121,16 @@ def submit_consent(username_input):
                 # now that we have condition, open the corresponding condition sheet to get last question idx
                 st.session_state['sheet'] = client.open(sheet_condition)
                 st.session_state['user_worksheet'] = st.session_state['sheet'].worksheet(st.session_state.username)
-                num_rows = len(st.session_state['user_worksheet'].get_all_values()) - 1
-                print(num_rows)
-                # we can compute this by taking the # of rows and subtract by 1 to include header to figure out # of questions?
-                st.session_state.last_question = num_rows
+                all_values = st.session_state['user_worksheet'].get_all_values()
+                if len(all_values) <= 1:
+                    st.session_state.questions_done = -1
+                elif len(all_values) > 30: # idk how many questions we have but the point is we can skip it and not go into the else which may break the system.
+                    st.session_state.questions_done = 30 
+                else:
+                    last_row = all_values[-1]
+                    print(last_row)
+                    # we can compute this by taking the # of rows and subtract by 1 to include header to figure out # of questions?
+                    st.session_state.questions_done = int(last_row[7]) # column of "number of questions completed"
             else:
                 # open sheet to get the count
                 condition_counts, worksheet = get_condition_counts(client)
@@ -145,7 +151,7 @@ def submit_consent(username_input):
                 # record user in pilot user data
                 update_pilot_user_data(client, location_data)
                 
-                st.session_state.last_question = -1
+                st.session_state.questions_done = -1
 
                 # make sheet per user
                 user_worksheet = create_user_worksheet()
