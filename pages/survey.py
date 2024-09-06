@@ -3,6 +3,7 @@ from streamlit_float import *
 from datetime import datetime
 import pages.utils.logger as logger
 import gspread
+import os
 from google.oauth2.service_account import Credentials
 
 def check_user_data():
@@ -57,7 +58,7 @@ def update_user_data(page_finished = "", column_idx = -1):
         survey_tracker.update_cell(row_idx, column_idx, page_finished)
         print(f"updated user {st.session_state.username} with finishing survey page {page_finished} in column {column_idx}")
     else:
-        new_row = [st.session_state.username, 'complete', 'no', 'no', 'no']
+        new_row = [st.session_state.username, 'complete', 'no', 'no', 'no', 'no']
         survey_tracker.append_row(new_row)
         print(f"created user {st.session_state.username} with finishing survey page {page_finished} in column {column_idx}")
 
@@ -80,8 +81,40 @@ def record_data_clear_state(keys_list = [], header=False, survey_type = ""):
 
 def finished():
     st.title("Thank you for your time!")
-    st.subheader("Click below to complete the study.")
-    st.write("https://app.prolific.com/submissions/complete?cc=C1IZ4VLN")
+    st.subheader("You will be compensated after we review your answers and footage.")
+    st.write("Insert link here for people to indicate they are finished?")
+
+def video_submission():
+    st.title("Mandatory Video Upload")
+
+    # File uploader that only accepts video files
+    uploaded_video = st.file_uploader("Upload a video file", type=["mp4", "mov", "avi"])
+
+    # Ensure the user uploads a video before enabling the submit button
+    if uploaded_video is None:
+        st.warning("Please upload a video file before proceeding.")
+        st.button("Submit", disabled=True)
+    else:
+        try:
+            st.success("Video uploaded successfully!")            
+            # Display the video in the app
+            st.video(uploaded_video)
+
+            # Create the folder if it doesn't exist
+            os.makedirs("uploaded_videos", exist_ok=True)
+
+            # Save the uploaded video file
+            with open(f"uploaded_videos/{uploaded_video.name}", "wb") as f:
+                f.write(uploaded_video.getbuffer())
+            
+            print(f"Video saved successfully as: uploaded_videos/{uploaded_video.name}")
+            if st.button("Submit", key="submit_recording", disabled=False):
+                update_user_data("complete", 6)
+                st.session_state.last_progress = -1
+                st.rerun()
+        except Exception as e:
+            print("Error with the video save: {e}")
+
 
 def free_form_questions():
     if 'time_spent' not in st.session_state:
@@ -145,7 +178,7 @@ def free_form_questions():
             record_data_clear_state(['strategy', 'error_finding', 'ai_model_usage', 'ai_model_interaction_usage', 'misc_comments', 'time_spent'])
             update_user_data("complete", 5)
             # create clickable link so worker can be paid
-            st.session_state.last_progress = -1
+            st.session_state.last_progress = 5
             st.rerun()
 
 def interaction_questions():
@@ -324,3 +357,5 @@ def survey():
             interaction_questions()
         elif st.session_state.last_progress == 4:
             free_form_questions()
+        elif st.session_state.last_progress == 5:
+            video_submission()
