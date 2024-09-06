@@ -96,7 +96,7 @@ def instruction():
         st.session_state['instruction_done'] = True
         
     if not st.session_state['instruction_done']:
-        N = 2*10 # 120
+        N = 120
         for secs in range(N+1,0,-1):
             secs = secs - 1
             mm, ss = secs//60, secs%60
@@ -104,5 +104,5 @@ def instruction():
             time.sleep(1)
     next = st.button("Next", on_click=click_next)
     if st.session_state['instruction_done']:
-        st.session_state.page = "main_study"
+        st.session_state.page = "tutorial" #"main_study"
         st.rerun()

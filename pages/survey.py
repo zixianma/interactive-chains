@@ -81,7 +81,7 @@ def record_data_clear_state(keys_list = [], header=False, survey_type = ""):
 def finished():
     st.title("Thank you for your time!")
     st.subheader("Click below to complete the study.")
-    st.write("Insert link here.")
+    st.write("https://app.prolific.com/submissions/complete?cc=C1IZ4VLN")
 
 def free_form_questions():
     if 'time_spent' not in st.session_state:
