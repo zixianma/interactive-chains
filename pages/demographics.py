@@ -28,6 +28,19 @@ def questions():
     gender_placeholder = "Select your gender"
     race_ethnicity_placeholder = "Select your race/ethnicity"
     
+    
+    st.markdown(
+        """
+        <style>
+            div[role=radiogroup] label:first-of-type {
+                visibility: hidden;
+                height: 0px;
+            }
+        </style>
+    """,
+        unsafe_allow_html=True,
+    )
+    
     # Question 1: Gender
     st.markdown("#### Q1: What is your gender?")
     st.session_state.gender = st.radio(
@@ -65,12 +78,13 @@ def questions():
             "Native Hawaiian or Other Pacific Islander",
             "White",
             "Prefer not to say",
+            "Mixed-race",
             "Other"
         ],
         key='race_ethnicity_radio'
     )
     
-    if st.session_state.race_ethnicity == "Other":
+    if st.session_state.race_ethnicity == "Other" or st.session_state.race_ethnicity == "Mixed-race":
         st.session_state.race_ethnicity_other = st.text_input(
             "Please specify your race/ethnicity:",
             value=st.session_state.get('race_ethnicity_other', ''),
@@ -103,8 +117,8 @@ def questions():
             st.error("Please describe your gender in the 'Self-described' field.")
         elif st.session_state.race_ethnicity == race_ethnicity_placeholder:
             st.error("Please select your race/ethnicity.")
-        elif st.session_state.race_ethnicity == "Other" and st.session_state.race_ethnicity_other.strip() == '':
-            st.error("Please specify your race/ethnicity in the 'Other' field.")
+        elif (st.session_state.race_ethnicity == "Other" or st.session_state.race_ethnicity == "Mixed-race") and st.session_state.race_ethnicity_other.strip() == '':
+            st.error("Please specify your race/ethnicity in the 'Other/Mixed-race' field.")
         elif any([
                 st.session_state.age.strip() == '',
                 st.session_state.job_title.strip() == '',
