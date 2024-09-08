@@ -130,7 +130,11 @@ def submit_consent(username_input):
                     last_row = all_values[-1]
                     print(last_row)
                     # we can compute this by taking the # of rows and subtract by 1 to include header to figure out # of questions?
-                    st.session_state.questions_done = int(last_row[7]) # column of "number of questions completed"
+                    # condition-based - this wil change based on data.
+                    if st.session_state.condition == "I. hai-regenerate":
+                        st.session_state.questions_done = int(last_row[7]) # column of "number of questions completed"
+                    else:
+                        st.session_state.questions_done = int(last_row[8]) # column of "number of questions completed" for HAI-static-chain and hai-answer
             else:
                 # open sheet to get the count
                 condition_counts, worksheet = get_condition_counts(client)

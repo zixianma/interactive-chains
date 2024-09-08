@@ -245,7 +245,6 @@ def display_right_column(env, idx, right_column, condition):
         if st.session_state[idx]['submitted']:
             end_time = datetime.now()
             st.session_state[idx]["elapsed_time"] = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
-            st.session_state[idx]['actions'].append(f"finish[{answer}]")
             st.session_state['answer'] = answer
             obs, r, done, info = step(env, f"finish[{answer}]")
             st.session_state.user_data["last question idx done"] = idx
@@ -417,7 +416,6 @@ def display_right_column(env, idx, right_column, condition):
             if st.session_state[idx]['submitted']:
                 end_time = datetime.now()
                 st.session_state[idx]["elapsed_time"] = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
-                st.session_state[idx]['actions'].append(f"finish[{answer}]")
                 obs, r, done, info = step(env, f"finish[{answer}]")
                 st.session_state['answer'] = answer
                 right_column.write(f'Submitted: {answer}')
@@ -631,6 +629,7 @@ def main_study():
                 # st.warning("You're at the end of all examples. There is no next example.", icon="⚠️")
                 st.session_state.page = "end_tutorial" #"survey"
             else:
+                st.session_state[idx]['actions'].append(f"finish[{answer}]") = st.session_state['answer']
                 st.session_state.count += 1
                 if st.session_state.condition.find("regenerate") > -1:
                     logger.write_to_user_sheet([st.session_state.username, idx, st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
