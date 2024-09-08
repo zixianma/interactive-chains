@@ -91,9 +91,6 @@ def record_data_clear_state(keys_list = []):
             del st.session_state[key]
 
 def questions():
-    
-    if 'time_spent' not in st.session_state:
-        st.session_state.time_spent = datetime.now()
         
     # st.subheader("Note: You must answer all of the questions here before clicking submit to be paid. You cannot go back, please take your time answering these.")
     
@@ -204,8 +201,6 @@ def questions():
                 if age <= 0 or age > 120:
                     st.error("Please enter a valid age between 1 and 120.")
                 else:
-                    end_time = datetime.now()
-                    st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
                     record_data_clear_state([
                         'gender', 
                         'gender_self_described', 
@@ -213,7 +208,6 @@ def questions():
                         'race_ethnicity_other', 
                         'age',
                         'job_title',
-                        'time_spent'
                     ])
                     update_user_data()
                     st.session_state.page = "instruction"

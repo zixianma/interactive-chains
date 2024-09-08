@@ -45,7 +45,7 @@ def ensure_demo_worksheet():
         # If it doesn't exist, create it
         demographics_sheet = sheet.add_worksheet(title="Demographics", rows=100, cols=20)
         # Add a header row for the demographics sheet
-        demographics_sheet.append_row(["Username", "Gender", "Self-Described Gender", "Race/Ethnicity", "Other Race/Ethnicity", "Age", "Job Title", "Time Spent"])
+        demographics_sheet.append_row(["Username", "Gender", "Self-Described Gender", "Race/Ethnicity", "Other Race/Ethnicity", "Age", "Job Title"])
     return demographics_sheet
 
 def write_demo_response(data):
