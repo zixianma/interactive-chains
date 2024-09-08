@@ -36,3 +36,24 @@ def create_user_worksheet():
         worksheet.append_row(header_list)
     return worksheet
 
+def ensure_demo_worksheet():
+    sheet = st.session_state['sheet']
+    try:
+        # Try to get the "Demographics" worksheet
+        demographics_sheet = sheet.worksheet("Demographics")
+    except gspread.exceptions.WorksheetNotFound:
+        # If it doesn't exist, create it
+        demographics_sheet = sheet.add_worksheet(title="Demographics", rows=100, cols=20)
+        # Add a header row for the demographics sheet
+        demographics_sheet.append_row(["Username", "Gender", "Self-Described Gender", "Race/Ethnicity", "Other Race/Ethnicity", "Age", "Job Title", "Time Spent"])
+    return demographics_sheet
+
+def write_demo_response(data):
+    print(st.session_state)
+    demo_worksheet = st.session_state['demographics']
+
+    responses = []
+    for tuple in data:
+        responses.append(tuple[1])
+    demo_worksheet.append_row(responses)
+

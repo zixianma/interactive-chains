@@ -121,6 +121,7 @@ def submit_consent(username_input):
                 # now that we have condition, open the corresponding condition sheet to get last question idx
                 st.session_state['sheet'] = client.open(sheet_condition)
                 st.session_state['user_worksheet'] = st.session_state['sheet'].worksheet(st.session_state.username)
+                st.session_state['demographics'] = st.session_state['sheet'].worksheet('Demographics')
                 all_values = st.session_state['user_worksheet'].get_all_values()
                 if len(all_values) <= 1:
                     st.session_state.questions_done = -1
@@ -155,9 +156,14 @@ def submit_consent(username_input):
 
                 # make sheet per user
                 user_worksheet = create_user_worksheet()
+                demo_worksheet = ensure_demo_worksheet()
             
                 if 'user_worksheet' not in st.session_state:
                     st.session_state['user_worksheet'] = user_worksheet
+                
+                if 'demographics' not in st.session_state:
+                    st.session_state['demographics'] = demo_worksheet
+
         st.session_state.page =  "demographics" #"tutorial" #"instruction" "survey" "main_study" "survey" #
 
 def login():
