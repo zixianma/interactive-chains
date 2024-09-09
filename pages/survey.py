@@ -127,7 +127,7 @@ def finished():
     st.write("https://app.prolific.com/submissions/complete?cc=C1IZ4VLN")
 
 def video_submission():
-    st.title("Mandatory Video Upload")
+    st.title("Video Upload")
 
     # File uploader that only accepts video files
     uploaded_video = st.file_uploader("Upload a video file", type=["webm"]) # "mp4", "mov", "avi", 
