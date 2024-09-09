@@ -237,6 +237,18 @@ def interaction_questions():
 
     options = ['Select an Option', 'Strongly Disagree', 'Disagree', 'Somewhat Disagree', 'Neutral', 'Somewhat Agree', 'Agree', 'Strongly Agree'] 
     st.subheader("Rate the following statements")
+    st.markdown(
+        """
+        <style>
+            div[role=radiogroup] label:first-of-type {
+                visibility: hidden;
+                height: 0px;
+                width: 0px;
+            }
+        </style>
+    """,
+        unsafe_allow_html=True,
+    )
 
     st.session_state.answer_helpful = st.radio("I found it helpful to **read the AI model's answer** when answering the question.", options, horizontal=True, key='answer_helpful_radio')
     # condition based
@@ -289,6 +301,19 @@ def interaction_questions():
 def ai_usage_questions():
     if 'time_spent' not in st.session_state:
         st.session_state.time_spent = datetime.now()
+    
+    st.markdown(
+        """
+        <style>
+            div[role=radiogroup] label:first-of-type {
+                visibility: hidden;
+                height: 0px;
+                width: 0px;
+            }
+        </style>
+    """,
+        unsafe_allow_html=True,
+    )
 
     st.title("AI Usage Reflection Questions")
     st.subheader("Note: You cannot go back, please take your time answering these.")
@@ -341,6 +366,19 @@ def ai_usage_questions():
 def tasks_demand_questions():
     if 'time_spent' not in st.session_state:
         st.session_state.time_spent = datetime.now()
+    
+    st.markdown(
+        """
+        <style>
+            div[role=radiogroup] label:first-of-type {
+                visibility: hidden;
+                height: 0px;
+                width: 0px;
+            }
+        </style>
+    """,
+        unsafe_allow_html=True,
+    )
 
     st.title("Task Reflection Questions")
     st.subheader("Note: You must answer all of the questions here to be paid. You cannot go back, please take your time answering these.")
@@ -356,10 +394,15 @@ def tasks_demand_questions():
 
     st.subheader("Reflect on how you feel after answering all of the questions")
     st.session_state.mental_demand = st.slider("How mentally demanding were the tasks?", 0, 100, step=5, key="mental_slider")
+    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
     st.session_state.success = st.slider("How successful were you in accomplishing what you were asked to do?", 0, 100, step=5, key='success_slider')
+    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
     st.session_state.effort = st.slider("How hard did you have to work to accomplish your level of performance?", 0, 100, step=5,key="effort_slider")
+    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
     st.session_state.pace = st.slider("How hurried or rushed were the pace of the tasks?", 0, 100, step=5, key="pace_slider")
+    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
     st.session_state.stress = st.slider("How insecure, discouraged, irritated, stressed, and annoyed were you?", 0, 100, step=5, key="stress_slider")
+    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
 
     
     if st.button("Next", key="tasks_demand_questions_next"):

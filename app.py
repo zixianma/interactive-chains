@@ -18,13 +18,14 @@ def main():
         [data-testid="stSidebar"][aria-expanded="true"]{
             min-width: 600px;
         }
-        /* Increase the font size of the radio button header */
-        .stRadio label p {
-            font-size: 24px !important;
+        /* Increase the font size of the radio button header (only the first label) */
+        div[class*="stRadio"] > label > div[data-testid="stMarkdownContainer"] > p {
+            font-size: 36px !important;
         }
+
         /* Increase the font size of the radio button options */
-        .stRadio div[data-baseweb="radio"] div.st-cx p {
-            font-size: 22px !important;
+        div[role='radiogroup'] label div p {
+            font-size: 24px !important;
         }
         /* slider text */
         div[class*="stSlider"] > label > div[data-testid="stMarkdownContainer"] > p {
@@ -63,6 +64,17 @@ def main():
         /* Increase the font size of the <p> tag inside the stTextArea */
         .stTextArea label p {
             font-size: 24px !important;
+        }
+
+        #custom-slider-container {
+            width: 50% !important;
+            display: flex;
+            justify-content: space-between;
+        }
+        #custom-slider-container .slider-text {
+            top: -35px;
+            position: relative;
+            font-weight: bold;
         }
         """,
         unsafe_allow_html=True,
