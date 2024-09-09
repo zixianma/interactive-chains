@@ -51,3 +51,4 @@ toml==0.10.2
 tornado==6.4.1
 tzdata==2024.1
 urllib3==2.2.2
+google-api-python-client==2.144.0
