@@ -2,25 +2,95 @@ from streamlit_float import *
 import streamlit as st
 from datetime import datetime
 import pages.utils.logger as logger
+import gspread
+import os
+from google.oauth2.service_account import Credentials
+
+def check_user_data():
+    # Load secrets for Google Sheets credentials
+    toml_data = st.secrets
+    credentials_data = toml_data["connections"]["gsheets"]
+
+    # Define the scope for the Google Sheets API
+    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+
+    # Authenticate using credentials from secrets
+    credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
+    client = gspread.authorize(credentials)
+
+    # Open the "Condition Counts" spreadsheet and the "Demo Tracker" worksheet
+    sheet = client.open("Condition Counts")
+    demo_tracker = sheet.worksheet("Demo Tracker")
+
+    # Get all usernames in the first column of "Demo Tracker"
+    usernames = demo_tracker.col_values(1)
+
+    # Check if the current user's username exists in the tracker
+    if st.session_state.username in usernames:
+        row_idx = usernames.index(st.session_state.username) + 1
+        user_record = demo_tracker.row_values(row_idx)
+
+        # Check if the user has already completed the demographics page (assuming column 2 for demo)
+        if user_record[1].lower() == 'complete':
+            print(f"User {st.session_state.username} has already completed the demographics page.")
+            return -1  # Return -1 to indicate completion
+        else:
+            print(f"User {st.session_state.username} has not completed the demographics page.")
+            return 1  # Return 1 to indicate they need to complete the page
+    else:
+        print(f"User {st.session_state.username} not found in the demo tracker.")
+        return 1  # New user, needs to complete the page
+
+
+def update_user_data():
+    # Load secrets for Google Sheets credentials
+    toml_data = st.secrets
+    credentials_data = toml_data["connections"]["gsheets"]
+
+    # Define the scope for the Google Sheets API
+    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+
+    # Authenticate using credentials from secrets
+    credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
+    client = gspread.authorize(credentials)
+
+    # Open the "Condition Counts" spreadsheet and the "Demo Tracker" worksheet
+    sheet = client.open("Condition Counts")
+    demo_tracker = sheet.worksheet("Demo Tracker")
+
+    # Get all usernames in the first column of "Demo Tracker"
+    usernames = demo_tracker.col_values(1)
+
+    # Check if the current user's username exists in the tracker
+    if st.session_state.username in usernames:
+        # Update the "complete" status for the demographics page (assuming column 2 for demo)
+        row_idx = usernames.index(st.session_state.username) + 1
+        demo_tracker.update_cell(row_idx, 2, 'complete')
+        print(f"Updated user {st.session_state.username} with completing demographics in column 2")
+    else:
+        # Create a new row for the user if not found and mark the demographics page as complete
+        new_row = [st.session_state.username, 'complete']
+        demo_tracker.append_row(new_row)
+        print(f"Created new entry for user {st.session_state.username} and marked demographics as complete.")
+
 
 def record_data_clear_state(keys_list = []):
     # convert the data from dict to tuple
     responses_dict = []
+    user_name = st.session_state.username
+    responses_dict.append(('username', user_name))
     keys = keys_list
     for key in keys:
         if key in st.session_state:
             # will change this later, doing as sanity checker for now
             responses_dict.append((key, st.session_state[key]))
-    logger.write_survey_response(responses_dict, header=True, survey_type='DEMOGRAPHICS') # this is assuming all of this is on one page.
+    logger.write_demo_response(responses_dict)
     # Delete all keys in the list
     for key in keys:
         if key in st.session_state:
             del st.session_state[key]
 
 def questions():
-    
-    if 'time_spent' not in st.session_state:
-        st.session_state.time_spent = datetime.now()
         
     # st.subheader("Note: You must answer all of the questions here before clicking submit to be paid. You cannot go back, please take your time answering these.")
     
@@ -131,8 +201,6 @@ def questions():
                 if age <= 0 or age > 120:
                     st.error("Please enter a valid age between 1 and 120.")
                 else:
-                    end_time = datetime.now()
-                    st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
                     record_data_clear_state([
                         'gender', 
                         'gender_self_described', 
@@ -140,8 +208,8 @@ def questions():
                         'race_ethnicity_other', 
                         'age',
                         'job_title',
-                        'time_spent'
                     ])
+                    update_user_data()
                     st.session_state.page = "instruction"
                     st.rerun()
             except ValueError:
@@ -152,8 +220,16 @@ def demographics():
     st.title("Demographics Questions")
 
     placeholder = st.empty()
+    
+    if 'demo_progress' not in st.session_state:
+        st.session_state.demo_progress = check_user_data()
+        print(f'sanity check: {st.session_state.demo_progress}')
 
     with placeholder.container():
-        questions()
+        if st.session_state.demo_progress == -1:
+            st.session_state.page = "instruction"
+            st.rerun()
+        elif st.session_state.demo_progress == 1:
+            questions()
 
     
