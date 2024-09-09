@@ -127,7 +127,7 @@ def finished():
     st.write("https://app.prolific.com/submissions/complete?cc=C1IZ4VLN")
 
 def video_submission():
-    st.title("Mandatory Video Upload")
+    st.title("Video Upload")
 
     # File uploader that only accepts video files
     uploaded_video = st.file_uploader("Upload a video file", type=["webm"]) # "mp4", "mov", "avi", 
@@ -172,16 +172,16 @@ def free_form_questions():
 
     # Use st.session_state.get to avoid overwriting existing text when rerunning
     st.session_state.strategy = st.text_area(
-        ":red[*]What was your strategy for answering the questions? (Please answer this question with at least 10 words.)",
+        ":red[*]What was your strategy for answering the questions?",
         value=st.session_state.get('strategy', ''), key='strategy_frq'
     )
     st.session_state.ai_model_usage = st.text_area(
-        ":red[*]How did you use the AI model to help you answer the questions? (Please answer this question with at least 10 words.)",
+        ":red[*]How did you use the AI model to help you answer the questions?",
         value=st.session_state.get('ai_model_usage', ''), key='ai_model_usage_frq'
     )
     if st.session_state.condition.find("hai-answer") == -1:
         st.session_state.error_finding = st.text_area(
-            ":red[*]What did you think of the AI model's reasoning chains? Did you find them accurate and helpful? If not, what errors did you find in them? (Please answer this question with at least 10 words.)",
+            ":red[*]What did you think of the AI model's reasoning chains? Did you find them accurate and helpful? If not, what errors did you find in them?",
             value=st.session_state.get('error_finding', ''), key='error_finding_frq'
         )
     else:
@@ -189,7 +189,7 @@ def free_form_questions():
 
     if st.session_state.condition.find("hai-regenerate") > -1:
         st.session_state.ai_model_interaction_usage = st.text_area(
-            ":red[*]How did you interact with the AI model? Was anything confusing or demanding? If so, what was it and why? (Please answer this question with at least 10 words.)",
+            ":red[*]How did you interact with the AI model? Was anything confusing or demanding? If so, what was it and why?",
             value=st.session_state.get('ai_model_interaction_usage', ''), key='ai_model_interaction_usage_frq'
         )
     else:
@@ -254,13 +254,13 @@ def interaction_questions():
     # condition based
     if st.session_state.condition.find("hai-answer") == -1:
         # st.write("I found the AI's highlights helpful in determining what to edit")
-        st.session_state.chain_helpful = st.radio("I found it helpful to **read the AI model's reasoning chain** when answering the question.", options, horizontal=True, key='chain_helpful_radio')
+        st.session_state.chain_helpful = st.radio("I found it helpful to **read the AI model's reasoning chain** when answering the question (A reasoning chain is the list of thoughts, actions, and observations that help the model reason and reach its final answer).", options, horizontal=True, key='chain_helpful_radio')
     else:
         st.session_state.chain_helpful = None
     st.session_state.search_helpful = st.radio("I found **Search** helpful when answering the question.", options, horizontal=True, key='search_helpful_radio')
     st.session_state.lookup_helpful = st.radio("I found **Lookup** helpful when answering the question.", options, horizontal=True, key='lookup_helpful_radio')
     if st.session_state.condition.find("hai-regenerate") > -1:
-        st.session_state.interaction_helpful = st.radio("I found it helpful to **interact with the AI model** when answering the question.", options, horizontal=True, key='interact_helpful_radio')
+        st.session_state.interaction_helpful = st.radio("I found it helpful to **interact with the AI model** when answering the question (Interaction includes editing AI's thought/action and updating its output).", options, horizontal=True, key='interact_helpful_radio')
         st.session_state.chain_edit_helpful = st.radio("I found it helpful to **edit the AI model's reasoning chain** when answering the question.", options, horizontal=True, key='edit_chain_helpful_radio')
         st.session_state.thought_edit_helpful = st.radio("I found it helpful to **edit the AI model's thought(s)** when answering the question.", options, horizontal=True, key='edit_thought_helpful_radio')
         st.session_state.action_edit_helpful = st.radio("I found it helpful to **edit the AI model's action(s)** when answering the question.", options, horizontal=True, key='edit_action_helpful_radio')

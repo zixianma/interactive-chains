@@ -234,13 +234,13 @@ def display_right_column(env, idx, right_column, condition):
 
         form = right_column.form(key='user-form')
         answer = form.radio(
-            "Select and submit your final answer:",
+            "Select and submit your final answer (You can only click submit once):",
             ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"],
             index=None,
             key=f"{st.session_state.condition}_answer_{idx}" # this is so the radio button clears it last saved answer because this is saved in session_state
         )
 
-        submit = form.form_submit_button('Submit', on_click=click_submit, type="primary")
+        submit = form.form_submit_button('Submit', on_click=click_submit, type="primary", disabled=st.session_state[idx]["submitted"])
         if st.session_state[idx]['submitted']:
             end_time = datetime.now()
             st.session_state[idx]["elapsed_time"] = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
@@ -411,7 +411,7 @@ def display_right_column(env, idx, right_column, condition):
                 key=f'{st.session_state.condition}_answer_{idx}'
             )
 
-            submit = form.form_submit_button('Submit', on_click=click_submit, type="primary")
+            submit = form.form_submit_button('Submit', on_click=click_submit, type="primary", disabled=st.session_state[idx]['submitted'])
             if st.session_state[idx]['submitted']:
                 end_time = datetime.now()
                 st.session_state[idx]["elapsed_time"] = (end_time - st.session_state[idx][f"start_time_{idx}"]).total_seconds()
@@ -501,7 +501,7 @@ def main_study():
                     
         action_definitions = st.markdown('''
         - The *Search* action searches for the document that's the most related to the keyword you enter. 
-        - The *Lookup* action finds a text in the last document found by Search or returns “no more results” if the text is not found. 
+        - The *Lookup* action looks up a text in the last document found by Search and returns sentences that contain the text or “no more results” if the text is not found. You should only perform Lookup after Search.  
         - The *Finish* action submits one of the three answers: SUPPORTS, REFUTES, or NOT ENOUGH INFO about the claim.''')
         
         note = st.markdown(":red[Note that you should make your decision based ONLY on the **Observations** on this interface. You will reach wrong answers if you rely on information from Wikipedia or ChatGPT.]")
@@ -569,6 +569,12 @@ def main_study():
 
         else:
             raise NotImplementedError
+        if "condition2screenshots" not in st.session_state:
+            st.session_state['condition2screenshots'] = {
+                                "C. hai-answer": ["data/images/hai-answer-1.png", "data/images/hai-answer-2.png", "data/images/hai-answer-3.png", "data/images/hai-answer-4.png"], 
+                                "D. hai-static-chain": ["data/images/hai-static-chain-1.png", "data/images/hai-static-chain-2.png", "data/images/hai-static-chain-3.png", "data/images/hai-static-chain-4.png"], 
+                                "I. hai-regenerate": ["data/images/hai-regenerate-1.png", "data/images/hai-regenerate-2.png", "data/images/hai-regenerate-3.png", "data/images/hai-regenerate-4.png", "data/images/hai-regenerate-5.png"]
+                            }
         screenshots = st.session_state['condition2screenshots'][st.session_state.condition]
         for i, screenshot in enumerate(screenshots):
             st.image(screenshot, caption=f"Step {i+1}")
@@ -628,15 +634,16 @@ def main_study():
             st.session_state["next_clicked"] = False
         else:
             total_num = len(st.session_state['train_ids']) + len(st.session_state['test_ids'])
-            st.session_state[idx]['actions'] = st.session_state['answer']
-            st.session_state.count += 1
-            if st.session_state.condition.find("regenerate") > -1:
-                logger.write_to_user_sheet([st.session_state.username, idx, st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
-            else:
-                logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
             if st.session_state.count == total_num:
                 # st.warning("You're at the end of all examples. There is no next example.", icon="⚠️")
                 st.session_state.page = "end_tutorial" #"survey"
-            st.session_state["next_clicked"] = False
-            st.rerun()
+            else:
+                st.session_state[idx]['actions'].append(st.session_state['answer'])
+                st.session_state.count += 1
+                if st.session_state.condition.find("regenerate") > -1:
+                    logger.write_to_user_sheet([st.session_state.username, idx, st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
+                else:
+                    logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
 
+        st.session_state["next_clicked"] = False
+        st.rerun()

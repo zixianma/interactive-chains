@@ -20,7 +20,7 @@ def instruction():
                   
     action_definitions = st.markdown('''
     - The *Search* action searches for the document that's the most related to the keyword you enter. 
-    - The *Lookup* action finds a text in the last document found by Search or returns “no more results” if the text is not found. 
+    - The *Lookup* action looks up a text in the last document found by Search and returns sentences that contain the text or “no more results” if the text is not found. You should only perform Lookup after Search.  
     - The *Finish* action submits one of the three answers: SUPPORTS, REFUTES, or NOT ENOUGH INFO about the claim.''')
     
     # if st.session_state.condition == "C. hai-answer":
