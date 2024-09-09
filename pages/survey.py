@@ -439,6 +439,23 @@ def survey():
         st.session_state.last_progress = check_user_data()
         print(f'sanity check: {st.session_state.last_progress}')
 
+    st.markdown(
+        """
+        <style>
+        /* Increase the font size of the radio button header (only the first label) */
+        div[class*="stRadio"] > label > div[data-testid="stMarkdownContainer"] > p {
+            font-size: 36px !important;
+        }
+
+        /* Increase the font size of the radio button options */
+        div[role='radiogroup'] label div p {
+            font-size: 24px !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     # Create a placeholder for dynamic content
     placeholder = st.empty()
 

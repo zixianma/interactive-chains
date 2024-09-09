@@ -18,14 +18,13 @@ def main():
         [data-testid="stSidebar"][aria-expanded="true"]{
             min-width: 600px;
         }
-        /* Increase the font size of the radio button header (only the first label) */
-        div[class*="stRadio"] > label > div[data-testid="stMarkdownContainer"] > p {
-            font-size: 36px !important;
-        }
-
-        /* Increase the font size of the radio button options */
-        div[role='radiogroup'] label div p {
+        /* Increase the font size of the radio button header */
+        .stRadio label p {
             font-size: 24px !important;
+        }
+        /* Increase the font size of the radio button options */
+        .stRadio div[data-baseweb="radio"] div.st-cx p {
+            font-size: 22px !important;
         }
         /* slider text */
         div[class*="stSlider"] > label > div[data-testid="stMarkdownContainer"] > p {

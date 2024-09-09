@@ -125,8 +125,8 @@ def submit_consent(username_input):
                 all_values = st.session_state['user_worksheet'].get_all_values()
                 if len(all_values) <= 1:
                     st.session_state.questions_done = -1
-                elif len(all_values) > 30: # idk how many questions we have but the point is we can skip it and not go into the else which may break the system.
-                    st.session_state.questions_done = 30 
+                elif len(all_values) >= 37: # idk how many questions we have but the point is we can skip it and not go into the else which may break the system.
+                    st.session_state.questions_done = 36
                 else:
                     last_row = all_values[-1]
                     print(last_row)
