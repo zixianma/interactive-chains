@@ -365,7 +365,22 @@ def ai_usage_questions():
 
 def tasks_demand_questions():
     if 'time_spent' not in st.session_state:
-        st.session_state.time_spent = datetime.now()
+        st.session_state.time_spent = datetime.now()    
+    if 'mental_moved' not in st.session_state:
+        st.session_state.mental_moved = False
+    if 'success_moved' not in st.session_state:
+        st.session_state.success_moved = False
+    if 'effort_moved' not in st.session_state:
+        st.session_state.effort_moved = False
+    if 'pace_moved' not in st.session_state:
+        st.session_state.pace_moved = False
+    if 'stress_moved' not in st.session_state:
+        st.session_state.stress_moved = False
+
+    # Function to update slider movement state
+    def check_slider_movement(slider_name, slider_value):
+        if slider_value != 50:
+            st.session_state[slider_name] = True
     
     st.markdown(
         """
@@ -392,18 +407,33 @@ def tasks_demand_questions():
     st.session_state.new_solutions = st.radio("I really enjoy a task that involves coming up with new solutions to problems.", options, horizontal=True, key="new_solutions_slider")
     st.session_state.difficulty = st.radio("I would prefer a task that is intellectual, difficult, and important to one that is somewhat important but does not require much thought.", options, horizontal=True, key="difficulty_slider")
 
+    # Display the sliders and update movement state directly
     st.subheader("Reflect on how you feel after answering all of the questions")
-    st.session_state.mental_demand = st.slider("How mentally demanding were the tasks?", 0, 100, step=5, key="mental_slider")
-    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
-    st.session_state.success = st.slider("How successful were you in accomplishing what you were asked to do?", 0, 100, step=5, key='success_slider')
-    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
-    st.session_state.effort = st.slider("How hard did you have to work to accomplish your level of performance?", 0, 100, step=5,key="effort_slider")
-    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
-    st.session_state.pace = st.slider("How hurried or rushed were the pace of the tasks?", 0, 100, step=5, key="pace_slider")
-    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
-    st.session_state.stress = st.slider("How insecure, discouraged, irritated, stressed, and annoyed were you?", 0, 100, step=5, key="stress_slider")
+
+    st.session_state.mental_demand = st.slider(
+        "How mentally demanding were the tasks?", 0, 100, step=5, key="mental_slider", value=50)
+    check_slider_movement('mental_moved', st.session_state.mental_demand)
     st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
 
+    st.session_state.success = st.slider(
+        "How successful were you in accomplishing what you were asked to do?", 0, 100, step=5, key='success_slider', value=50)
+    check_slider_movement('success_moved', st.session_state.success)
+    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
+
+    st.session_state.effort = st.slider(
+        "How hard did you have to work to accomplish your level of performance?", 0, 100, step=5, key="effort_slider", value=50)
+    check_slider_movement('effort_moved', st.session_state.effort)
+    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
+
+    st.session_state.pace = st.slider(
+        "How hurried or rushed were the pace of the tasks?", 0, 100, step=5, key="pace_slider", value=50)
+    check_slider_movement('pace_moved', st.session_state.pace)
+    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
+
+    st.session_state.stress = st.slider(
+        "How insecure, discouraged, irritated, stressed, and annoyed were you?", 0, 100, step=5, key="stress_slider", value=50)
+    check_slider_movement('stress_moved', st.session_state.stress)
+    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
     
     if st.button("Next", key="tasks_demand_questions_next"):
         if (
@@ -415,6 +445,10 @@ def tasks_demand_questions():
             st.session_state.difficulty == 'Select an Option'
             ):
             st.error("Please make sure to select an option for all questions before submitting.")
+        elif (any([not st.session_state.mental_moved, not st.session_state.success_moved, 
+                not st.session_state.effort_moved, not st.session_state.pace_moved, 
+                not st.session_state.stress_moved])):
+            st.error("Please interact with the sldiers")
         else:
             end_time = datetime.now()
             st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
