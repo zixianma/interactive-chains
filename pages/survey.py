@@ -4,7 +4,11 @@ from datetime import datetime
 import pages.utils.logger as logger
 import gspread
 import os
+from google.oauth2 import service_account
 from google.oauth2.service_account import Credentials
+from googleapiclient.http import MediaIoBaseUpload
+from googleapiclient.discovery import build
+import time
 
 def check_user_data():
     toml_data = st.secrets # toml.load(".streamlit/secrets.toml")
@@ -35,6 +39,25 @@ def check_user_data():
     else:
         return 1
 
+def upload_to_drive(file, file_name):
+    toml_data = st.secrets
+    credentials_data = toml_data["connections"]["gsheets"]
+    # Authenticate with Google Drive using the credentials
+    credentials = service_account.Credentials.from_service_account_info(credentials_data)
+    drive_service = build('drive', 'v3', credentials=credentials)
+    media = MediaIoBaseUpload(file, mimetype='video/webm')
+    new_file_name = f"{st.session_state.username}_{st.session_state.condition}_{file_name}"
+    file_metadata = {
+        'name': new_file_name,
+        'parents': ['1qTeHaCMkaRWJ4P2Jq9qmkdDWs7BvgeuH']  # Replace with your Google Drive folder ID
+    }
+    uploaded_file = drive_service.files().create(
+        body=file_metadata,
+        media_body=media,
+        fields='id'
+    ).execute()
+
+    return uploaded_file.get('id')
 
 def update_user_data(page_finished = "", column_idx = -1):
     toml_data = st.secrets # toml.load(".streamlit/secrets.toml")
@@ -99,21 +122,27 @@ def video_submission():
             st.success("Video uploaded successfully!")            
             # Display the video in the app
             st.video(uploaded_video)
-
-            # Create the folder if it doesn't exist
-            os.makedirs("uploaded_videos", exist_ok=True)
-
-            # Save the uploaded video file
-            with open(f"uploaded_videos/{uploaded_video.name}", "wb") as f:
-                f.write(uploaded_video.getbuffer())
             
-            print(f"Video saved successfully as: uploaded_videos/{uploaded_video.name}")
-            if st.button("Submit", key="submit_recording", disabled=False):
+            if st.button("Submit", key="submit_recording", disabled=st.session_state.uploading):
+                 # Disable the button and show progress
+                st.session_state.uploading = True
+
+                # Progress bar
+                progress_bar = st.progress(0)
+
+                # Simulate upload progress
+                for i in range(1, 101):
+                    progress_bar.progress(i)
+                    time.sleep(1.3)  # Simulate upload delay?
+
+                video_id = upload_to_drive(uploaded_video, uploaded_video.name)
+                print(f"Video uploaded to Google Drive successfully! File ID: {video_id}")
                 update_user_data("complete", 6)
                 st.session_state.last_progress = -1
+                st.session_state.uploading = False
                 st.rerun()
         except Exception as e:
-            print("Error with the video save: {e}")
+            print(f"Error with the video save: {e}")
 
 
 def free_form_questions():
@@ -340,6 +369,10 @@ def survey():
     # Initialize the page in session state if not already set
     if 'qa_page' not in st.session_state:
         st.session_state.qa_page = 'tasks_demand'
+    
+    # Initialize session state for the submit button and progress bar
+    if 'uploading' not in st.session_state:
+        st.session_state.uploading = False
     
     if 'last_progress' not in st.session_state:
         st.session_state.last_progress = check_user_data()
