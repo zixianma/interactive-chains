@@ -209,8 +209,7 @@ def display_right_column(env, idx, right_column, condition):
     if condition == "A. human" or condition == "C. hai-answer" or condition == "D. hai-static-chain":
         # right_column.subheader("Perform a Search or Lookup action:")
         right_column.markdown("#### Perform a Search or Lookup action:")
-       
-        search_query = right_column.text_input('Search', key=f"search {idx}")
+        search_query = right_column.text_input('Search', placeholder="Penibaetic System", key=f"search {idx}")
         if search_query:
             if search_query != st.session_state[idx].get(f"last_search_{idx}"):
                 st.session_state[idx][f"last_search_{idx}"] = search_query
@@ -221,7 +220,7 @@ def display_right_column(env, idx, right_column, condition):
             right_column.chat_message("user", avatar="🌐").write(obs)
             st.session_state[idx]['observations'].append(obs)
 
-        lookup_query = right_column.text_input('Lookup', key=f"lookup {idx}")
+        lookup_query = right_column.text_input('Lookup', placeholder="mountain ranges", key=f"lookup {idx}")
 
         if lookup_query:
             if lookup_query != st.session_state[idx].get(f"last_lookup_{idx}"):
@@ -253,13 +252,13 @@ def display_right_column(env, idx, right_column, condition):
             right_column.write(f'Submitted: {answer}')
             if idx in st.session_state['train_ids']:
                 if r == 1:
-                    output = "Your answer is right! :)\n"
+                    output = "**:green[Your answer is right! :)]**\n"
                 else:
-                    output = f"Your answer is wrong :( The correct answer is {info['gt_answer']}.\n"
+                    output = "**:red[Your answer is wrong :(]**\n"
                 if idx in st.session_state['train_id2explanation']:
                     expl = st.session_state['train_id2explanation'][idx]
                     output += expl
-                right_column.write(f'{output}')
+                right_column.markdown(f'{output}')
             # st.session_state[idx]['submitted'] = False
         next = right_column.button("Next question", on_click=click_next)
     else:
@@ -424,9 +423,9 @@ def display_right_column(env, idx, right_column, condition):
                 # right_column.write(f'{obs}')
                 if idx in st.session_state['train_ids']:
                     if r == 1:
-                        output = "Your answer is right! :)"
+                        output = "**:green[Your answer is right! :)]**\n"
                     else:
-                        output = f"Your answer is wrong :( The correct answer is {info['gt_answer']}.\n"
+                        output = "**:red[Your answer is wrong :(]**\n"
                     if idx in st.session_state['train_id2explanation']:
                         expl = st.session_state['train_id2explanation'][idx]
                         output += expl
@@ -611,8 +610,11 @@ def main_study():
 
     if 'train_id2explanation' not in st.session_state:
         st.session_state['train_id2explanation'] = {
-        4118: "The correct action is Search[Stephen Hillenburg], which yields the result below that supports the claim:\nStephen McDannell Hillenburg (August 21, 1961 – November 26, 2018) was an American animator, writer, producer, director, voice actor, marine science educator, and entrepreneur. He was best known for creating the animated television series SpongeBob SquarePants for Nickelodeon in 1999. Serving as the showrunner for its first three seasons, and again from season nine until his death, the show has become the fifth-longest-running American animated series. He also provided the original voice of Patchy's pet, Potty the Parrot.. Born in Lawton, Oklahoma and raised in Anaheim, California, Hillenburg became fascinated with the ocean as a child and developed an interest in art.",
-        5726: "The correct action is Search[Emma Watson], which yields the result below that supports the claim: Emma Charlotte Duerre Watson (born 15 April 1990) is an English actress. Known for her roles in both blockbusters and independent films, she has received a selection of accolades, including a Young Artist Award and three MTV Movie Awards. Watson has been ranked among the world's highest-paid actresses by Forbes and Vanity Fair, and was named one of the 100 most influential people in the world by Time magazine in 2015.[1][2][3]. Watson attended the Dragon School and trained in acting at the Oxford branch of Stagecoach Theatre Arts. As a child, she rose to stardom after landing her first professional acting role as Hermione Granger in the Harry Potter film series, having previously acted only in school plays.",  
+        4050: 'The correct answer is SUPPORTS because the result of Search[Penibaetic System] indicates that "The Penibaetic System is the southernmost of the three systems of mountain ranges".',
+        6996: 'The correct answer is REFUTES because the result of Search[CHiPs] indicates that "CHiPs is an American crime drama television series" instead of a "German film".',
+        802: 'The correct answer is NOT ENOUGH INFO because Search[Noah Cyrus] and Lookup[Miley Cyrus] only return "Miley Cyrus (sister)" with no mentions of Miley Cyrus collaborating with Noah Cyrus. Similarly, Search[Miley Cyrus] and Lookup[Noah Cyrus] only return "Noah Cyrus (sister)" with no mentions of collaboration.',
+        4118: "The correct answer is SUPPORTS because Search[Stephen Hillenburg] yields the result below that supports the claim:\nStephen McDannell Hillenburg (August 21, 1961 – November 26, 2018) was an American animator...Born in Lawton, Oklahoma and raised in Anaheim, California, Hillenburg became fascinated with the ocean as a child and developed an interest in art.",
+        5726: "The correct answer is SUPPORTS because Search[Emma Watson] yields the result below that supports the claim: Emma Charlotte Duerre Watson (born 15 April 1990) is an English actress...",  
         1557: "The correct answer is NOT ENOUGH INFO, because the wiki page about folklore does not mention anything about pratfalls: \nFolklore is the body of expressive culture shared by a particular group of people, culture or subculture.[1] This includes oral traditions such as tales, myths, legends,[a] proverbs, poems, jokes, and other oral traditions.[3][4] This also includes material culture, such as traditional building styles common to the group. Folklore also encompasses customary lore, taking actions for folk beliefs, and the forms and rituals of celebrations such as Christmas, weddings, folk dances, and initiation rites.[3]. Each one of these, either singly or in combination, is considered a folklore artifact or traditional cultural expression. Just as essential as the form, folklore also encompasses the transmission of these artifacts from one region to another or from one generation to the next. Folklore is not something one can typically gain from a formal school curriculum or study in the fine arts."
     }
     # if prev:

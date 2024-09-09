@@ -143,8 +143,9 @@ class WikiEnv(gym.Env):
       if self.lookup_cnt >= len(self.lookup_list):
         self.obs = "No more results.\n"
       else:
-        self.obs = f"(Result {self.lookup_cnt + 1} / {len(self.lookup_list)}) " + self.lookup_list[self.lookup_cnt]
-        self.lookup_cnt += 1
+        self.obs = "\n".join([f"{i+1}. {self.lookup_list[i]}" for i in range(len(self.lookup_list))])
+        # self.obs = f"(Result {self.lookup_cnt + 1} / {len(self.lookup_list)}) " + self.lookup_list[self.lookup_cnt]
+        # self.lookup_cnt += 1
     elif action.startswith("finish[") and action.endswith("]"):
       answer = action[len("finish["):-1]
       self.answer = answer
