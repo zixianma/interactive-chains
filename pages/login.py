@@ -59,7 +59,7 @@ def find_user_row(client, location_data):
     worksheet = sheet.worksheet("Pilot User Data")
     records = worksheet.get_all_records()
     for idx, record in enumerate(records, start=2):  # start=2 to account for header row
-        if record['Username'] == st.session_state.username and record['IP'] == location_data['ip']:
+        if record['Username'] == st.session_state.username:
             return idx, record
     return None, None
 
@@ -68,9 +68,9 @@ def update_pilot_user_data(client, location_data, seen=False, idx = -1):
     worksheet = sheet.worksheet("Pilot User Data")
     if seen:
         # User exists, update their visit count and last visit time
-        visits = int(worksheet.cell(idx, 3).value) + 1  # Column 3 is 'Visits'
-        worksheet.update_cell(idx, 3, visits)
-        visit_times = worksheet.cell(idx, 4).value  # Column 4 is 'Visit Times'
+        visits = int(worksheet.cell(idx, 2).value) + 1  # Column 3 is 'Visits'
+        worksheet.update_cell(idx, 2, visits)
+        visit_times = worksheet.cell(idx, 3).value  # Column 4 is 'Visit Times'
 
         # Convert visit_times string back to a list
         if visit_times:
@@ -80,10 +80,10 @@ def update_pilot_user_data(client, location_data, seen=False, idx = -1):
 
         # Append the new visit time
         visit_times_list.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        worksheet.update_cell(idx, 4, ', '.join(visit_times_list))
+        worksheet.update_cell(idx, 3, ', '.join(visit_times_list))
     else:
         # User does not exist, add a new row
-        new_row = [st.session_state.username, str(location_data['ip']), 1, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), st.session_state.condition, str(location_data)]
+        new_row = [st.session_state.username, 1, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), st.session_state.condition]
         worksheet.append_row(new_row)
 
 def submit_consent(username_input):
@@ -125,8 +125,8 @@ def submit_consent(username_input):
                 all_values = st.session_state['user_worksheet'].get_all_values()
                 if len(all_values) <= 1:
                     st.session_state.questions_done = -1
-                elif len(all_values) > 30: # idk how many questions we have but the point is we can skip it and not go into the else which may break the system.
-                    st.session_state.questions_done = 30 
+                elif len(all_values) >= 37: # idk how many questions we have but the point is we can skip it and not go into the else which may break the system.
+                    st.session_state.questions_done = 36
                 else:
                     last_row = all_values[-1]
                     print(last_row)
