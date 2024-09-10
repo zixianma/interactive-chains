@@ -113,7 +113,6 @@ def record_data_clear_state(keys_list = [], header=False, survey_type = ""):
     keys = keys_list
     for key in keys:
         if key in st.session_state:
-            # will change this later, doing as sanity checker for now
             responses.append((key, st.session_state[key]))
     logger.write_survey_response(responses, header, survey_type)
     # Delete all keys in the list
@@ -293,7 +292,7 @@ def interaction_questions():
             end_time = datetime.now()
             st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
-            record_data_clear_state(['code_completion_helpful', 'highlights_helpful', 'willing_to_pay', 'willing_to_pay_highlights', 'code_completion_distracting', 'highlights_distracting', 'time_spent'])
+            record_data_clear_state(['answer_helpful', 'chain_helpful', 'search_helpful', 'lookup_helpful', 'interaction_helpful', 'chain_edit_helpful', 'thought_edit_helpful', 'action_edit_helpful', 'update_output_helpful' ,'time_spent'])
             update_user_data("complete", 4)
             st.session_state.last_progress = 4
             st.rerun()
@@ -358,7 +357,7 @@ def ai_usage_questions():
             end_time = datetime.now()
             st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
-            record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_answer_helpful', 'ai_reasoning_chain_usage', 'ai_reasoning_chain_helpful', 'interaction_usage', 'interaction_helpfulness', 'explanation_usage', 'explanation_helpfulness', 'time_spent'])
+            record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_reasoning_chain_usage', 'interaction_usage', 'human_search', 'human_lookup' 'time_spent'])
             update_user_data("complete", 3)
             st.session_state.last_progress = 3
             st.rerun()

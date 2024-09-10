@@ -634,16 +634,15 @@ def main_study():
             st.session_state["next_clicked"] = False
         else:
             total_num = len(st.session_state['train_ids']) + len(st.session_state['test_ids'])
+            st.session_state[idx]['actions'].append(f"finish[{st.session_state['answer']}")
+            st.session_state.count += 1
+            if st.session_state.condition.find("regenerate") > -1:
+                logger.write_to_user_sheet([st.session_state.username, idx, st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
+            else:
+                logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
             if st.session_state.count == total_num:
                 # st.warning("You're at the end of all examples. There is no next example.", icon="⚠️")
                 st.session_state.page = "end_tutorial" #"survey"
-            else:
-                st.session_state[idx]['actions'].append(st.session_state['answer'])
-                st.session_state.count += 1
-                if st.session_state.condition.find("regenerate") > -1:
-                    logger.write_to_user_sheet([st.session_state.username, idx, st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
-                else:
-                    logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
 
         st.session_state["next_clicked"] = False
         st.rerun()
