@@ -150,7 +150,7 @@ def video_submission():
 
                 # Call function to upload the large video to Google Drive
                 video_id = upload_to_drive(uploaded_video, uploaded_video.name)
-                st.success(f"Video uploaded to Google Drive successfully!")
+                st.success(f"Video uploaded successfully!")
                 print(f"Video uploaded to Google Drive successfully! File ID: {video_id}")
                 # Update session state and reset after completion
                 update_user_data("complete", 6)
@@ -219,9 +219,9 @@ def free_form_questions():
             st.error("Please write at least 10 words regarding how you interacted with the model.")
         else:
             end_time = datetime.now()
-            st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
+            st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             # submit data
-            record_data_clear_state(['strategy', 'error_finding', 'ai_model_usage', 'ai_model_interaction_usage', 'misc_comments', 'time_spent'])
+            record_data_clear_state(['strategy', 'error_finding', 'ai_model_usage', 'ai_model_interaction_usage', 'misc_comments', 'elapsed_time'])
             update_user_data("complete", 5)
             # create clickable link so worker can be paid
             st.session_state.last_progress = 5
@@ -290,9 +290,9 @@ def interaction_questions():
             st.error("Please make sure to select an option for all questions before submitting.")
         else:
             end_time = datetime.now()
-            st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
+            st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
-            record_data_clear_state(['answer_helpful', 'chain_helpful', 'search_helpful', 'lookup_helpful', 'interaction_helpful', 'chain_edit_helpful', 'thought_edit_helpful', 'action_edit_helpful', 'update_output_helpful' ,'time_spent'])
+            record_data_clear_state(['answer_helpful', 'chain_helpful', 'search_helpful', 'lookup_helpful', 'interaction_helpful', 'chain_edit_helpful', 'thought_edit_helpful', 'action_edit_helpful', 'update_output_helpful' ,'elapsed_time'])
             update_user_data("complete", 4)
             st.session_state.last_progress = 4
             st.rerun()
@@ -355,9 +355,9 @@ def ai_usage_questions():
             st.error("Please make sure to select an option for all questions before submitting.")
         else:
             end_time = datetime.now()
-            st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
+            st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
-            record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_reasoning_chain_usage', 'interaction_usage', 'human_search', 'human_lookup' 'time_spent'])
+            record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_reasoning_chain_usage', 'interaction_usage', 'human_search', 'human_lookup' 'elapsed_time'])
             update_user_data("complete", 3)
             st.session_state.last_progress = 3
             st.rerun()
@@ -450,9 +450,9 @@ def tasks_demand_questions():
             st.error("Please interact with the sldiers")
         else:
             end_time = datetime.now()
-            st.session_state.time_spent = str((end_time - st.session_state.time_spent).total_seconds())
+            st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
-            record_data_clear_state( ['mental_demand', 'success', 'effort', 'pace', 'stress', 'complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'time_spent'], header=True, survey_type="FEEDBACK")
+            record_data_clear_state( ['mental_demand', 'success', 'effort', 'pace', 'stress', 'complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'elapsed_time'], header=True, survey_type="FEEDBACK")
             update_user_data() # since this is the first call, we can have this be parameterless
             st.session_state.last_progress = 2
             st.rerun()

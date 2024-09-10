@@ -68,9 +68,9 @@ def update_pilot_user_data(client, location_data, seen=False, idx = -1):
     worksheet = sheet.worksheet("Pilot User Data")
     if seen:
         # User exists, update their visit count and last visit time
-        visits = int(worksheet.cell(idx, 2).value) + 1  # Column 3 is 'Visits'
-        worksheet.update_cell(idx, 2, visits)
-        visit_times = worksheet.cell(idx, 3).value  # Column 4 is 'Visit Times'
+        visits = int(worksheet.cell(idx, 3).value) + 1  # Column 3 is 'Visits'
+        worksheet.update_cell(idx, 3, visits)
+        visit_times = worksheet.cell(idx, 4).value  # Column 4 is 'Visit Times'
 
         # Convert visit_times string back to a list
         if visit_times:
@@ -80,10 +80,10 @@ def update_pilot_user_data(client, location_data, seen=False, idx = -1):
 
         # Append the new visit time
         visit_times_list.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        worksheet.update_cell(idx, 3, ', '.join(visit_times_list))
+        worksheet.update_cell(idx, 4, ', '.join(visit_times_list))
     else:
         # User does not exist, add a new row
-        new_row = [st.session_state.username, 1, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), st.session_state.condition]
+        new_row = [st.session_state.username, "empty IP string", 1, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), st.session_state.condition]
         worksheet.append_row(new_row)
 
 def submit_consent(username_input):
