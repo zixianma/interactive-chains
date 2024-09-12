@@ -357,7 +357,7 @@ def ai_usage_questions():
             end_time = datetime.now()
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
-            record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_reasoning_chain_usage', 'interaction_usage', 'human_search', 'human_lookup' 'elapsed_time'])
+            record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_reasoning_chain_usage', 'interaction_usage', 'human_search', 'human_lookup', 'elapsed_time'])
             update_user_data("complete", 3)
             st.session_state.last_progress = 3
             st.rerun()
