@@ -125,7 +125,7 @@ def submit_consent(username_input):
                 st.session_state['demographics'] = exponential_backoff(st.session_state['sheet'].worksheet, 'Demographics')  
                 all_values = exponential_backoff(st.session_state['user_worksheet'].get, 'H2:H50')
                 print(f'all values: {all_values}')
-                if len(all_values) == 0:
+                if not all_values or (len(all_values) == 1 and not all_values[0]):
                     st.session_state.questions_done = -1
                 elif len(all_values) >= 37:
                     st.session_state.questions_done = 36
@@ -133,6 +133,7 @@ def submit_consent(username_input):
                     last_question_answered = all_values[-1]
                     print(f'last_question_answered: {last_question_answered}')
                     st.session_state.questions_done = int(last_question_answered[0])
+                print(f'st.session_state.questions_done: {st.session_state.questions_done}')
             else:
                 pilot_worksheet = exponential_backoff(condition_counts_sheet.worksheet, "Pilot")
                 condition_counts = get_condition_counts(pilot_worksheet)
