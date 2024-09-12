@@ -110,7 +110,7 @@ def submit_consent(username_input):
             credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
             client = gspread.authorize(credentials)
 
-            condition_counts_sheet = exponential_backoff(client.open, "Condition Counts")  
+            st.session_state.condition_counts_sheet = condition_counts_sheet = exponential_backoff(client.open, "Condition Counts")  
             row, user_condition = find_user_row(condition_counts_sheet)
 
             if user_condition:
