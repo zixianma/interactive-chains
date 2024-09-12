@@ -4,28 +4,29 @@ from streamlit_float import *
 from google.oauth2.service_account import Credentials
 import toml
 import random
+from pages.utils.exponential_backoff import exponential_backoff
 from pages.utils.logger import *
 import toml
 import gspread
 from google.oauth2.service_account import Credentials
 
-def get_user_ip():
-    try:
-        ip = requests.get('https://api64.ipify.org?format=json').json()["ip"]
-        response = requests.get(f'https://ipinfo.io/{ip}/json')
-        data = response.json()
-        location = {
-            'ip': data.get('ip'),
-            'city': data.get('city'),
-            'region': data.get('region'),
-            'country': data.get('country'),
-            'loc': data.get('loc'),  # Latitude and Longitude
-            'org': data.get('org'),
-            'timezone': data.get('timezone')
-        }
-        return location
-    except Exception as e:
-        return {"error": str(e)}
+# def get_user_ip():
+#     try:
+#         ip = requests.get('https://api64.ipify.org?format=json').json()["ip"]
+#         response = requests.get(f'https://ipinfo.io/{ip}/json')
+#         data = response.json()
+#         location = {
+#             'ip': data.get('ip'),
+#             'city': data.get('city'),
+#             'region': data.get('region'),
+#             'country': data.get('country'),
+#             'loc': data.get('loc'),  # Latitude and Longitude
+#             'org': data.get('org'),
+#             'timezone': data.get('timezone')
+#         }
+#         return location
+#     except Exception as e:
+#         return {"error": str(e)}
 
 # Function to assign a condition based on the counts
 def assign_condition(condition_counts):
@@ -40,38 +41,36 @@ def assign_condition(condition_counts):
     return chosen_condition
 
 # Retrieve condition counts from Google Sheets
-def get_condition_counts(client):
-    sheet = client.open("Condition Counts")
-    worksheet = sheet.worksheet("Pilot")
-    records = worksheet.get_all_records()
-
+def get_condition_counts(pilot_worksheet):
+    records = exponential_backoff(pilot_worksheet.get_all_records)
     condition_counts = {record['Condition']: record['Count'] for record in records}
-    return condition_counts, worksheet
+    return condition_counts
 
 # Update condition count in Google Sheets
 def update_condition_count(worksheet, condition, count):
-    cell = worksheet.find(condition)
-    worksheet.update_cell(cell.row, cell.col + 1, count)
+    cell = exponential_backoff(worksheet.find, condition)
+    exponential_backoff(worksheet.update_cell, cell.row, cell.col + 1, count)
 
 # Find a user by username and IP
-def find_user_row(client, location_data):
-    sheet = client.open("Condition Counts")
-    worksheet = sheet.worksheet("Pilot User Data")
-    records = worksheet.get_all_records()
-    for idx, record in enumerate(records, start=2):  # start=2 to account for header row
-        if record['Username'] == st.session_state.username:
-            return idx, record
+def find_user_row(condition_counts_sheet):
+    pilot_user_data_sheet = exponential_backoff(condition_counts_sheet.worksheet, "Pilot User Data")
+    usernames = exponential_backoff(pilot_user_data_sheet.get, 'A2:A301')
+
+    for idx, record in enumerate(usernames, start=2):  # start=2 to account for header row
+        if record[0] == st.session_state.username:
+            # if the username exists, then we can fetch the row
+            print(f'record found for {idx}')
+            user_condition = exponential_backoff(pilot_user_data_sheet.get, f'D{idx}')
+            return idx, user_condition[0][0]
     return None, None
 
-def update_pilot_user_data(client, location_data, seen=False, idx = -1):
-    sheet = client.open("Condition Counts")
-    worksheet = sheet.worksheet("Pilot User Data")
+def update_pilot_user_data(pilot_user_data_sheet, seen=False, idx = -1):
     if seen:
         # User exists, update their visit count and last visit time
-        visits = int(worksheet.cell(idx, 3).value) + 1  # Column 3 is 'Visits'
-        worksheet.update_cell(idx, 3, visits)
-        visit_times = worksheet.cell(idx, 4).value  # Column 4 is 'Visit Times'
+        visits = int(exponential_backoff(pilot_user_data_sheet.cell, idx, 2).value) + 1
+        visit_times = exponential_backoff(pilot_user_data_sheet.cell, idx, 3).value
 
+        cell_range = f'B{idx}:C{idx}'
         # Convert visit_times string back to a list
         if visit_times:
             visit_times_list = visit_times.split(', ')
@@ -80,11 +79,18 @@ def update_pilot_user_data(client, location_data, seen=False, idx = -1):
 
         # Append the new visit time
         visit_times_list.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        worksheet.update_cell(idx, 4, ', '.join(visit_times_list))
+
+        # Batch update the visit time and visits count for this user
+        values = [[visits,', '.join(visit_times_list)]]
+        updates = {
+            'range': cell_range,
+            'values': values
+        }
+        exponential_backoff(pilot_user_data_sheet.update, cell_range, values)
     else:
         # User does not exist, add a new row
-        new_row = [st.session_state.username, "empty IP string", 1, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), st.session_state.condition]
-        worksheet.append_row(new_row)
+        new_row = [st.session_state.username, 1, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), st.session_state.condition]
+        exponential_backoff(pilot_user_data_sheet.append_row, new_row)
 
 def submit_consent(username_input):
     if not username_input or username_input == "":
@@ -92,7 +98,6 @@ def submit_consent(username_input):
     else:
         st.session_state['username_submitted'] = True
         st.session_state.username = st.session_state.username_input
-        # st.session_state['username_submitted'] = True
 
         if 'sheet' not in st.session_state:
             toml_data = st.secrets # toml.load(".streamlit/secrets.toml")
@@ -104,58 +109,41 @@ def submit_consent(username_input):
             # Authenticate using the credentials from the TOML file
             credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
             client = gspread.authorize(credentials)
-            location_data = get_user_ip()
 
-            # check if user exists prior, if so we re-route them to where they last were + keep same condition. otherwise update condition count + log
-            row, user_record = find_user_row(client, location_data)
+            condition_counts_sheet = exponential_backoff(client.open, "Condition Counts")  
+            row, user_condition = find_user_row(condition_counts_sheet)
 
-            if user_record:
-                # need to fetch the condition they were on and set it for them
-                # also need to get the question_idx
-                # update visit count?
-                update_pilot_user_data(client, location_data, seen=True, idx = row)
-                # st.write("continuing where you left off: " + str(user_record['Condition']))
-                print("continuing where you left off: " + str(user_record['Condition']))
-                st.session_state.condition = user_record['Condition']
+            if user_condition:
+                pilot_user_data_sheet = exponential_backoff(condition_counts_sheet.worksheet, "Pilot User Data")  
+                update_pilot_user_data(pilot_user_data_sheet, seen=True, idx=row)
+                print("continuing where you left off: " + str(user_condition))
+                st.session_state.condition = str(user_condition)
                 sheet_condition = st.session_state.condition.split(' ', 1)[1]
-                # now that we have condition, open the corresponding condition sheet to get last question idx
-                st.session_state['sheet'] = client.open(sheet_condition)
-                st.session_state['user_worksheet'] = st.session_state['sheet'].worksheet(st.session_state.username)
-                st.session_state['demographics'] = st.session_state['sheet'].worksheet('Demographics')
-                all_values = st.session_state['user_worksheet'].get_all_values()
-                if len(all_values) <= 1:
+                print(f'sheet condition {sheet_condition}')
+                st.session_state['sheet'] = exponential_backoff(client.open, sheet_condition)  
+                st.session_state['user_worksheet'] = exponential_backoff(st.session_state['sheet'].worksheet, st.session_state.username)  
+                st.session_state['demographics'] = exponential_backoff(st.session_state['sheet'].worksheet, 'Demographics')  
+                all_values = exponential_backoff(st.session_state['user_worksheet'].get, 'H2:H50')
+                print(f'all values: {all_values}')
+                if len(all_values) == 0:
                     st.session_state.questions_done = -1
-                elif len(all_values) >= 37: # idk how many questions we have but the point is we can skip it and not go into the else which may break the system.
+                elif len(all_values) >= 37:
                     st.session_state.questions_done = 36
                 else:
-                    last_row = all_values[-1]
-                    print(last_row)
-                    # we can compute this by taking the # of rows and subtract by 1 to include header to figure out # of questions?
-                    # condition-based - this wil change based on data.
-                    if st.session_state.condition == "I. hai-regenerate":
-                        st.session_state.questions_done = int(last_row[7]) # column of "number of questions completed"
-                    else:
-                        st.session_state.questions_done = int(last_row[8]) # column of "number of questions completed" for HAI-static-chain and hai-answer
+                    last_question_answered = all_values[-1]
+                    print(f'last_question_answered: {last_question_answered}')
+                    st.session_state.questions_done = int(last_question_answered[0])
             else:
-                # open sheet to get the count
-                condition_counts, worksheet = get_condition_counts(client)
-
-                # Assign a condition and update the count
+                pilot_worksheet = exponential_backoff(condition_counts_sheet.worksheet, "Pilot")
+                condition_counts = get_condition_counts(pilot_worksheet)
                 assigned_condition = assign_condition(condition_counts)
-                update_condition_count(worksheet, assigned_condition, condition_counts[assigned_condition])
-
-                print(f"You have been assigned to: {assigned_condition}") # debugging purposes
-
+                update_condition_count(pilot_worksheet, assigned_condition, condition_counts[assigned_condition])
+                print(f"You have been assigned to: {assigned_condition}")
                 st.session_state.condition = assigned_condition
-                # Open the Google Sheet by name based on condition
                 sheet_condition = st.session_state.condition.split(' ', 1)[1]
-                # print(f"after the substring: " + str(sheet_condition))
-                sheet = client.open(sheet_condition)
-                st.session_state['sheet'] = sheet
-
-                # record user in pilot user data
-                update_pilot_user_data(client, location_data)
-                
+                st.session_state['sheet'] = exponential_backoff(client.open, sheet_condition)
+                pilot_user_data_sheet = exponential_backoff(condition_counts_sheet.worksheet, "Pilot User Data")
+                update_pilot_user_data(pilot_user_data_sheet)
                 st.session_state.questions_done = -1
 
                 # make sheet per user
@@ -168,7 +156,7 @@ def submit_consent(username_input):
                 if 'demographics' not in st.session_state:
                     st.session_state['demographics'] = demo_worksheet
 
-        st.session_state.page =   "survey" # "end_tutorial" #"instruction" "main_study" "survey" # "demographics" #
+        st.session_state.page =   "demographics" # "end_tutorial" #"instruction" "main_study" "survey" # "demographics" #
 
 def login():
     # if 'username' not in st.session_state:
@@ -179,8 +167,7 @@ def login():
         if 'user_data' not in st.session_state:
             st.session_state.user_data = {
                 "visits": 0,
-                'last question idx done': -1,
-                'location data': get_user_ip()
+                'last question idx done': -1
             }
 
 

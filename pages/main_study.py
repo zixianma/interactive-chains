@@ -182,17 +182,6 @@ def display_right_column(env, idx, right_column, condition):
     def click_next():
         st.session_state["next_clicked"] = True
 
-    # make session state dict per question
-    if f"last_search_{idx}" not in st.session_state[idx]:
-        st.session_state[idx][f"last_search_{idx}"] = None
-    if f"last_lookup_{idx}" not in st.session_state[idx]:
-        st.session_state[idx][f"last_lookup_{idx}"] = None
-    if f"start_time_{idx}" not in st.session_state[idx]:
-        st.session_state[idx][f"start_time_{idx}"] = datetime.now()
-    if 'observations' not in st.session_state[idx]:
-        st.session_state[idx]['observations'] = []
-    if 'actions' not in st.session_state[idx]:
-        st.session_state[idx]['actions'] = []
     # env = st.session_state['env']
     question = env.reset(idx=idx) # st.session_state[idx]['question'] # 
     # make session state dict per question
@@ -202,8 +191,6 @@ def display_right_column(env, idx, right_column, condition):
         st.session_state[idx][f"last_lookup_{idx}"] = None
     if f"start_time_{idx}" not in st.session_state[idx]:
         st.session_state[idx][f"start_time_{idx}"] = datetime.now()
-    if 'observations' not in st.session_state[idx]:
-        st.session_state[idx]['observations'] = []
     if 'actions' not in st.session_state[idx]:
         st.session_state[idx]['actions'] = []
     if condition == "A. human" or condition == "C. hai-answer" or condition == "D. hai-static-chain":
@@ -218,7 +205,6 @@ def display_right_column(env, idx, right_column, condition):
             obs, r, done, info = step(env, f"search[{search_query}]")
             # right_column.write(obs)
             right_column.chat_message("user", avatar="🌐").write(obs)
-            st.session_state[idx]['observations'].append(obs)
 
         lookup_query = right_column.text_input('Lookup', placeholder="mountain ranges", key=f"lookup {idx}")
 
@@ -230,7 +216,6 @@ def display_right_column(env, idx, right_column, condition):
             obs, r, done, info = step(env, f"lookup[{lookup_query}]")
             # right_column.write(obs)
             right_column.chat_message("user", avatar="🌐").write(obs)
-            st.session_state[idx]['observations'].append(obs)
 
         form = right_column.form(key='user-form')
         answer = form.radio(
@@ -273,7 +258,7 @@ def display_right_column(env, idx, right_column, condition):
             if "generate_next_step" not in st.session_state[idx]:
                 st.session_state[idx]["generate_next_step"] = False
             if "model_output_per_run" not in st.session_state[idx]:
-                st.session_state[idx]["model_output_per_run"] = {0: st.session_state[idx]['curr_model_output']}
+                st.session_state[idx]["model_output_per_run"] = {0: st.session_state[idx]['curr_model_output'][:2]}
             if "ai_output_clicks" not in st.session_state[idx]:
                 st.session_state[idx]["ai_output_clicks"] = 0
             if "last_ai_button_click_time" not in st.session_state[idx]:
@@ -400,7 +385,7 @@ def display_right_column(env, idx, right_column, condition):
                             break
                     # turn off generate flag after a new output is generated
                     st.session_state[idx][f"generate_next_step"] = False
-                st.session_state[idx]['model_output_per_run'][st.session_state[idx]["ai_output_clicks"]] = st.session_state[idx]['curr_model_output']
+                st.session_state[idx]['model_output_per_run'][st.session_state[idx]["ai_output_clicks"]] = st.session_state[idx]['curr_model_output'][:2]
                 st.session_state[idx]['curr_msgs'] = curr_msgs
                 st.rerun()
             form = right_column.form(key='user-form')
@@ -478,9 +463,10 @@ def main_study():
     
     if st.session_state.questions_done != -1 and st.session_state.count == 0:
         st.session_state.count = st.session_state.questions_done
-        if (st.session_state.count >= (len(test_ids) + len(train_ids))):
-            st.session_state.page = "end_tutorial" #"survey"
-            st.rerun()
+
+    if (st.session_state.count >= (len(test_ids) + len(train_ids))):
+        st.session_state.page = "end_tutorial" #"survey"
+        st.rerun()
 
     if st.session_state.count < len(st.session_state['train_ids']):
         st.title("📚 Training phase")
@@ -638,10 +624,8 @@ def main_study():
             if st.session_state.condition.find("regenerate") > -1:
                 logger.write_to_user_sheet([st.session_state.username, idx, st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
             else:
-                logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), str(st.session_state[idx]['observations']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
-            if st.session_state.count > total_num:
-                # st.warning("You're at the end of all examples. There is no next example.", icon="⚠️")
-                st.session_state.page = "end_tutorial" #"survey"
+                logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
+            # print(f'session state count vs total num: {st.session_state.count} {total_num}')
 
         st.session_state["next_clicked"] = False
         st.rerun()
