@@ -61,7 +61,7 @@ def exponential_backoff(api_call_func, *args, max_retries=5, max_backoff=64, **k
                 
                 # Log the retry attempt and wait time
                 print(f"Quota exceeded. Retrying in {wait_time:.2f} seconds... (Retry {retries + 1}/{max_retries})")
-                data.append(f"Quota exceeded. Retrying in {wait_time:.2f} seconds... (Retry {retries + 1}/{max_retries})")
+                # data.append(f"Quota exceeded. Retrying in {wait_time:.2f} seconds... (Retry {retries + 1}/{max_retries})")
 
                 # Wait for the calculated backoff time
                 time.sleep(wait_time)
@@ -79,6 +79,6 @@ def exponential_backoff(api_call_func, *args, max_retries=5, max_backoff=64, **k
     total_time_spent = time.time() - start_time
     print(f"Max retries exceeded after {retries} retries and {total_time_spent:.2f} seconds.")
     print(f"Total backoff time: {total_backoff_time:.2f} seconds")
-    data.append(f"Max retries exceeded after {retries} retries and {total_time_spent:.2f} seconds. Total backoff time: {total_backoff_time:.2f} seconds.")
-    st.session_state.condition_counts_sheet.worksheet("Exponential Backoff Log").append_row(data)
+    # data.append(f"Max retries exceeded after {retries} retries and {total_time_spent:.2f} seconds. Total backoff time: {total_backoff_time:.2f} seconds.")
+    # st.session_state.condition_counts_sheet.worksheet("Exponential Backoff Log").append_row(data)
     raise Exception("Max retries exceeded")
