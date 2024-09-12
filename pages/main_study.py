@@ -258,7 +258,7 @@ def display_right_column(env, idx, right_column, condition):
             if "generate_next_step" not in st.session_state[idx]:
                 st.session_state[idx]["generate_next_step"] = False
             if "model_output_per_run" not in st.session_state[idx]:
-                st.session_state[idx]["model_output_per_run"] = {0: st.session_state[idx]['curr_model_output'][:2]}
+                st.session_state[idx]["model_output_per_run"] = {0: st.session_state[idx]['curr_model_output']}
             if "ai_output_clicks" not in st.session_state[idx]:
                 st.session_state[idx]["ai_output_clicks"] = 0
             if "last_ai_button_click_time" not in st.session_state[idx]:
@@ -385,7 +385,7 @@ def display_right_column(env, idx, right_column, condition):
                             break
                     # turn off generate flag after a new output is generated
                     st.session_state[idx][f"generate_next_step"] = False
-                st.session_state[idx]['model_output_per_run'][st.session_state[idx]["ai_output_clicks"]] = st.session_state[idx]['curr_model_output'][:2]
+                st.session_state[idx]['model_output_per_run'][st.session_state[idx]["ai_output_clicks"]] = st.session_state[idx]['curr_model_output']
                 st.session_state[idx]['curr_msgs'] = curr_msgs
                 st.rerun()
             form = right_column.form(key='user-form')
