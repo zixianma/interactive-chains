@@ -14,15 +14,14 @@ def write_to_user_sheet(data):
     all_actions_sheet = exponential_backoff(user_data_sheet.worksheet, 'all actions')  
     exponential_backoff(all_actions_sheet.append_row, data)  
 
-
-def write_survey_response(data, header=False, survey_type=""):
-    print(st.session_state)
-    user_worksheet = st.session_state['user_worksheet'] 
-    if header:
-        exponential_backoff(user_worksheet.append_row, [survey_type, '-', '-'])
-    
-    responses = [tuple[1] for tuple in data]
-    exponential_backoff(user_worksheet.append_row, responses)
+def write_survey_response(data, sheet, key_list):
+    responses = []
+    for key in key_list:
+        value = data[key]
+        if value is not None:
+            # print(f'response: {key} , {value}')
+            responses.append(value)
+    exponential_backoff(sheet.append_row, responses)
 
 def create_user_worksheet():
     sheet = st.session_state['sheet']

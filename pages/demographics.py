@@ -5,22 +5,11 @@ import pages.utils.logger as logger
 import gspread
 import os
 from google.oauth2.service_account import Credentials
+from pages.utils.exponential_backoff import exponential_backoff
 
 def check_user_data():
-    # Load secrets for Google Sheets credentials
-    toml_data = st.secrets
-    credentials_data = toml_data["connections"]["gsheets"]
-
-    # Define the scope for the Google Sheets API
-    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-
-    # Authenticate using credentials from secrets
-    credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
-    client = gspread.authorize(credentials)
-
-    # Open the "Condition Counts" spreadsheet and the "Demo Tracker" worksheet
-    sheet = client.open("Condition Counts")
-    demo_tracker = sheet.worksheet("Demo Tracker")
+    # Open the "Demo Tracker" worksheet
+    demo_tracker = exponential_backoff(st.session_state.condition_counts_sheet.worksheet, "Demo Tracker")
 
     # Get all usernames in the first column of "Demo Tracker"
     usernames = demo_tracker.col_values(1)
@@ -43,20 +32,8 @@ def check_user_data():
 
 
 def update_user_data():
-    # Load secrets for Google Sheets credentials
-    toml_data = st.secrets
-    credentials_data = toml_data["connections"]["gsheets"]
-
-    # Define the scope for the Google Sheets API
-    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-
-    # Authenticate using credentials from secrets
-    credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
-    client = gspread.authorize(credentials)
-
-    # Open the "Condition Counts" spreadsheet and the "Demo Tracker" worksheet
-    sheet = client.open("Condition Counts")
-    demo_tracker = sheet.worksheet("Demo Tracker")
+    # Open the "Demo Tracker" worksheet
+    demo_tracker = exponential_backoff(st.session_state.condition_counts_sheet.worksheet, "Demo Tracker")
 
     # Get all usernames in the first column of "Demo Tracker"
     usernames = demo_tracker.col_values(1)
