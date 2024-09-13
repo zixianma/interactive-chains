@@ -16,6 +16,7 @@ def write_to_user_sheet(data):
 
 def write_survey_response(data, sheet, key_list):
     responses = []
+    responses.append(st.session_state.username)
     for key in key_list:
         value = data[key]
         if value is not None:
