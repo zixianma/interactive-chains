@@ -114,7 +114,7 @@ def questions():
     # Question 1: Gender
     st.markdown("#### Q1: What is your gender?")
     st.session_state.gender = st.radio(
-        "",
+        "gender",
         options=[
             gender_placeholder,
             "Woman",
@@ -123,7 +123,8 @@ def questions():
             "Prefer not to disclose",
             "Self-described"
         ],
-        key='gender_radio'
+        key='gender_radio',
+        label_visibility="collapsed"
     )
     
     if st.session_state.gender == "Self-described":
@@ -138,7 +139,7 @@ def questions():
     # Question 2: Race/Ethnicity
     st.markdown("#### Q2: What is your race/ethnicity?")
     st.session_state.race_ethnicity = st.radio(
-        "",
+        "race/ethnicity",
         options=[
             race_ethnicity_placeholder,
             "American Indian or Alaska Native",
@@ -151,7 +152,8 @@ def questions():
             "Mixed-race",
             "Other"
         ],
-        key='race_ethnicity_radio'
+        key='race_ethnicity_radio',
+        label_visibility="collapsed"
     )
     
     if st.session_state.race_ethnicity == "Other" or st.session_state.race_ethnicity == "Mixed-race":
@@ -166,17 +168,19 @@ def questions():
     # Question 3: Age
     st.markdown("#### Q3: What is your age?")
     st.session_state.age = st.text_input(
-        "",
+        "Age",
         value=st.session_state.get('age', ''),
-        key='age_input'
+        key='age_input',
+        label_visibility="collapsed"
     )
     
     # Question 4: Job Title
     st.markdown("#### Q4: What is your job title?")
     st.session_state.job_title = st.text_input(
-        "",
+        "job title",
         value=st.session_state.get('job_title', ''),
-        key='job_title_input'
+        key='job_title_input',
+        label_visibility="collapsed"
     )
     
     if st.button("Submit", key="submit_mcq"):
