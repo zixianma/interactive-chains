@@ -107,14 +107,29 @@ def update_user_data(page_finished = "", column_idx = -1):
 def count_words(text):
     return len(text.split())
 
-def record_data_clear_state(keys_list = [], header=False, survey_type = ""):
+# def record_data_clear_state(keys_list = [], header=False, survey_type = ""):
+#    # convert the data from dict to tuple
+#    responses = []
+#    keys = keys_list
+#    for key in keys:
+#        if key in st.session_state:
+#            responses.append((key, st.session_state[key]))
+#    logger.write_survey_response(responses, header, survey_type)
+#    # Delete all keys in the list
+#    for key in keys:
+#        if key in st.session_state:
+#            del st.session_state[key]
+
+def record_data_clear_state(keys_list, sheet_name):
     # convert the data from dict to tuple
     responses = []
+    user_name = st.session_state.username
+    responses.append(('username', user_name))
     keys = keys_list
     for key in keys:
         if key in st.session_state:
             responses.append((key, st.session_state[key]))
-    logger.write_survey_response(responses, header, survey_type)
+    logger.write_survey_response(responses, sheet_name)
     # Delete all keys in the list
     for key in keys:
         if key in st.session_state:
@@ -221,7 +236,7 @@ def free_form_questions():
             end_time = datetime.now()
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             # submit data
-            record_data_clear_state(['strategy', 'error_finding', 'ai_model_usage', 'ai_model_interaction_usage', 'misc_comments', 'elapsed_time'])
+            record_data_clear_state(['strategy', 'error_finding', 'ai_model_usage', 'ai_model_interaction_usage', 'misc_comments', 'elapsed_time'], "Survey_free_form_questions")
             update_user_data("complete", 5)
             # create clickable link so worker can be paid
             st.session_state.last_progress = 5
@@ -292,7 +307,7 @@ def interaction_questions():
             end_time = datetime.now()
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
-            record_data_clear_state(['answer_helpful', 'chain_helpful', 'search_helpful', 'lookup_helpful', 'interaction_helpful', 'chain_edit_helpful', 'thought_edit_helpful', 'action_edit_helpful', 'update_output_helpful' ,'elapsed_time'])
+            record_data_clear_state(['answer_helpful', 'chain_helpful', 'search_helpful', 'lookup_helpful', 'interaction_helpful', 'chain_edit_helpful', 'thought_edit_helpful', 'action_edit_helpful', 'update_output_helpful' ,'elapsed_time'], "Survey_interaction_questions")
             update_user_data("complete", 4)
             st.session_state.last_progress = 4
             st.rerun()
@@ -357,7 +372,7 @@ def ai_usage_questions():
             end_time = datetime.now()
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
-            record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_reasoning_chain_usage', 'interaction_usage', 'human_search', 'human_lookup', 'elapsed_time'])
+            record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_reasoning_chain_usage', 'interaction_usage', 'human_search', 'human_lookup', 'elapsed_time'], "Survey_ai_usage_questions")
             update_user_data("complete", 3)
             st.session_state.last_progress = 3
             st.rerun()
@@ -452,7 +467,7 @@ def tasks_demand_questions():
             end_time = datetime.now()
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
-            record_data_clear_state( ['mental_demand', 'success', 'effort', 'pace', 'stress', 'complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'elapsed_time'], header=True, survey_type="FEEDBACK")
+            record_data_clear_state(['mental_demand', 'success', 'effort', 'pace', 'stress', 'complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'elapsed_time'], "Survey_tasks_demand_questions")
             update_user_data() # since this is the first call, we can have this be parameterless
             st.session_state.last_progress = 2
             st.rerun()
