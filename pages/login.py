@@ -128,7 +128,7 @@ def submit_consent(username_input):
                 if not all_values or (len(all_values) == 1 and not all_values[0]):
                     st.session_state.questions_done = -1
                     st.session_state.page =   "demographics" # begin_tutorial or instruction?
-                elif len(all_values) == 36:
+                elif len(all_values) >= 36:
                     st.session_state.questions_done = 36
                     st.session_state.page =   "end_tutorial"
                 else:
