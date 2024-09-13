@@ -8,6 +8,7 @@ from google.oauth2 import service_account
 from google.oauth2.service_account import Credentials
 from googleapiclient.http import MediaIoBaseUpload
 from googleapiclient.discovery import build
+from pages.utils.exponential_backoff import exponential_backoff
 import time
 import io
 
@@ -21,9 +22,7 @@ def check_user_data():
     # Authenticate using the credentials from the TOML file
     credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
     client = gspread.authorize(credentials)
-    sheet = client.open("Condition Counts")
-    # user_data = sheet.worksheet("Pilot User Data")
-    survey_tracker = sheet.worksheet("Survey Tracker")
+    survey_tracker = exponential_backoff(st.session_state.condition_counts_sheet.worksheet, "Survey Tracker")
 
     usernames = survey_tracker.col_values(1)
 
@@ -88,9 +87,8 @@ def update_user_data(page_finished = "", column_idx = -1):
     # Authenticate using the credentials from the TOML file
     credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
     client = gspread.authorize(credentials)
-    sheet = client.open("Condition Counts")
-    user_data = sheet.worksheet("Pilot User Data")
-    survey_tracker = sheet.worksheet("Survey Tracker")
+    user_data = exponential_backoff(st.session_state.condition_counts_sheet.worksheet, "Pilot User Data")
+    survey_tracker = exponential_backoff(st.session_state.condition_counts_sheet.worksheet, "Survey Tracker")
 
     usernames = survey_tracker.col_values(1)
 
@@ -117,13 +115,13 @@ def record_data_clear_state(keys_list = [], survey_page_num = -1):
     survey_worksheet = st.session_state['sheet']
 
     if survey_page_num == 1:
-        survey_worksheet = st.session_state['sheet'].worksheet("Survey Page 1")
+        survey_worksheet = exponential_backoff(st.session_state['sheet'].worksheet, "Survey Page 1")
     elif survey_page_num == 2:
-        survey_worksheet = st.session_state['sheet'].worksheet("Survey Page 2")
+        survey_worksheet = exponential_backoff(st.session_state['sheet'].worksheet, "Survey Page 2")
     elif survey_page_num == 3:
-        survey_worksheet = st.session_state['sheet'].worksheet("Survey Page 3")
+        survey_worksheet = exponential_backoff(st.session_state['sheet'].worksheet, "Survey Page 3")
     elif survey_page_num == 4:
-        survey_worksheet = st.session_state['sheet'].worksheet("Survey Page 4")
+         survey_worksheet = exponential_backoff(st.session_state['sheet'].worksheet, "Survey Page 4")
 
     logger.write_survey_response(responses, survey_worksheet, keys_list)
     # Delete all keys in the list

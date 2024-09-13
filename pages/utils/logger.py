@@ -32,9 +32,9 @@ def create_user_worksheet():
         worksheet = exponential_backoff(sheet.add_worksheet, title=st.session_state.username, rows=100, cols=20)  
         
         if st.session_state.condition.find("regenerate") > -1:
-            header_list = ["user", "question idx", "Number of Generate AI output button clicks", "model output", "answer", "condition", "time", "number of questions completed", "no", "no"]
+            header_list = ["user", "question idx", "Number of Generate AI output button clicks", "model output", "answer", "condition", "time", "number of questions completed"]
         else:
-            header_list = ["user", "question idx", "total steps", "action space", "answer", "condition", "time", "number of questions completed", "no", "no"]
+            header_list = ["user", "question idx", "total steps", "action space", "answer", "condition", "time", "number of questions completed"]
         
         exponential_backoff(worksheet.append_row, header_list)  
     
