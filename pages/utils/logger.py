@@ -15,14 +15,14 @@ def write_to_user_sheet(data):
     exponential_backoff(all_actions_sheet.append_row, data)  
 
 
-def write_survey_response(data, header=False, survey_type=""):
-    print(st.session_state)
-    user_worksheet = st.session_state['user_worksheet'] 
-    if header:
-        exponential_backoff(user_worksheet.append_row, [survey_type, '-', '-'])
-    
-    responses = [tuple[1] for tuple in data]
-    exponential_backoff(user_worksheet.append_row, responses)
+#def write_survey_response(data, header=False, survey_type=""):
+#    print(st.session_state)
+#    user_worksheet = st.session_state['user_worksheet'] 
+#    if header:
+#        exponential_backoff(user_worksheet.append_row, [survey_type, '-', '-'])
+#   
+#    responses = [tuple[1] for tuple in data]
+#    exponential_backoff(user_worksheet.append_row, responses)
 
 def create_user_worksheet():
     sheet = st.session_state['sheet']
@@ -62,4 +62,27 @@ def write_demo_response(data):
     responses = [tuple[1] for tuple in data]
     exponential_backoff(demo_worksheet.append_row, responses)  
 
+def create_survey_worksheet(sheet_name, columns):
+    header = ["Username"] + columns
+
+    # Get the main sheet object
+    sheet = st.session_state['sheet']
+
+    try:
+        # Try to get the worksheet
+        worksheet = exponential_backoff(sheet.worksheet, sheet_name)
+    except gspread.exceptions.WorksheetNotFound:
+        # If not found, create a new one
+        worksheet = exponential_backoff(sheet.add_worksheet, title=sheet_name, rows=100, cols=20)
+        # Append the header row (with user-specific columns)
+        exponential_backoff(worksheet.append_row, header)
+
+    return worksheet
+
+def write_survey_response(data, sheet_name):
+    survey_worksheet = st.session_state[sheet_name]
+    responses = [tuple[1] for tuple in data]
+    exponential_backoff(survey_worksheet.append_row, responses)
+    
+    
 

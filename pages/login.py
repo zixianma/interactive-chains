@@ -120,9 +120,15 @@ def submit_consent(username_input):
                 st.session_state.condition = str(user_condition)
                 sheet_condition = st.session_state.condition.split(' ', 1)[1]
                 print(f'sheet condition {sheet_condition}')
+                
                 st.session_state['sheet'] = exponential_backoff(client.open, sheet_condition)  
                 st.session_state['user_worksheet'] = exponential_backoff(st.session_state['sheet'].worksheet, st.session_state.username)  
-                st.session_state['demographics'] = exponential_backoff(st.session_state['sheet'].worksheet, 'Demographics')  
+                st.session_state['demographics'] = exponential_backoff(st.session_state['sheet'].worksheet, 'Demographics')
+                st.session_state['Survey_free_form_questions'] = exponential_backoff(st.session_state['sheet'].worksheet, "Survey_free_form_questions")
+                st.session_state['Survey_interaction_questions'] = exponential_backoff(st.session_state['sheet'].worksheet, "Survey_interaction_questions")
+                st.session_state['Survey_ai_usage_questions'] = exponential_backoff(st.session_state['sheet'].worksheet, "Survey_ai_usage_questions")
+                st.session_state['Survey_tasks_demand_questions'] = exponential_backoff(st.session_state['sheet'].worksheet, "Survey_tasks_demand_questions")
+                
                 all_values = exponential_backoff(st.session_state['user_worksheet'].get, 'H2:H50')
                 print(f'all values: {all_values}')
                 if not all_values or (len(all_values) == 1 and not all_values[0]):
@@ -150,14 +156,31 @@ def submit_consent(username_input):
                 # make sheet per user
                 user_worksheet = create_user_worksheet()
                 demo_worksheet = ensure_demo_worksheet()
+                
+                free_form_worksheet = create_survey_worksheet("Survey_free_form_questions",['strategy', 'error_finding', 'ai_model_usage', 'ai_model_interaction_usage', 'misc_comments', 'elapsed_time'])
+                interaction_worksheet = create_survey_worksheet("Survey_interaction_questions", ['answer_helpful', 'chain_helpful', 'search_helpful', 'lookup_helpful', 'interaction_helpful', 'chain_edit_helpful', 'thought_edit_helpful', 'action_edit_helpful', 'update_output_helpful' ,'elapsed_time'])
+                ai_usage_worksheet = create_survey_worksheet("Survey_ai_usage_questions", ['ai_frequency', 'ai_answer_usage', 'ai_reasoning_chain_usage', 'interaction_usage', 'human_search', 'human_lookup', 'elapsed_time'])
+                tasks_demand_worksheet = create_survey_worksheet("Survey_tasks_demand_questions", ['mental_demand', 'success', 'effort', 'pace', 'stress', 'complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'elapsed_time'])
             
                 if 'user_worksheet' not in st.session_state:
                     st.session_state['user_worksheet'] = user_worksheet
                 
                 if 'demographics' not in st.session_state:
                     st.session_state['demographics'] = demo_worksheet
+                    
+                if 'Survey_free_form_questions' not in st.session_state:
+                    st.session_state['Survey_free_form_questions'] = free_form_worksheet
 
-        st.session_state.page =   "demographics" # "end_tutorial" #"instruction" "main_study" "survey" # "demographics" #
+                if 'Survey_interaction_questions' not in st.session_state:
+                    st.session_state['Survey_interaction_questions'] = interaction_worksheet
+
+                if 'Survey_ai_usage_questions' not in st.session_state:
+                    st.session_state['Survey_ai_usage_questions'] = ai_usage_worksheet
+
+                if 'Survey_tasks_demand_questions' not in st.session_state:
+                    st.session_state['Survey_tasks_demand_questions'] = tasks_demand_worksheet
+
+        st.session_state.page = "demographics" # "end_tutorial" #"instruction" "main_study" "survey" # "demographics" #
 
 def login():
     # if 'username' not in st.session_state:
