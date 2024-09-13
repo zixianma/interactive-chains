@@ -233,9 +233,6 @@ def display_right_column(env, idx, right_column, condition):
             obs, r, done, info = step(env, f"finish[{answer}]")
             st.session_state.user_data["last question idx done"] = idx
             right_column.write(f'Submitted: {answer}')
-            st.session_state[idx]['actions'].append(f"finish[{st.session_state['answer']}")
-            st.session_state.count += 1
-            logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
             if idx in st.session_state['train_ids']:
                 if r == 1:
                     output = "**:green[Your answer is right! :)]**\n"
@@ -406,12 +403,6 @@ def display_right_column(env, idx, right_column, condition):
                 st.session_state['answer'] = answer
                 right_column.write(f'Submitted: {answer}')
                 # right_column.write(f'{obs}')
-                st.session_state[idx]['actions'].append(f"finish[{st.session_state['answer']}")
-                st.session_state.count += 1
-                if st.session_state.condition.find("regenerate") > -1:
-                    logger.write_to_user_sheet([st.session_state.username, idx, st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
-                else:
-                    logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
                 if idx in st.session_state['train_ids']:
                     if r == 1:
                         output = "**:green[Your answer is right! :)]**\n"
@@ -626,6 +617,13 @@ def main_study():
         if not st.session_state[idx]['submitted']:
             warning.warning("You need to submit your answer before going to the next question.", icon="⚠️")
             # print(f'session state count vs total num: {st.session_state.count} {total_num}')
+        else:
+            st.session_state[idx]['actions'].append(f"finish[{st.session_state['answer']}")
+            st.session_state.count += 1
+            if st.session_state.condition.find("regenerate") > -1:
+                logger.write_to_user_sheet([st.session_state.username, idx, st.session_state[idx]["ai_output_clicks"], str(st.session_state[idx]['model_output_per_run']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
+            else:
+                logger.write_to_user_sheet([st.session_state.username, idx, len(st.session_state[idx]['actions']), str(st.session_state[idx]['actions']), st.session_state['answer'], st.session_state.condition, st.session_state[idx]["elapsed_time"], st.session_state.count])
 
         st.session_state["next_clicked"] = False
         st.rerun()
