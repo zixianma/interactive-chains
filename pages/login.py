@@ -56,7 +56,10 @@ def find_user_row(condition_counts_sheet):
     pilot_user_data_sheet = exponential_backoff(condition_counts_sheet.worksheet, "Pilot User Data")
     usernames = exponential_backoff(pilot_user_data_sheet.get, 'A2:A301')
 
-    if not usernames:
+    print(f'usernames: {usernames}')
+
+    if not usernames or all(len(record) == 0 for record in usernames):
+        print(f'empty usernames list')
         # Handle the case when the list is empty
         return None, None
 
