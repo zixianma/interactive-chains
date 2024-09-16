@@ -29,12 +29,15 @@ from google.oauth2.service_account import Credentials
 #         return {"error": str(e)}
 
 # Function to assign a condition based on the counts
-def assign_condition(condition_counts):
+def assign_condition(condition_counts, condition_with_higher_odds):
     # Find the condition with the minimum count
     min_count = min(condition_counts.values())
     balanced_conditions = [condition for condition, count in condition_counts.items() if count == min_count]
 
-    # Randomly choose a condition from the balanced list
+    if condition_with_higher_odds in balanced_conditions:
+        balanced_conditions.append(condition_with_higher_odds)
+    
+    # Randomly choose a condition from the modified list
     chosen_condition = random.choice(balanced_conditions)
     condition_counts[chosen_condition] += 1
 
@@ -148,7 +151,7 @@ def submit_consent(username_input):
             else:
                 pilot_worksheet = exponential_backoff(condition_counts_sheet.worksheet, "Pilot")
                 condition_counts = get_condition_counts(pilot_worksheet)
-                assigned_condition = assign_condition(condition_counts)
+                assigned_condition = assign_condition(condition_counts, "D. hai-static-chain")
                 update_condition_count(pilot_worksheet, assigned_condition, condition_counts[assigned_condition])
                 print(f"You have been assigned to: {assigned_condition}")
                 st.session_state.condition = assigned_condition
