@@ -28,14 +28,24 @@ from google.oauth2.service_account import Credentials
 #     except Exception as e:
 #         return {"error": str(e)}
 
-# Function to assign a condition based on the counts
-def assign_condition(condition_counts):
-    # Find the condition with the minimum count
-    min_count = min(condition_counts.values())
-    balanced_conditions = [condition for condition, count in condition_counts.items() if count == min_count]
-
-    # Randomly choose a condition from the balanced list
-    chosen_condition = random.choice(balanced_conditions)
+def assign_condition(condition_counts, weights=None):
+    """
+    condition_counts: Dictionary of condition counts.
+    weights: Optional dictionary of weights for each condition, where the keys are condition names and values are the corresponding weights.
+             If no weights are provided, default to 1 for all conditions.
+    """
+    # Default weights to 1 for all conditions if not provided
+    if weights is None:
+        weights = {condition: 1 for condition in condition_counts.keys()}
+    
+    # Create a list of conditions and their respective weights
+    conditions = list(condition_counts.keys())
+    condition_weights = [weights.get(condition, 1) for condition in conditions]
+    
+    # Choose a condition based on the weights
+    chosen_condition = random.choices(conditions, weights=condition_weights, k=1)[0]
+    
+    # Increment the count of the chosen condition
     condition_counts[chosen_condition] += 1
 
     return chosen_condition
@@ -148,7 +158,11 @@ def submit_consent(username_input):
             else:
                 pilot_worksheet = exponential_backoff(condition_counts_sheet.worksheet, "Pilot")
                 condition_counts = get_condition_counts(pilot_worksheet)
-                assigned_condition = assign_condition(condition_counts)
+                # this is to make static chain 2x as likely
+                weights = {
+                    'D. hai-static-chain': 2,
+                }
+                assigned_condition = assign_condition(condition_counts, weights)
                 update_condition_count(pilot_worksheet, assigned_condition, condition_counts[assigned_condition])
                 print(f"You have been assigned to: {assigned_condition}")
                 st.session_state.condition = assigned_condition
