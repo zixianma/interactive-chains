@@ -162,7 +162,8 @@ def video_submission():
 
     # Button to check the password
     if st.button("Submit"):
-        if password == st.secrets["video_password"]['password']:
+        trimmed_password = password.strip()
+        if trimmed_password == st.secrets["video_password"]['password']:
             update_user_data("complete", 6)
             st.session_state.last_progress = -1
             st.rerun()
