@@ -106,6 +106,13 @@ def count_words(text):
     return len(text.split())
 
 def record_data_clear_state(keys_list = [], survey_page = ""):
+    # Check if the page has already been submitted
+    submission_key = f"submitted_{survey_page}"
+    
+    if submission_key in st.session_state and st.session_state[submission_key]:
+        st.info(f"You have already submitted the {survey_page} page.")
+        return  # Exit if the page has already been submitted
+    
     # convert the data from dict to tuple
     responses = {}
     for key in keys_list:
@@ -119,6 +126,8 @@ def record_data_clear_state(keys_list = [], survey_page = ""):
         if key in st.session_state:
             del st.session_state[key]
 
+    st.session_state[submission_key] = True
+
 def finished():
     st.title("Thank you for your time!")
     st.subheader("You will be compensated after we review your answers and footage. Click the link below to complete the study.")
@@ -127,8 +136,15 @@ def finished():
 def video_submission():
     st.title("Video Upload")
 
+    # Initialize session state for tracking submission and upload progress
+    if "uploading" not in st.session_state:
+        st.session_state.uploading = False
+
+    if "video_submitted" not in st.session_state:
+        st.session_state.video_submitted = False  # Tracks if the video was already submitted
+
     # File uploader that only accepts video files
-    uploaded_video = st.file_uploader("Upload a video file", type=["webm"]) # "mp4", "mov", "avi", 
+    uploaded_video = st.file_uploader("Upload a video file", type=["webm"])  # You can add other file types if needed
 
     # Ensure the user uploads a video before enabling the submit button
     if uploaded_video is None:
@@ -136,12 +152,13 @@ def video_submission():
         st.button("Submit", disabled=True)
     else:
         try:
-            st.success("Video uploaded successfully!")            
+            st.success("Video uploaded successfully!")
             # Display the video in the app
             st.video(uploaded_video)
-            
-            if st.button("Submit", key="submit_recording", disabled=st.session_state.uploading):
-                 # Disable the button and show progress
+
+            # Disable the submit button if the video has already been submitted
+            if st.button("Submit", key="submit_recording", disabled=st.session_state.uploading or st.session_state.video_submitted):
+                # Immediately disable the button to prevent spamming
                 st.session_state.uploading = True
 
                 # Progress bar
@@ -150,33 +167,43 @@ def video_submission():
                 # Call function to upload the large video to Google Drive
                 video_id = upload_to_drive(uploaded_video, uploaded_video.name)
                 st.success(f"Video uploaded successfully!")
-                print(f"Video uploaded to Google Drive successfully! File ID: {video_id}")
-                # Update session state and reset after completion
+                print(f'video uploaded succesfully!  File ID: {video_id} for user: {st.session_state.username}')
+
+                # Update session state after submission to prevent future submissions
+                st.session_state.video_submitted = True  # Prevent future submissions
+                st.session_state.uploading = False
+
+                # Update user data and reset after completion
                 update_user_data("complete", 6)
                 st.session_state.last_progress = -1
-                st.session_state.uploading = False
-                st.rerun()
+                st.rerun()  # Refresh the page to reflect changes
         except Exception as e:
             st.error(f"Error with the video save: {e}.\n Please contact for help.")
             st.session_state.uploading = False
 
 
+
 def free_form_questions():
+    survey_page = "Free Form Questions"
     if 'time_spent' not in st.session_state:
         st.session_state.time_spent = datetime.now()
+    if f"submit_disabled_{survey_page}" not in st.session_state:
+        st.session_state[f"submit_disabled_{survey_page}"] = False
 
     st.title("Final Questions & Feedback")
     st.subheader("Note: You cannot go back, please take your time answering these.")
 
-    # Use st.session_state.get to avoid overwriting existing text when rerunning
+    # Use st.session_state to preserve input across reruns
     st.session_state.strategy = st.text_area(
         ":red[*]What was your strategy for answering the questions?",
         value=st.session_state.get('strategy', ''), key='strategy_frq'
     )
+    
     st.session_state.ai_model_usage = st.text_area(
         ":red[*]How did you use the AI model to help you answer the questions?",
         value=st.session_state.get('ai_model_usage', ''), key='ai_model_usage_frq'
     )
+    
     if st.session_state.condition.find("hai-answer") == -1:
         st.session_state.error_finding = st.text_area(
             ":red[*]What did you think of the AI model's reasoning chains? Did you find them accurate and helpful? If not, what errors did you find in them?",
@@ -193,19 +220,19 @@ def free_form_questions():
     else:
         st.session_state.ai_model_interaction_usage = None
 
-
     st.session_state.misc_comments = st.text_area(
         "[Optional] Any other comments or remarks regarding the study?",
         value=st.session_state.get('misc_comments', ''), key='misc_comments_frq'
     )
 
-    if st.button("Submit", key="submit_answers"):
+    # Perform validation and submission
+    if st.button("Submit", key="submit_answers", disabled=st.session_state[f"submit_disabled_{survey_page}"]):
+        # Validation
         if any([
             st.session_state.strategy.strip() == '',
             st.session_state.error_finding is not None and st.session_state.error_finding.strip() == '',
             st.session_state.ai_model_usage.strip() == '',
             st.session_state.ai_model_interaction_usage is not None and st.session_state.ai_model_interaction_usage.strip() == '',
-            # st.session_state.misc_comments is None or st.session_state.misc_comments.strip() == ''
         ]):
             st.error("Please answer all the required questions before submitting.")
         elif count_words(st.session_state.strategy) < 10:
@@ -217,18 +244,27 @@ def free_form_questions():
         elif st.session_state.condition.find("hai-regenerate") > -1 and count_words(st.session_state.ai_model_interaction_usage) < 10:
             st.error("Please write at least 10 words regarding how you interacted with the model.")
         else:
+            # Only disable the submit button after successful submission
             end_time = datetime.now()
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
-            # submit data
-            record_data_clear_state(['strategy', 'ai_model_usage', 'error_finding', 'ai_model_interaction_usage', 'misc_comments', 'elapsed_time'], survey_page = "Free Form Questions")
+            
+            # Submit the data
+            record_data_clear_state(['strategy', 'ai_model_usage', 'error_finding', 'ai_model_interaction_usage', 'misc_comments', 'elapsed_time'], survey_page=survey_page)
             update_user_data("complete", 5)
-            # create clickable link so worker can be paid
+            
+            # Mark the submit button as disabled only after successful submission
+            st.session_state[f"submit_disabled_{survey_page}"] = True
+            
+            # Navigate to the next page or create a clickable link
             st.session_state.last_progress = 5
             st.rerun()
 
 def interaction_questions():
+    survey_page = "Interaction Questions"
     if 'time_spent' not in st.session_state:
         st.session_state.time_spent = datetime.now()
+    if f"submit_disabled_{survey_page}" not in st.session_state:
+        st.session_state[f"submit_disabled_{survey_page}"] = False
 
     st.title("Interaction Reflection Questions")
     st.subheader("Note: You cannot go back, please take your time answering these.")
@@ -274,7 +310,7 @@ def interaction_questions():
     # st.session_state.code_completion_distracting = st.radio("I found the AI’s code completions distracting.", options, horizontal=True, key='code_completion_distracting_radio')
     # st.session_state.highlights_distracting = st.radio("I found the AI’s highlights distracting.", options, horizontal=True, key='highlights_distracting_radio')
 
-    if st.button("Next", key="interaction_questions_next"):
+    if st.button("Next", key="interaction_questions_next", disabled=st.session_state[f"submit_disabled_{survey_page}"]):
         if (
             st.session_state.answer_helpful == 'Select an Option' or
             st.session_state.chain_helpful == 'Select an Option' or
@@ -289,16 +325,20 @@ def interaction_questions():
             st.error("Please make sure to select an option for all questions before submitting.")
         else:
             end_time = datetime.now()
+            st.session_state[f"submit_disabled_{survey_page}"] = True
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
-            record_data_clear_state(['answer_helpful', 'chain_helpful', 'search_helpful', 'lookup_helpful', 'interaction_helpful', 'chain_edit_helpful', 'thought_edit_helpful', 'action_edit_helpful', 'update_output_helpful' ,'elapsed_time'], survey_page = "Interaction Questions")
+            record_data_clear_state(['answer_helpful', 'chain_helpful', 'search_helpful', 'lookup_helpful', 'interaction_helpful', 'chain_edit_helpful', 'thought_edit_helpful', 'action_edit_helpful', 'update_output_helpful' ,'elapsed_time'], survey_page = survey_page)
             update_user_data("complete", 4)
             st.session_state.last_progress = 4
             st.rerun()
 
 def ai_usage_questions():
+    survey_page = "AI Usage Questions"
     if 'time_spent' not in st.session_state:
         st.session_state.time_spent = datetime.now()
+    if f"submit_disabled_{survey_page}" not in st.session_state:
+        st.session_state[f"submit_disabled_{survey_page}"] = False
     
     st.markdown(
         """
@@ -338,7 +378,7 @@ def ai_usage_questions():
     # st.session_state.explanation_usage = st.radio("How often did you use the AI model's explanations to come to an answer?", options_frequency, horizontal=True, key='explanation_usage_radio')
     # st.session_state.explanation_helpfulness = st.radio("How helpful did you find the AI model's explanations when trying to come to an answer?", options_helpful, horizontal=True, key='explanation_helpfulness_radio')
 
-    if st.button("Next", key="ai_usage_questions_next"):
+    if st.button("Next", key="ai_usage_questions_next", disabled=st.session_state[f"submit_disabled_{survey_page}"]):
         if (
             st.session_state.ai_frequency == 'Select an Option' or
             st.session_state.ai_answer_usage == 'Select an Option' or
@@ -354,14 +394,16 @@ def ai_usage_questions():
             st.error("Please make sure to select an option for all questions before submitting.")
         else:
             end_time = datetime.now()
+            st.session_state[f"submit_disabled_{survey_page}"] = True
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
-            record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_reasoning_chain_usage', 'interaction_usage', 'human_search', 'human_lookup', 'elapsed_time'], survey_page = "AI Usage Questions")
+            record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_reasoning_chain_usage', 'interaction_usage', 'human_search', 'human_lookup', 'elapsed_time'], survey_page = survey_page)
             update_user_data("complete", 3)
             st.session_state.last_progress = 3
             st.rerun()
 
 def tasks_demand_questions():
+    survey_page = "Task Demand Questions"
     if 'time_spent' not in st.session_state:
         st.session_state.time_spent = datetime.now()    
     if 'mental_moved' not in st.session_state:
@@ -374,6 +416,8 @@ def tasks_demand_questions():
         st.session_state.pace_moved = False
     if 'stress_moved' not in st.session_state:
         st.session_state.stress_moved = False
+    if f"submit_disabled_{survey_page}" not in st.session_state:
+        st.session_state[f"submit_disabled_{survey_page}"] = False
 
     # Function to update slider movement state
     def check_slider_movement(slider_name, slider_value):
@@ -433,7 +477,7 @@ def tasks_demand_questions():
     check_slider_movement('stress_moved', st.session_state.stress)
     st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
     
-    if st.button("Next", key="tasks_demand_questions_next"):
+    if st.button("Next", key="tasks_demand_questions_next", disabled=st.session_state[f"submit_disabled_{survey_page}"]):
         if (
             st.session_state.complex_to_simple == 'Select an Option' or
             st.session_state.thinking == 'Select an Option' or
@@ -449,9 +493,10 @@ def tasks_demand_questions():
             st.error("Please interact with the sldiers")
         else:
             end_time = datetime.now()
+            st.session_state[f"submit_disabled_{survey_page}"] = True
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             # log data
-            record_data_clear_state( ['complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'mental_demand', 'success', 'effort', 'pace', 'stress','elapsed_time'], survey_page="Task Demand Questions")
+            record_data_clear_state( ['complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'mental_demand', 'success', 'effort', 'pace', 'stress','elapsed_time'], survey_page=survey_page)
             update_user_data() # since this is the first call, we can have this be parameterless
             st.session_state.last_progress = 2
             st.rerun()
