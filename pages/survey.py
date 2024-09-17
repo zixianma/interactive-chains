@@ -53,27 +53,44 @@ def upload_to_drive(file, file_name):
     # Create metadata for the file
     file_metadata = {
         'name': new_file_name,
-        'parents': ['1qTeHaCMkaRWJ4P2Jq9qmkdDWs7BvgeuH']  # Replace with your Google Drive folder ID
+        'parents': ['1KvxSd68eBlUnybl4jtoTiTMsrFpUlSoWh1VBBtSA6J4tPCWE2ZL3rVG7_12qSkrpVtVqPo2N']
     }
 
     # Convert the Streamlit file uploader object to a BytesIO object for the upload
     file_io = io.BytesIO(file.getvalue())
 
+    # Use a larger chunk size for large file uploads (10MB? may swap to 5MB if suffering performance issues)
+    chunk_size = 10 * 1024 * 1024  # 10 MB
+
     # Create the MediaIoBaseUpload object with resumable=True for large file upload
-    media = MediaIoBaseUpload(file_io, mimetype='video/webm', chunksize=1024*1024, resumable=True)
+    media = MediaIoBaseUpload(file_io, mimetype='video/webm', chunksize=chunk_size, resumable=True)
 
     # Initiate the upload request
     request = drive_service.files().create(body=file_metadata, media_body=media, fields='id')
-    
+
+    # Initialize response and progress tracking
     response = None
     progress_bar = st.progress(0)
+    retries = 5  # Number of retry attempts
+    retry_delay = 5  # Retry delay in seconds
+
     while response is None:
-        # Track progress during upload
-        status, response = request.next_chunk()
-        if status:
-            # Update progress bar based on the upload status
-            st.session_state.upload_progress = int(status.progress() * 100)
-            progress_bar.progress(st.session_state.upload_progress)
+        try:
+            # Track progress during upload
+            status, response = request.next_chunk()
+            if status:
+                # Update progress bar based on the upload status
+                st.session_state.upload_progress = int(status.progress() * 100)
+                progress_bar.progress(st.session_state.upload_progress)
+
+        except (ConnectionError, TimeoutError, Exception) as e:
+            # Retry logic in case of failure
+            retries -= 1
+            if retries <= 0:
+                raise Exception(f"Upload failed after multiple retries: {e}. Please contact the Protocol Director, Zixian Ma, at zixianma@uw.edu")
+            print(f"Upload failed for {st.session_state.username}, retrying in {retry_delay} seconds... ({retries} retries left)")
+            time.sleep(retry_delay)
+            retry_delay *= 2  # Exponential backoff like implementation
 
     return response['id']
 
@@ -136,52 +153,69 @@ def finished():
 def video_submission():
     st.title("Video Upload")
 
-    # Initialize session state for tracking submission and upload progress
-    if "uploading" not in st.session_state:
-        st.session_state.uploading = False
+    st.markdown("Please submit your video through this [Google form](https://docs.google.com/forms/d/e/1FAIpQLSfDRHCootB91wKYUUvq5_qKmzk6lpYg0aS_adslML9dWkCCTQ/viewform).\n")
 
-    if "video_submitted" not in st.session_state:
-        st.session_state.video_submitted = False  # Tracks if the video was already submitted
+    st.write("After submitting the form, at the end there will be a password for you to enter below to complete the study.")
 
-    # File uploader that only accepts video files
-    uploaded_video = st.file_uploader("Upload a video file", type=["webm"])  # You can add other file types if needed
+    # Create a password input field
+    password = st.text_input("Enter password", type="password", key="password_video")
 
-    # Ensure the user uploads a video before enabling the submit button
-    if uploaded_video is None:
-        st.warning("Please upload a video file before proceeding.")
-        st.button("Submit", disabled=True)
-    else:
-        try:
-            st.success("Video uploaded successfully!")
-            # Display the video in the app
-            st.video(uploaded_video)
+    # Button to check the password
+    if st.button("Submit"):
+        trimmed_password = password.strip()
+        if trimmed_password == st.secrets["video_password"]['password']:
+            update_user_data("complete", 6)
+            st.session_state.last_progress = -1
+            st.rerun()
+        else:
+            st.error("Incorrect password. Please try again.")
 
-            # Disable the submit button if the video has already been submitted
-            if st.button("Submit", key="submit_recording", disabled=st.session_state.uploading or st.session_state.video_submitted):
-                # Immediately disable the button to prevent spamming
-                st.session_state.uploading = True
+    # # Initialize session state for tracking submission and upload progress
+    # if "uploading" not in st.session_state:
+    #     st.session_state.uploading = False
 
-                # Progress bar
-                st.session_state.upload_progress = 0
+    # if "video_submitted" not in st.session_state:
+    #     st.session_state.video_submitted = False  # Tracks if the video was already submitted
 
-                # Call function to upload the large video to Google Drive
-                video_id = upload_to_drive(uploaded_video, uploaded_video.name)
-                st.success(f"Video uploaded successfully!")
-                print(f'video uploaded succesfully!  File ID: {video_id} for user: {st.session_state.username}')
+    # # File uploader that only accepts video files
+    # uploaded_video = st.file_uploader("Upload a video file", type=["webm"])  # You can add other file types if needed
 
-                # Update session state after submission to prevent future submissions
-                st.session_state.video_submitted = True  # Prevent future submissions
-                st.session_state.uploading = False
+    # # Ensure the user uploads a video before enabling the submit button
+    # if uploaded_video is None:
+    #     st.warning("Please upload a video file before proceeding.")
+    #     st.button("Submit", disabled=True)
+    # else:
+    #     try:
+    #         st.success("Video uploaded successfully!")
+    #         # Display the video in the app
+    #         st.video(uploaded_video)
 
-                # Update user data and reset after completion
-                update_user_data("complete", 6)
-                st.session_state.last_progress = -1
-                st.rerun()  # Refresh the page to reflect changes
-        except Exception as e:
-            st.error(f"Error with the video save: {e}.\n Please contact for help.")
-            st.session_state.uploading = False
+    #         st.markdown("Alternatively, if you're experiencing issues uploading your video, you can submit it through this [Google form](https://docs.google.com/forms/d/e/1FAIpQLSfDRHCootB91wKYUUvq5_qKmzk6lpYg0aS_adslML9dWkCCTQ/viewform).")
 
+    #         # Disable the submit button if the video has already been submitted
+    #         if st.button("Submit", key="submit_recording", disabled=st.session_state.uploading or st.session_state.video_submitted):
+    #             # Immediately disable the button to prevent spamming
+    #             st.session_state.uploading = True
 
+    #             # Progress bar
+    #             st.session_state.upload_progress = 0
+
+    #             # Call function to upload the large video to Google Drive
+    #             video_id = upload_to_drive(uploaded_video, uploaded_video.name)
+    #             st.success(f"Video uploaded successfully!")
+    #             print(f'video uploaded succesfully!  File ID: {video_id} for user: {st.session_state.username}')
+
+    #             # Update session state after submission to prevent future submissions
+    #             st.session_state.video_submitted = True
+    #             st.session_state.uploading = False
+
+    #             # Update user data and reset after completion
+    #             update_user_data("complete", 6)
+    #             st.session_state.last_progress = -1
+    #             st.rerun()  # Refresh the page to reflect changes
+    #     except Exception as e:
+    #         st.error(f"Error with the video save: {e}.\n Please contact for help.")
+    #         st.session_state.uploading = False
 
 def free_form_questions():
     survey_page = "Free Form Questions"
