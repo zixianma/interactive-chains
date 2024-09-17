@@ -53,27 +53,44 @@ def upload_to_drive(file, file_name):
     # Create metadata for the file
     file_metadata = {
         'name': new_file_name,
-        'parents': ['1qTeHaCMkaRWJ4P2Jq9qmkdDWs7BvgeuH']  # Replace with your Google Drive folder ID
+        'parents': ['1qTeHaCMkaRWJ4P2Jq9qmkdDWs7BvgeuH']
     }
 
     # Convert the Streamlit file uploader object to a BytesIO object for the upload
     file_io = io.BytesIO(file.getvalue())
 
+    # Use a larger chunk size for large file uploads (10MB? may swap to 5MB if suffering performance issues)
+    chunk_size = 10 * 1024 * 1024  # 10 MB
+
     # Create the MediaIoBaseUpload object with resumable=True for large file upload
-    media = MediaIoBaseUpload(file_io, mimetype='video/webm', chunksize=1024*1024, resumable=True)
+    media = MediaIoBaseUpload(file_io, mimetype='video/webm', chunksize=chunk_size, resumable=True)
 
     # Initiate the upload request
     request = drive_service.files().create(body=file_metadata, media_body=media, fields='id')
-    
+
+    # Initialize response and progress tracking
     response = None
     progress_bar = st.progress(0)
+    retries = 5  # Number of retry attempts
+    retry_delay = 5  # Retry delay in seconds
+
     while response is None:
-        # Track progress during upload
-        status, response = request.next_chunk()
-        if status:
-            # Update progress bar based on the upload status
-            st.session_state.upload_progress = int(status.progress() * 100)
-            progress_bar.progress(st.session_state.upload_progress)
+        try:
+            # Track progress during upload
+            status, response = request.next_chunk()
+            if status:
+                # Update progress bar based on the upload status
+                st.session_state.upload_progress = int(status.progress() * 100)
+                progress_bar.progress(st.session_state.upload_progress)
+
+        except (ConnectionError, TimeoutError, Exception) as e:
+            # Retry logic in case of failure
+            retries -= 1
+            if retries <= 0:
+                raise Exception(f"Upload failed after multiple retries: {e}. Please contact the Protocol Director, Zixian Ma, at zixianma@uw.edu")
+            print(f"Upload failed for {st.session_state.username}, retrying in {retry_delay} seconds... ({retries} retries left)")
+            time.sleep(retry_delay)
+            retry_delay *= 2  # Exponential backoff like implementation
 
     return response['id']
 
@@ -170,7 +187,7 @@ def video_submission():
                 print(f'video uploaded succesfully!  File ID: {video_id} for user: {st.session_state.username}')
 
                 # Update session state after submission to prevent future submissions
-                st.session_state.video_submitted = True  # Prevent future submissions
+                st.session_state.video_submitted = True
                 st.session_state.uploading = False
 
                 # Update user data and reset after completion
@@ -180,8 +197,6 @@ def video_submission():
         except Exception as e:
             st.error(f"Error with the video save: {e}.\n Please contact for help.")
             st.session_state.uploading = False
-
-
 
 def free_form_questions():
     survey_page = "Free Form Questions"
