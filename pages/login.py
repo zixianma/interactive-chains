@@ -118,7 +118,7 @@ def submit_consent(username_input):
         st.session_state.username = st.session_state.username_input
 
         if 'status' not in st.session_state:
-            if len(st.session_state.username) < 24:
+            if len(st.session_state.username) < 15:
                 st.session_state.status = "test"
             else:
                 st.session_state.status = "prod"
