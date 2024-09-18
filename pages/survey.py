@@ -223,11 +223,18 @@ def free_form_questions():
         st.session_state.time_spent = datetime.now()
     if f"submit_disabled_{survey_page}" not in st.session_state:
         st.session_state[f"submit_disabled_{survey_page}"] = False
+    if 'submitted_once' not in st.session_state:
+        st.session_state.submitted_once = False
+
+    if st.session_state[f"submit_disabled_{survey_page}"]:
+        update_user_data("complete", 5)
+        st.session_state.last_progress = 5
+        st.rerun()
 
     st.title("Final Questions & Feedback")
     st.subheader("Note: You cannot go back, please take your time answering these.")
 
-    # Use st.session_state to preserve input across reruns
+    # Preserve input across reruns
     st.session_state.strategy = st.text_area(
         ":red[*]What was your strategy for answering the questions?",
         value=st.session_state.get('strategy', ''), key='strategy_frq'
@@ -261,6 +268,9 @@ def free_form_questions():
 
     # Perform validation and submission
     if st.button("Submit", key="submit_answers", disabled=st.session_state[f"submit_disabled_{survey_page}"]):
+        # Immediately disable the submit button
+        st.session_state[f"submit_disabled_{survey_page}"] = True
+
         # Validation
         if any([
             st.session_state.strategy.strip() == '',
@@ -269,29 +279,28 @@ def free_form_questions():
             st.session_state.ai_model_interaction_usage is not None and st.session_state.ai_model_interaction_usage.strip() == '',
         ]):
             st.error("Please answer all the required questions before submitting.")
+            st.session_state[f"submit_disabled_{survey_page}"] = False  # Re-enable on validation error
         elif count_words(st.session_state.strategy) < 10:
             st.error("Please write at least 10 words for your strategy.")
+            st.session_state[f"submit_disabled_{survey_page}"] = False
         elif st.session_state.condition.find("hai-answer") == -1 and count_words(st.session_state.error_finding) < 10:
             st.error("Please write at least 10 words regarding errors.")
+            st.session_state[f"submit_disabled_{survey_page}"] = False
         elif count_words(st.session_state.ai_model_usage) < 10:
             st.error("Please write at least 10 words for how you used the AI model.")
+            st.session_state[f"submit_disabled_{survey_page}"] = False
         elif st.session_state.condition.find("hai-regenerate") > -1 and count_words(st.session_state.ai_model_interaction_usage) < 10:
             st.error("Please write at least 10 words regarding how you interacted with the model.")
+            st.session_state[f"submit_disabled_{survey_page}"] = False
         else:
-            # Only disable the submit button after successful submission
+            # Ensure values are preserved before proceeding
+            st.session_state.submitted_once = True  # Prevent multiple submissions
             end_time = datetime.now()
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             
             # Submit the data
             record_data_clear_state(['strategy', 'ai_model_usage', 'error_finding', 'ai_model_interaction_usage', 'misc_comments', 'elapsed_time'], survey_page=survey_page)
-            update_user_data("complete", 5)
-            
-            # Mark the submit button as disabled only after successful submission
-            st.session_state[f"submit_disabled_{survey_page}"] = True
-            
-            # Navigate to the next page or create a clickable link
-            st.session_state.last_progress = 5
-            st.rerun()
+
 
 def interaction_questions():
     survey_page = "Interaction Questions"

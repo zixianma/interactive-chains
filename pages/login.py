@@ -117,6 +117,10 @@ def submit_consent(username_input):
         st.session_state['username_submitted'] = True
         st.session_state.username = st.session_state.username_input
 
+        if 'status' not in st.session_state:
+            # st.session_state.status = "test" # VALUES: ['prod', 'test']
+            st.session_state.status = "prod"
+
         if 'sheet' not in st.session_state:
             toml_data = st.secrets # toml.load(".streamlit/secrets.toml")
             credentials_data = toml_data["connections"]["gsheets"]
@@ -128,7 +132,7 @@ def submit_consent(username_input):
             credentials = Credentials.from_service_account_info(credentials_data, scopes=scope)
             client = gspread.authorize(credentials)
 
-            st.session_state.condition_counts_sheet = condition_counts_sheet = exponential_backoff(client.open, "Condition Counts")  
+            st.session_state.condition_counts_sheet = condition_counts_sheet = exponential_backoff(client.open, f"Condition Counts {st.session_state.status}")  
             row, user_condition = find_user_row(condition_counts_sheet)
 
             if user_condition:
@@ -136,7 +140,7 @@ def submit_consent(username_input):
                 update_pilot_user_data(pilot_user_data_sheet, seen=True, idx=row)
                 print("continuing where you left off: " + str(user_condition))
                 st.session_state.condition = str(user_condition)
-                sheet_condition = st.session_state.condition.split(' ', 1)[1]
+                sheet_condition = st.session_state.condition.split(' ', 1)[1] + ' ' + st.session_state.status
                 print(f'sheet condition {sheet_condition}')
                 st.session_state['sheet'] = exponential_backoff(client.open, sheet_condition)  
                 st.session_state['user_worksheet'] = exponential_backoff(st.session_state['sheet'].worksheet, st.session_state.username)
@@ -166,7 +170,7 @@ def submit_consent(username_input):
                 update_condition_count(pilot_worksheet, assigned_condition, condition_counts[assigned_condition])
                 print(f"You have been assigned to: {assigned_condition}")
                 st.session_state.condition = assigned_condition
-                sheet_condition = st.session_state.condition.split(' ', 1)[1]
+                sheet_condition = st.session_state.condition.split(' ', 1)[1] + ' ' + st.session_state.status
                 st.session_state['sheet'] = exponential_backoff(client.open, sheet_condition)
                 pilot_user_data_sheet = exponential_backoff(condition_counts_sheet.worksheet, "Pilot User Data")
                 update_pilot_user_data(pilot_user_data_sheet)
