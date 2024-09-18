@@ -124,9 +124,9 @@ def display_left_column(env, idx, left_column, condition):
                     expander.chat_message("user", avatar="🌐").write(step_str[kw])
                 elif kw == "action":
                     # step_container.write(step_str[kw])
-                    step_container.text_input("", step_str[kw], label_visibility="collapsed", disabled=True, key=f"display {kw} {i}")
+                    step_container.text_input("text_input", step_str[kw], label_visibility="collapsed", disabled=True, key=f"display {kw} {i}")
                 else:
-                    step_container.text_area("", step_str[kw], label_visibility="collapsed", disabled=True, key=f"display {kw} {i}")
+                    step_container.text_area("text_area", step_str[kw], label_visibility="collapsed", disabled=True, key=f"display {kw} {i}")
             # left_column.button("Edit this step", key=f"update {i}")
 
             expander.divider()
@@ -520,9 +520,9 @@ def main_study():
                         st.chat_message("user", avatar="🌐").write(content_str)
 
                     elif kw == "action":
-                        step_container.text_input("", content_str, label_visibility="collapsed", disabled=True)
+                        step_container.text_input("text_input", content_str, label_visibility="collapsed", disabled=True)
                     else:
-                        step_container.text_area("", content_str, label_visibility="collapsed", disabled=True)
+                        step_container.text_area("text_area", content_str, label_visibility="collapsed", disabled=True)
             st.divider()
 
         

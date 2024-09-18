@@ -85,9 +85,9 @@ def instruction():
                     expander.chat_message("user", avatar="🌐").write(content_str)
 
                 elif kw == "action":
-                    step_container.text_input("", content_str, label_visibility="collapsed", disabled=True)
+                    step_container.text_input("text_input", content_str, label_visibility="collapsed", disabled=True)
                 else:
-                    step_container.text_area("", content_str, label_visibility="collapsed", disabled=True)
+                    step_container.text_area("text_area", content_str, label_visibility="collapsed", disabled=True)
         expander.divider()
     if "instruction_done" not in st.session_state:
         st.session_state["instruction_done"] = False
@@ -103,7 +103,7 @@ def instruction():
             secs = secs - 1
             st.session_state["remaining_time"] -= 1
             mm, ss = secs//60, secs%60
-            ph.metric("", f"{mm:02d}:{ss:02d}")
+            ph.metric("Remaining Time", f"{mm:02d}:{ss:02d}", label_visibility="collapsed")
             time.sleep(1)
     print(st.session_state["remaining_time"])
     next = st.button("Next", on_click=click_next)
