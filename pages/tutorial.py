@@ -77,7 +77,7 @@ def begin_tutorial():
         else:
             raise NotImplementedError
     else:
-        st.markdown("### :red[IMPORTANT! It's highly recommended to complete the study in one setting. Please only refresh the page if you absolutely have to. Now, please follow the steps below to start a recording of your screen. You will need to upload the recording at the end to complete the study.]")
+        st.markdown("### :red[IMPORTANT! It's recommended to complete the study in one setting. Please only refresh the page if you have to. Now, please follow the steps below to start a recording of your screen. You will need to upload the recording at the end to complete the study.]")
         
     warning = st.empty()
     placeholder = st.empty()
