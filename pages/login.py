@@ -117,10 +117,13 @@ def submit_consent(username_input):
         st.session_state['username_submitted'] = True
         st.session_state.username = st.session_state.username_input
 
-        toml_data = st.secrets
         if 'status' not in st.session_state:
-            # st.session_state.status = "test" # VALUES: ['prod', 'test']
-            st.session_state.status = toml_data["status"]["status"]
+            if len(st.session_state.username) < 24:
+                st.session_state.status = "test"
+            else:
+                st.session_state.status = "prod"
+
+        print(f'test status: {st.session_state.status}')
 
         if 'sheet' not in st.session_state:
             toml_data = st.secrets # toml.load(".streamlit/secrets.toml")
