@@ -151,6 +151,12 @@ def format_action_str(action):
         return "none"
 
 @st.cache_data
+def combine_action_option_and_input(action_option, action_input):
+    combined_action_str = f"{action_option[0].lower() + action_option[1:]}[{action_input}]"
+    return combined_action_str
+    
+
+@st.cache_data
 def parse_action_into_parts(action):
     start = action.rfind(":") + 1 # +1 so it's min 0 even if not found
     mid = action.find("[")
@@ -162,7 +168,7 @@ def parse_action_into_parts(action):
 
 @st.cache_data
 def turn_step_dict_into_msg(step_dict):
-    msg = "\n".join([step_dict['thought'], step_dict['action'], step_dict['observation']])
+    msg = "\n".join([step_dict['thought'].strip(), step_dict['action'].strip(), step_dict['observation'].strip()])
     return msg
 
 # @st.cache_data
@@ -251,7 +257,6 @@ def display_right_column(env, idx, right_column, condition):
     else:
         if condition == "I. hai-regenerate":
             COOLDOWN_TIME = 8 # ADJUST HERE
-            # right_column.subheader("Edit any thought or action and update AI's output:")
             right_column.markdown("#### Edit any thought or action and update AI's output:")
             model_output =  st.session_state.model_outputs[idx][:-1]
             if 'curr_model_output' not in st.session_state[idx]:
@@ -271,19 +276,17 @@ def display_right_column(env, idx, right_column, condition):
             for i, step_dict in enumerate(st.session_state[idx]['curr_model_output']):
                 obs_str = step_dict['observation'] 
                 thought_str = step_dict['thought'] 
-                # action_str = step_dict['action']
                 action_dict = parse_action_into_parts(step_dict['action'])
-                
+
                 step_container = right_column.chat_message("assistant")
-                
                 thought_input = step_container.text_area("", thought_str, label_visibility="collapsed", key=f"thought {i}")
-                thought_key = f"Changed thought {i + 1} to: {thought_input}"
+                # thought_key = f"Changed thought {i + 1} to: {thought_input}"
 
                 if thought := thought_input and thought_input != step_dict['thought']:
                     # st.session_state[idx]["actions"].append(thought_key)
                     # st.session_state[idx]["generate_next_step"] = False
                     curr_msgs = [{"role": "user", "content": st.session_state['task_prompt'] + st.session_state[idx]['question']}]
-                    curr_msgs += [{"role": "assistant", "content": "\n".join([step_dict['thought'], step_dict['action'], step_dict['observation']])} for step_dict in model_output[:i]]
+                    curr_msgs += [{"role": "assistant", "content": turn_step_dict_into_msg(step_dict)} for step_dict in model_output[:i]]
                     curr_msgs += [{"role": "user", "content": f"{thought_input}"}]
                     next_action = llm(curr_msgs, stop=["Observation"])
                     action_dict = parse_action_into_parts(next_action)
@@ -297,18 +300,19 @@ def display_right_column(env, idx, right_column, condition):
                     action_index = 0
                 action_str = action_dict['input']
                 
-                action_dict['label'] = f"Action {i+1}: "
+                action_dict['label'] = f"Action {i+1}:"
                 action_label = action_cols[0].text_input("", action_dict['label'], label_visibility="collapsed", disabled=True, key=f"action label {i}") #
                 action_option = action_cols[1].selectbox("", all_action_options, label_visibility="collapsed", index=action_index, key=f"action choice {i}")
                 action_input = action_cols[2].text_input("", action_str, label_visibility="collapsed", key=f"action input {i}")
-                # action_input = step_container.text_input("", action_str, label_visibility="collapsed", key=f"action {i}")
-                action_combined = f"{action_option[0].lower() + action_option[1:]}[{action_input}]"
+
+                action_combined = combine_action_option_and_input(action_option, action_input) # search[query]
                 action_formatted = format_action_str(step_dict['action'])
 
-                action_key = f"Changed action {i + 1} to: {action_option.lower()}: {action_input}"
+                # action_key = f"Changed action {i + 1} to: {action_option.lower()}: {action_input}"
                 if action := action_input and action_combined != action_formatted: # action := action_input and  action := action_combined and 
                     # st.session_state[idx]["actions"].append(action_key)
-                    action = f"{action_option[0].lower() + action_option[1:]}[{action_input}]" # action_combined
+                    action = combine_action_option_and_input(action_option, action_input) # f"{action_option[0].lower() + action_option[1:]}[{action_input}]" # action_combined
+                    print("action:", action, action_combined)
                     obs, r, done, info = step(env, action)
                     obs_str = obs.replace('\\n', '')   
                     if done:
@@ -326,22 +330,28 @@ def display_right_column(env, idx, right_column, condition):
                     break
 
             st.session_state[idx]['curr_model_output'] = new_model_output
-            # print(f"model output: {model_output}")
-            # print(f"thoughts in session state: {st.session_state[idx]['changed_thoughts'][st.session_state[idx]['ai_output_clicks']]}")
             num_steps = len(st.session_state[idx]['curr_model_output'])
 
             def click_button():
                 current_time = time.time()
                 if current_time - st.session_state[idx]["last_ai_button_click_time"] >= COOLDOWN_TIME:
+                    st.session_state[idx]['time_warning'] = False
                     st.session_state[idx][f"generate_next_step"] = True
                     st.session_state[idx]["ai_output_clicks"] += 1
                     st.session_state[idx]["last_ai_button_click_time"] = current_time
                 else:
-                    st.warning("Please do not spam this button.")
+                    st.session_state[idx]['time_warning'] = True
+                    st.session_state[idx][f"generate_next_step"] = False
             
             current_time = time.time()
-            disable_button = current_time - st.session_state[idx]["last_ai_button_click_time"] < COOLDOWN_TIME or st.session_state[idx]["submitted"]
+            disable_button = st.session_state[idx]["submitted"] # current_time - st.session_state[idx]["last_ai_button_click_time"] < COOLDOWN_TIME or
+           
             generate = right_column.button("Update AI's output", key=f"generate {num_steps+1}", on_click=click_button, disabled=disable_button)
+            rc_warning = right_column.empty()
+            if 'time_warning' not in st.session_state[idx]:
+                st.session_state[idx]['time_warning'] = False
+            if st.session_state[idx]['time_warning']:
+                rc_warning.warning("You clicked this button too frequently. Please take some time to think about the reasoning chain before updating the AI's output again.")
             curr_msgs = format_model_output_into_msgs_for_idx(idx)
             if "curr_msgs" not in st.session_state[idx]:
                 st.session_state[idx]['curr_msgs'] = curr_msgs
@@ -350,47 +360,54 @@ def display_right_column(env, idx, right_column, condition):
             # print(curr_msgs != st.session_state[idx]['curr_msgs'])
             # print(curr_msgs[1:], '\n\n')
             # print(st.session_state[idx]['curr_msgs'][1:])
-            if st.session_state[idx]["generate_next_step"] and curr_msgs != st.session_state[idx]['curr_msgs']: # generate (not st.session_state[idx]["done"]) 
-                # container = right_column.container()
-                # with container:
-                with st.spinner('Wait for model to finish running...'):
-                    for i in range(num_steps, 8):
-                        new_thought_action = llm(curr_msgs, stop=["Observation"])
-                        if len(new_thought_action.strip()) == 0:
-                            print("try running with prefix..")
-                            last_msg = curr_msgs[-1]['content']
-                            print("last msg:", curr_msgs[-1])
-                            action_exists = last_msg.find("Action") > -1
-                            prefix_msg = [{"role": "user", "content": f"Thought {num_steps+1}:\n" if action_exists else f"Action {num_steps+1}:\n"}]
-                            print("Prefix msg:", prefix_msg)
-                            new_thought_action = llm(curr_msgs + prefix_msg, stop=["Observation"])
-
-                        print("model output:", new_thought_action)
-                        thought_str = get_part_from_step(new_thought_action, "Thought", "Action")
-                        action_str = get_part_from_step(new_thought_action, "Action", None)
-                        # new_thought = step_container.write(thought_str)
-                        # new_action = step_container.write(action_str)
-                        # print("action str:", action_str)
-                        action = format_action_str(action_str)
-                        obs, r, done, info = step(env, action)
-                        if not done:
-                            obs_str = obs.replace('\\n', '')
-                            obs_str = f"Observation {i+1}: {obs_str}"
-                            new_step_dict = {"thought": thought_str, "action": action_str, "observation": obs_str}
-                            curr_msgs.append({"role": "assistant", "content": turn_step_dict_into_msg(new_step_dict)})
-                            st.session_state[idx]['curr_model_output'].append(new_step_dict)
-                        else:
-                            st.session_state[idx]["done"] = True
-                            obs_str = f"Observation {i+1}: Done"
-                            new_step_dict = {"thought": thought_str, "action": action_str, "observation": "Done"}
-                            curr_msgs.append({"role": "assistant", "content": turn_step_dict_into_msg(new_step_dict)})
-                            st.session_state[idx]['curr_model_output'].append(new_step_dict)
-                            break
-                    # turn off generate flag after a new output is generated
+            if st.session_state[idx]["generate_next_step"]: # generate (not st.session_state[idx]["done"]) 
+                if curr_msgs == st.session_state[idx]['curr_msgs']:
+                    rc_warning.warning("You haven't made any changes to the thought/action. Please update the AI's output only after you make changes.")
                     st.session_state[idx][f"generate_next_step"] = False
-                st.session_state[idx]['model_output_per_run'][st.session_state[idx]["ai_output_clicks"]] = keep_thoughts_and_actions(st.session_state[idx]["curr_model_output"]) 
-                st.session_state[idx]['curr_msgs'] = curr_msgs
-                st.rerun()
+                else:
+                    print("curr msgs:\n", curr_msgs)
+                    print("curr msgs in session state:\n", st.session_state[idx]['curr_msgs'])
+                    # container = right_column.container()
+                    # with container:
+                    with st.spinner('Wait for model to finish running...'):
+                        for i in range(num_steps, 8):
+                            new_thought_action = llm(curr_msgs, stop=["Observation"])
+                            if len(new_thought_action.strip()) == 0:
+                                print("try running with prefix..")
+                                last_msg = curr_msgs[-1]['content']
+                                print("last msg:", curr_msgs[-1])
+                                action_exists = last_msg.find("Action") > -1
+                                prefix_msg = [{"role": "user", "content": f"Thought {num_steps+1}:\n" if action_exists else f"Action {num_steps+1}:\n"}]
+                                print("Prefix msg:", prefix_msg)
+                                new_thought_action = llm(curr_msgs + prefix_msg, stop=["Observation"])
+
+                            print("model output:", new_thought_action)
+                            thought_str = get_part_from_step(new_thought_action, "Thought", "Action")
+                            action_str = get_part_from_step(new_thought_action, "Action", None)
+                            # new_thought = step_container.write(thought_str)
+                            # new_action = step_container.write(action_str)
+                            # print("action str:", action_str)
+                            action = format_action_str(action_str)
+                            obs, r, done, info = step(env, action)
+                            if not done:
+                                obs_str = obs.replace('\\n', '')
+                                obs_str = f"Observation {i+1}: {obs_str}"
+                                new_step_dict = {"thought": thought_str, "action": action_str, "observation": obs_str}
+                                curr_msgs.append({"role": "assistant", "content": turn_step_dict_into_msg(new_step_dict)})
+                                st.session_state[idx]['curr_model_output'].append(new_step_dict)
+                            else:
+                                st.session_state[idx]["done"] = True
+                                obs_str = f"Observation {i+1}: Done"
+                                new_step_dict = {"thought": thought_str, "action": action_str, "observation": "Done"}
+                                curr_msgs.append({"role": "assistant", "content": turn_step_dict_into_msg(new_step_dict)})
+                                st.session_state[idx]['curr_model_output'].append(new_step_dict)
+                                break
+                        # turn off generate flag after a new output is generated
+                        st.session_state[idx][f"generate_next_step"] = False
+                    st.session_state[idx]['model_output_per_run'][st.session_state[idx]["ai_output_clicks"]] = keep_thoughts_and_actions(st.session_state[idx]["curr_model_output"]) 
+
+                    st.session_state[idx]['curr_msgs'] = format_model_output_into_msgs_for_idx(idx)
+                    st.rerun()
             form = right_column.form(key='user-form')
             answer = form.radio(
                 "Select and submit your final answer:",

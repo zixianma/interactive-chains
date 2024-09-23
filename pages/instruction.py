@@ -92,7 +92,7 @@ def instruction():
     if "instruction_done" not in st.session_state:
         st.session_state["instruction_done"] = False
     if "remaining_time" not in st.session_state:
-        st.session_state["remaining_time"] = 120
+        st.session_state["remaining_time"] = 60
     
     def click_next():
         st.session_state['instruction_done'] = True
