@@ -168,7 +168,9 @@ def submit_consent(username_input):
                 condition_counts = get_condition_counts(pilot_worksheet)
                 # this is to make static chain 2x as likely
                 weights = {
-                    'D. hai-static-chain': 2,
+                    'D. hai-static-chain': 0,
+                    'C. hai-answer': 0,
+                    'I. hai-regenerate': 1,
                 }
                 assigned_condition = assign_condition(condition_counts, weights)
                 update_condition_count(pilot_worksheet, assigned_condition, condition_counts[assigned_condition])
