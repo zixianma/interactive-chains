@@ -171,6 +171,10 @@ def format_model_output_into_msgs_for_idx(idx):
     curr_msgs += [{"role": "assistant", "content": turn_step_dict_into_msg(step_dict)} for step_dict in st.session_state[idx]['curr_model_output']]
     return curr_msgs
 
+def keep_thoughts_and_actions(data):
+    return [{'step': index + 1, 'thought': entry['thought'], 'action': entry['action']} 
+                 for index, entry in enumerate(data)]
+
 
 def display_right_column(env, idx, right_column, condition):     
     def click_submit():
@@ -257,7 +261,7 @@ def display_right_column(env, idx, right_column, condition):
             if "generate_next_step" not in st.session_state[idx]:
                 st.session_state[idx]["generate_next_step"] = False
             if "model_output_per_run" not in st.session_state[idx]:
-                st.session_state[idx]["model_output_per_run"] = {0: st.session_state[idx]['curr_model_output']}
+                st.session_state[idx]["model_output_per_run"] = {0: keep_thoughts_and_actions(st.session_state[idx]['curr_model_output'])}
             if "ai_output_clicks" not in st.session_state[idx]:
                 st.session_state[idx]["ai_output_clicks"] = 0
             if "last_ai_button_click_time" not in st.session_state[idx]:
@@ -384,7 +388,7 @@ def display_right_column(env, idx, right_column, condition):
                             break
                     # turn off generate flag after a new output is generated
                     st.session_state[idx][f"generate_next_step"] = False
-                st.session_state[idx]['model_output_per_run'][st.session_state[idx]["ai_output_clicks"]] = st.session_state[idx]['curr_model_output']
+                st.session_state[idx]['model_output_per_run'][st.session_state[idx]["ai_output_clicks"]] = keep_thoughts_and_actions(st.session_state[idx]["curr_model_output"]) 
                 st.session_state[idx]['curr_msgs'] = curr_msgs
                 st.rerun()
             form = right_column.form(key='user-form')
