@@ -48,7 +48,7 @@ def begin_tutorial():
     st.title("Tutorial")
     if st.session_state['tutorial_idx'] < num_tutorial_screenshots:
     
-        st.subheader("Here's a step-by-step tutorial on how to use the interface.")
+        st.subheader("Here's a step-by-step tutorial on how to use the interface. Please follow these steps when completing the tasks for your submission to get approved.")
         if st.session_state.condition == "C. hai-answer":
             left_inst = "On the left, you are given the AI model's suggested answer, which may be incorrect."
             left_inst = st.markdown(left_inst)

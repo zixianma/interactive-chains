@@ -12,8 +12,8 @@ def load_examples():
 def instruction():
 
     st.title("Task Instruction")
-    st.subheader("Please take at least 2 minutes to read the task instructions below carefully before proceeding.")
-    st.text("A Next button will show up at the bottom after 2 minutes for you to go to the next page.")
+    st.subheader("Please take at least 1 minute to read the task instructions below carefully before proceeding.")
+    st.text("A Next button will show up at the bottom after 1 minute for you to go to the next page.")
     ph = st.empty()
     goal = st.markdown("In this study, you will decide with the help of an AI model if there is evidence in the **Observation** that SUPPORTS or REFUTES a **Claim**, or if there is NOT ENOUGH INFORMATION.")
     definitions = st.markdown("""An **Observation** is some text returned by an **Action**, which includes *Search*, *Lookup* and *Finish*.""")
