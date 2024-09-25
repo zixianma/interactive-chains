@@ -62,9 +62,6 @@ def load_model_outputs():
     int_q_id2output = {int(k): v for k, v in q_id2output.items()}
     return int_q_id2output
 
-def get_model_output(output_df, idx):
-    output = output_df[output_df['question_idx'] == idx].iloc[0]
-    return output['all_steps']
 
 @st.cache_data
 def process_model_output(step_str, final=False):
@@ -99,10 +96,9 @@ def extract_final_answer(model_output):
     final_ans = last_step_str[start+1:end if end > 0 else len(last_step_str)]
     return final_ans
 
-def display_left_column(env, idx, left_column, condition):
+def display_left_column(idx, left_column, condition):
     if condition == "C. hai-answer":
         left_column.subheader("AI model's output:")
-        # model_output = get_model_output(model_outputs, idx)
         model_output = st.session_state.model_outputs[idx]
         final_ans = extract_final_answer(model_output)
         # left_column.divider()
@@ -110,7 +106,6 @@ def display_left_column(env, idx, left_column, condition):
         container.write(f"AI answer: {final_ans}")
 
     elif condition != "A. human":
-        # model_output = get_model_output(model_outputs, idx)
         model_output = st.session_state.model_outputs[idx]
         expander = left_column.expander("#### AI model's output", expanded=True)
         for i, step_str in enumerate(model_output):
@@ -291,7 +286,6 @@ def display_right_column(env, idx, right_column, condition):
                     next_action = llm(curr_msgs, stop=["Observation"])
                     action_dict = parse_action_into_parts(next_action)
                     # break
-                action_cols = step_container.columns([2, 2, 8])
                 
                 all_action_options = ["Search", "Lookup", "Finish"]
                 try:
@@ -299,19 +293,43 @@ def display_right_column(env, idx, right_column, condition):
                 except:
                     action_index = 0
                 action_str = action_dict['input']
+
+                if 'action_input' not in st.session_state[idx]:
+                    st.session_state[idx][f'action_input_{i}'] = action_str
+                if 'action_index' not in st.session_state[idx]:
+                    st.session_state[idx][f'action_index_{i}'] = action_index
+
+                # def update_action_option(key):
+                #     action_option = st.session_state[key]
+                #     st.session_state[idx][f'action_index_{i}'] = all_action_options.index(action_option)
+                    
+                # def update_action_input(key):
+                #     st.session_state[idx][f'action_input_{i}'] = st.session_state[key]
+
+                action_input_widget_key = f"action input {i}"
+                action_option_widget_key = f"action choice {i}"
+
+                if action_input_widget_key in st.session_state and st.session_state[idx][f'action_input_{i}'] != st.session_state[action_input_widget_key]:
+                    st.session_state[idx][f'action_input_{i}'] = st.session_state[action_input_widget_key]
+                
+                if action_option_widget_key in st.session_state and st.session_state[idx][f'action_index_{i}'] != all_action_options.index(st.session_state[action_option_widget_key]):
+                    st.session_state[idx][f'action_index_{i}'] = all_action_options.index(st.session_state[action_option_widget_key])
                 
                 action_dict['label'] = f"Action {i+1}:"
-                action_label = action_cols[0].text_input("", action_dict['label'], label_visibility="collapsed", disabled=True, key=f"action label {i}") #
-                action_option = action_cols[1].selectbox("", all_action_options, label_visibility="collapsed", index=action_index, key=f"action choice {i}")
-                action_input = action_cols[2].text_input("", action_str, label_visibility="collapsed", key=f"action input {i}")
+                action_cols = step_container.columns([2, 2, 8])
+                action_label = action_cols[0].text_input("none", action_dict['label'], label_visibility="collapsed", disabled=True, key=f"action label {i}") #
+                action_option = action_cols[1].selectbox("none", all_action_options, label_visibility="collapsed", index=st.session_state[idx][f'action_index_{i}'], key=action_option_widget_key) # on_change=update_action_option, args=[action_option_widget_key])
+                action_input = action_cols[2].text_input("none", st.session_state[idx][f'action_input_{i}'], label_visibility="collapsed", key=action_input_widget_key) # on_change=update_action_input, args=[action_input_widget_key])
+        
 
                 action_combined = combine_action_option_and_input(action_option, action_input) # search[query]
                 action_formatted = format_action_str(step_dict['action'])
 
                 # action_key = f"Changed action {i + 1} to: {action_option.lower()}: {action_input}"
-                if action := action_input and action_combined != action_formatted: # action := action_input and  action := action_combined and 
+                if action_combined != action_formatted: # action := action_input and 
                     # st.session_state[idx]["actions"].append(action_key)
-                    action = combine_action_option_and_input(action_option, action_input) # f"{action_option[0].lower() + action_option[1:]}[{action_input}]" # action_combined
+                    action = action_combined
+                    # action = combine_action_option_and_input(action_option, action_input) # f"{action_option[0].lower() + action_option[1:]}[{action_input}]" # action_combined
                     print("action:", action, action_combined)
                     obs, r, done, info = step(env, action)
                     obs_str = obs.replace('\\n', '')   
@@ -355,20 +373,12 @@ def display_right_column(env, idx, right_column, condition):
             curr_msgs = format_model_output_into_msgs_for_idx(idx)
             if "curr_msgs" not in st.session_state[idx]:
                 st.session_state[idx]['curr_msgs'] = curr_msgs
-            
-            # print(st.session_state[idx]["generate_next_step"])
-            # print(curr_msgs != st.session_state[idx]['curr_msgs'])
-            # print(curr_msgs[1:], '\n\n')
-            # print(st.session_state[idx]['curr_msgs'][1:])
+
             if st.session_state[idx]["generate_next_step"]: # generate (not st.session_state[idx]["done"]) 
                 if curr_msgs == st.session_state[idx]['curr_msgs']:
                     rc_warning.warning("You haven't made any changes to the thought/action. Please update the AI's output only after you make changes.")
                     st.session_state[idx][f"generate_next_step"] = False
                 else:
-                    print("curr msgs:\n", curr_msgs)
-                    print("curr msgs in session state:\n", st.session_state[idx]['curr_msgs'])
-                    # container = right_column.container()
-                    # with container:
                     with st.spinner('Wait for model to finish running...'):
                         for i in range(num_steps, 8):
                             new_thought_action = llm(curr_msgs, stop=["Observation"])
@@ -384,9 +394,7 @@ def display_right_column(env, idx, right_column, condition):
                             print("model output:", new_thought_action)
                             thought_str = get_part_from_step(new_thought_action, "Thought", "Action")
                             action_str = get_part_from_step(new_thought_action, "Action", None)
-                            # new_thought = step_container.write(thought_str)
-                            # new_action = step_container.write(action_str)
-                            # print("action str:", action_str)
+
                             action = format_action_str(action_str)
                             obs, r, done, info = step(env, action)
                             if not done:
@@ -616,7 +624,7 @@ def main_study():
     st.divider()
     
     left_column, right_column = st.columns(2)
-    left_column = display_left_column(env, idx, left_column, st.session_state.condition)
+    left_column = display_left_column(idx, left_column, st.session_state.condition)
     right_column = display_right_column(env, idx, right_column, st.session_state.condition)
 
     if 'train_id2explanation' not in st.session_state:
