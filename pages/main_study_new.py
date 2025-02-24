@@ -7,6 +7,7 @@ import re
 from datetime import datetime
 import time
 import pages.utils.logger as logger
+import time
 
 
 @st.cache_data
@@ -223,6 +224,9 @@ def main_study():
 
     if "count" not in st.session_state:
         st.session_state.count = 0
+
+    if "question_start_time" not in st.session_state:
+        st.session_state["question_start_time"] = time.time()
     
     questions = load_data(path="data/science_qa_gpt4_wrong_questions.json")  # pass in different path for different questions
     if "questions" not in st.session_state:
@@ -367,12 +371,14 @@ def main_study():
         #     # print(f'session state count vs total num: {st.session_state.count} {total_num}')]
         #     st.session_state["next_clicked"] = False
         # else:
+            time_spent = time.time() - st.session_state["question_start_time"]
             if st.session_state.condition == "E. Verifiable CoT":
                 raise NotImplementedError
             else:
                 logger.write_to_user_sheet([st.session_state.username, st.session_state.condition, idx,
                                             st.session_state['Model Reasoning'], st.session_state['answer'],
-                                            st.session_state.step_1_response, st.session_state.step_2_response, st.session_state["gt_answer"]])
+                                            st.session_state.step_1_response, st.session_state.step_2_response, st.session_state["gt_answer"],
+                                            time_spent])
                 
                 st.session_state['Model Reasoning'] = ""
                 st.session_state['answer'] = ""
@@ -381,6 +387,7 @@ def main_study():
                 st.session_state.step_2_response = ""
                 st.session_state.step_phase = 1
                 st.session_state.count += 1
+                st.session_state["question_start_time"] = time.time()
                 st.session_state["next_clicked"] = False
                 st.rerun()
     
