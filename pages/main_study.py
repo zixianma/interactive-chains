@@ -11,7 +11,6 @@ import pages.utils.logger as logger
 
 float_init(theme=True, include_unstable_primary=False)
 
-@st.cache_data
 def load_prompts():
     folder = './prompts/'
     prompt_file = 'fever.json'

@@ -11,7 +11,7 @@ def write_to_user_sheet(data):
     exponential_backoff(sheet.append_row, data)
     
     user_data_sheet = st.session_state['sheet']
-    all_actions_sheet = exponential_backoff(user_data_sheet.worksheet, 'all actions')  
+    all_actions_sheet = exponential_backoff(user_data_sheet.worksheet, 'Main Study')  
     exponential_backoff(all_actions_sheet.append_row, data)  
 
 def write_survey_response(data, sheet, key_list):
@@ -32,10 +32,10 @@ def create_user_worksheet():
         # Create a new worksheet for the user if it doesn't exist
         worksheet = exponential_backoff(sheet.add_worksheet, title=st.session_state.username, rows=100, cols=20)  
         
-        if st.session_state.condition.find("regenerate") > -1:
-            header_list = ["Username", "question idx", "Number of Generate AI output button clicks", "model output", "answer", "condition", "time", "number of questions completed"]
+        if st.session_state.condition.find("verifiasble") > -1:
+            header_list = []  # Not implement yet
         else:
-            header_list = ["Username", "question idx", "total steps", "action space", "answer", "condition", "time", "number of questions completed"]
+            header_list = ["Username", "Condition", "Question idx", "Model Reasoning", "Model Answer", "Step 1", "Step 2", "Gt Answer"]
         
         exponential_backoff(worksheet.append_row, header_list)  
     

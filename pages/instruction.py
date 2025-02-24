@@ -92,7 +92,7 @@ def instruction():
     if "instruction_done" not in st.session_state:
         st.session_state["instruction_done"] = False
     if "remaining_time" not in st.session_state:
-        st.session_state["remaining_time"] = 60
+        st.session_state["remaining_time"] = 5  # Change back to 60
     
     def click_next():
         st.session_state['instruction_done'] = True
@@ -108,5 +108,5 @@ def instruction():
     print(st.session_state["remaining_time"])
     next = st.button("Next", on_click=click_next)
     if st.session_state['instruction_done']:
-        st.session_state.page =  "begin_tutorial" #"main_study" "survey" # 
+        st.session_state.page =  "main_study" # "begin_tutorial" #"main_study" "survey" # 
         st.rerun()

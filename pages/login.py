@@ -153,24 +153,26 @@ def submit_consent(username_input):
                 print(f'all values: {all_values}, len: {len(all_values)}')
                 if not all_values or (len(all_values) == 1 and not all_values[0]):
                     st.session_state.questions_done = -1
-                    st.session_state.page =   "demographics" # begin_tutorial or instruction?
+                    st.session_state.page = "demographics" # begin_tutorial or instruction?
                 elif len(all_values) >= 36:
                     st.session_state.questions_done = 36
-                    st.session_state.page =   "end_tutorial"
+                    st.session_state.page = "end_tutorial"
                 else:
                     last_question_answered = all_values[-1]
                     print(f'last_question_answered: {last_question_answered}')
                     st.session_state.questions_done = int(last_question_answered[0])
-                    st.session_state.page =   "begin_tutorial" # begin_tutorial or instruction?
+                    st.session_state.page = "main_study" #"begin_tutorial" # begin_tutorial or instruction?
                 print(f'st.session_state.questions_done: {st.session_state.questions_done}')
             else:
                 pilot_worksheet = exponential_backoff(condition_counts_sheet.worksheet, "Pilot")
                 condition_counts = get_condition_counts(pilot_worksheet)
                 # this is to make static chain 2x as likely
                 weights = {
-                    'D. hai-static-chain': 0,
-                    'C. hai-answer': 0,
-                    'I. hai-regenerate': 1,
+                    "A. Answer only" : 0,
+                    "B. Paragraph CoT" : 1,
+                    "C. Step-by-step CoT -- All at once": 0,
+                    "D. Step-by-step CoT -- Sequential": 0
+                    # "E. Verifiable CoT": 0
                 }
                 assigned_condition = assign_condition(condition_counts, weights)
                 update_condition_count(pilot_worksheet, assigned_condition, condition_counts[assigned_condition])
@@ -192,7 +194,7 @@ def submit_consent(username_input):
                 if 'demographics' not in st.session_state:
                     st.session_state['demographics'] = demo_worksheet
                 
-                st.session_state.page =   "demographics"
+                st.session_state.page = "demographics"
 
         # st.session_state.page =   "main_study" # "end_tutorial" #"instruction" "main_study" "survey" # "demographics" #
 
