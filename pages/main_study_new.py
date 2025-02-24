@@ -109,7 +109,7 @@ def show_step_2(index):
         additional_info = question.get("model_explanation", None)
     
     elif condition == "C. Step-by-step CoT -- All at once":
-        st.markdown("**Model's Step-by-step CoT:**")
+        st.markdown("**Model's Step-by-step Chain-of-thought:**")
 
         step_str = question.get("cot_steps", "")
         if step_str:
@@ -127,7 +127,14 @@ def show_step_2(index):
         st.warning(question.get("model_answer", "No answer available."))
 
     elif condition == "D. Step-by-step CoT - Sequential":
-        raise NotImplementedError
+        st.markdown("**Model's Step-by-step Chain-of-thought:")
+
+        step_str = question.get("cot_steps", "")
+        if step_str:
+            parts = re.split(r"Step\s*\d+:", step_str)
+            steps_list = [part.strip() for part in parts if part.strip()]
+
+            
     
     elif condition == "E. Verifiable CoT":
         raise NotImplementedError
