@@ -134,8 +134,33 @@ def show_step_2(index):
             parts = re.split(r"Step\s*\d+:", step_str)
             steps_list = [part.strip() for part in parts if part.strip()]
 
+            if "current_step" not in st.session_state:
+                st.session_state.current_step = 0
+
+            total_steps = len(steps_list)
+
+            if st.session_state.current_step < total_steps:
+                st.write(f"**Step {st.session_state.current_step + 1}:** {steps_list[st.session_state.current_step]}")
             
-    
+            col1, col2 = st.columns([1,1])
+            if st.session_state.current_step > 0:
+                if col1.button("Previous Step", key=f"prev_step_{index}"):
+                    st.session_state_current_step -= 1
+                    st.rerun()
+            
+            if st.session_state.current_step < total_steps - 1:
+                if col2.button("Next Step", key=f"next_step_{index}"):
+                    st.session_state.current_step += 1
+                    st.rerun()
+            
+            if st.session_state.current_step == total_steps - 1:
+                st.markdown("**Model's Final Answer:**")
+                st.warning(question.get("model_answer", "No answer available."))
+        
+        else:
+            st.info("No step-by-step CoT available.")
+
+
     elif condition == "E. Verifiable CoT":
         raise NotImplementedError
     
@@ -187,6 +212,7 @@ def show_step_2(index):
             st.session_state.step_phase = 1
             # reset the submission flag for the next question.
             st.session_state.step_2_submitted = False
+            st.session_state.cuttent_step = 0
             st.session_state["next_clicked"] = True
             return
     else:
