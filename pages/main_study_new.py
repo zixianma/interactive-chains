@@ -8,17 +8,31 @@ from datetime import datetime
 import time
 import pages.utils.logger as logger
 import time
+import os
 
 
 @st.cache_data
 def load_data(path="./data/training_questions.json"):
-    """Loads the training and main-study questions from JSON files."""
-    with open(path, "r") as f:
-        questions = json.load(f)
-    
-    questions = {int(k): v for k, v in questions.items()}
+    """Loads the training and main-study questions from JSON or JSONL files."""
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"File not found: {path}")
 
-    return questions
+    # Handle JSONL files
+    if path.endswith(".jsonl"):
+        data = []
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                data.append(json.loads(line.strip()))
+        return data
+
+    # Handle standard JSON files
+    elif path.endswith(".json"):
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return {int(k): v for k, v in data.items()}
+
+    else:
+        raise ValueError("Unsupported file format. Please use .json or .jsonl")
 
 
 def show_step_1(index):
@@ -86,53 +100,50 @@ def show_step_2(index):
     st.subheader("Step 2: Model's Help & Your Decision")
 
     question = st.session_state.questions[index]
-
     st.write("**Question:**", question["question"])
 
     condition = st.session_state.condition
 
+    # Flag to control whether Accept/Reject is allowed
+    can_accept_reject = True
+
     if condition == "A. Answer only":
         st.markdown("**Model's Final Answer:**")
         st.warning(question.get("model_answer", "No answer available"))
-
-        additional_info = None
     
     elif condition == "B. Paragraph CoT":
         st.markdown("**Model's Paragraph Chain-of-thought**")
         st.info(question.get("model_explanation", "No paragraph CoT available"))
-
         if index in st.session_state.idxtoimage:
-            st.image(st.session_state.idxtoimage[index], caption=f"Image for the above question", use_container_width=True)
-
+            st.image(
+                st.session_state.idxtoimage[index],
+                caption="Image for the above question",
+                use_container_width=True,
+            )
         st.markdown("**Model's Final Answer:**")
-        st.warning(question.get("model_answer", "No answer available"))
-
-        additional_info = question.get("model_explanation", None)
+        st.warning(question.get("model_answer", "No answer available."))
     
     elif condition == "C. Step-by-step CoT -- All at once":
         st.markdown("**Model's Step-by-step Chain-of-thought:**")
-
-        step_str = question.get("cot_steps", "")
+        step_str = question.get("model_explanation", "")
         if step_str:
             parts = re.split(r"Step\s*\d+:", step_str)
             steps_list = [part.strip() for part in parts if part.strip()]
-
             with st.expander("Model chain of thought"):
                 for i, step_text in enumerate(steps_list, start=1):
                     st.write(f"**Step {i}:** {step_text}")
         else:
             st.info("No step-by-step CoT available.")
         
-
         st.markdown("**Model's Final Answer:**")
         st.warning(question.get("model_answer", "No answer available."))
-
-    elif condition == "D. Step-by-step CoT - Sequential":
-        st.markdown("**Model's Step-by-step Chain-of-thought:")
-
-        step_str = question.get("cot_steps", "")
+    
+    elif condition == "D. Step-by-step CoT -- Sequential":
+        st.markdown("**Model's Step-by-step Chain-of-thought:**")
+        step_str = question.get("model_explanation", "")
+        
         if step_str:
-            parts = re.split(r"Step\s*\d+:", step_str)
+            parts = re.split(r"(?:\*\*)?Step\s*\d+:", step_str, flags=re.IGNORECASE)
             steps_list = [part.strip() for part in parts if part.strip()]
 
             if "current_step" not in st.session_state:
@@ -140,31 +151,37 @@ def show_step_2(index):
 
             total_steps = len(steps_list)
 
-            if st.session_state.current_step < total_steps:
-                st.write(f"**Step {st.session_state.current_step + 1}:** {steps_list[st.session_state.current_step]}")
-            
-            col1, col2 = st.columns([1,1])
-            if st.session_state.current_step > 0:
-                if col1.button("Previous Step", key=f"prev_step_{index}"):
-                    st.session_state_current_step -= 1
-                    st.rerun()
-            
+            # Display all steps up to (and including) the current step
+            for i in range(st.session_state.current_step + 1):
+                st.markdown(f"**Step {i+1}:** {steps_list[i]}", unsafe_allow_html=True)
+
+            # If not at the final step, show the "Next Step" button centered
             if st.session_state.current_step < total_steps - 1:
-                if col2.button("Next Step", key=f"next_step_{index}"):
-                    st.session_state.current_step += 1
-                    st.rerun()
-            
-            if st.session_state.current_step == total_steps - 1:
+                left_spacer, mid_col, right_spacer = st.columns([1, 2, 1])
+                with mid_col:
+                    if st.button("Next Step", key="next_step"):
+                        st.session_state.current_step += 1
+                        st.rerun()
+                can_accept_reject = False
+            else:
+                # When at final step, display the final answer on a new line
+                st.markdown("<br>", unsafe_allow_html=True)
                 st.markdown("**Model's Final Answer:**")
                 st.warning(question.get("model_answer", "No answer available."))
-        
+                can_accept_reject = True
         else:
             st.info("No step-by-step CoT available.")
-
-
+            can_accept_reject = False
+    
     elif condition == "E. Verifiable CoT":
         raise NotImplementedError
-    
+
+    st.markdown("---")  # Divider
+
+    # Accept/Reject Section: Only available if allowed
+    if not can_accept_reject:
+        st.info("Please finish reading all steps before deciding.")
+        return
 
     st.markdown("**Do you ACCEPT or REJECT the model's answer?**")
 
@@ -179,12 +196,11 @@ def show_step_2(index):
                 height: 0px;
             }
         </style>
-    """,
+        """,
         unsafe_allow_html=True,
     )
     
     response_placeholder = "Select your response"
-
     response = st.radio(
         "Your selection",
         options=[response_placeholder, "Yes, I ACCEPT the model's answer", "No, I REJECT the model's answer"],
@@ -211,9 +227,9 @@ def show_step_2(index):
     if st.session_state.step_2_submitted:
         if st.button("Next", key=f"next_{index}"):
             st.session_state.step_phase = 1
-            # reset the submission flag for the next question.
+            # Reset for next question
             st.session_state.step_2_submitted = False
-            st.session_state.cuttent_step = 0
+            st.session_state.current_step = 0
             st.session_state["next_clicked"] = True
             return
     else:
@@ -223,7 +239,10 @@ def show_step_2(index):
 def main_study():
 
     if "count" not in st.session_state:
-        st.session_state.count = 0
+        if st.session_state.questions_done == -1:
+            st.session_state.count = 0
+        else:
+            st.session_state.count = st.session_state.questions_done
 
     if "question_start_time" not in st.session_state:
         st.session_state["question_start_time"] = time.time()
@@ -232,11 +251,11 @@ def main_study():
     if st.session_state.condition == "A. Answer only":
         raise NotImplementedError
     elif st.session_state.condition == "B. Paragraph CoT":
-        question = load_data(path="data/science_qa_gpt4_wrong_questions.json")
+        questions = load_data(path="data/science_qa_gpt4_wrong_questions.json")
     elif st.session_state.condition == "E. Verifiable CoT":
         raise NotImplementedError
     else:
-        questions = load_data(path="data/GSM8k_incorect_example.jsonl")  # pass in different path for different questions
+        questions = load_data(path="data/GSM8k_incorrect_example.jsonl")  # pass in different path for different questions
 
     if "questions" not in st.session_state:
         st.session_state.questions = questions
@@ -391,7 +410,7 @@ def main_study():
                 logger.write_to_user_sheet([st.session_state.username, st.session_state.condition, idx,
                                             st.session_state['Model answer'], st.session_state.step_1_response,
                                             st.session_state.step_2_response, st.session_state["gt_answer"],
-                                            time_spent])
+                                            time_spent, st.session_state.count + 1])
                 
                 st.session_state['Model Reasoning'] = ""
                 st.session_state['Model answer'] = ""
