@@ -228,12 +228,25 @@ def main_study():
     if "question_start_time" not in st.session_state:
         st.session_state["question_start_time"] = time.time()
     
-    questions = load_data(path="data/science_qa_gpt4_wrong_questions.json")  # pass in different path for different questions
+
+    if st.session_state.condition == "A. Answer only":
+        raise NotImplementedError
+    elif st.session_state.condition == "B. Paragraph CoT":
+        question = load_data(path="data/science_qa_gpt4_wrong_questions.json")
+    elif st.session_state.condition == "E. Verifiable CoT":
+        raise NotImplementedError
+    else:
+        questions = load_data(path="data/GSM8k_incorect_example.jsonl")  # pass in different path for different questions
+
     if "questions" not in st.session_state:
         st.session_state.questions = questions
 
-    train_ids = [61, 841]
-    test_ids = [2788, 9120, 20245]
+    # Need to finalize when creating the final question bank
+    # train_ids = [61, 841]
+    # test_ids = [2788, 9120, 20245]
+
+    train_ids = [0, 1, 2]
+    test_ids = [3, 4,  5, 6, 7, 8, 9, 10]
 
     if 'train_ids' not in st.session_state:
         st.session_state["train_ids"] = train_ids
@@ -262,7 +275,7 @@ def main_study():
     # st.session_state.condition = condition
     # print(st.session_state.condition)
 
-    st.session_state.condition = "B. Paragraph CoT"  # now set to condition B for testing
+    # st.session_state.condition = "B. Paragraph CoT"  # now set to condition B for testing
 
     if st.session_state.count >= len(all_ids):
         st.session_state.page = "end_tutorial"
@@ -345,8 +358,8 @@ def main_study():
         raise NotImplementedError
     else:
         st.session_state['Model Reasoning'] = question["model_explanation"]
-        st.session_state['answer'] = question["answer"]
-        st.session_state['gt_answer'] = question["ground_truth"]
+        st.session_state['Model answer'] = question["model_answer"]
+        st.session_state['gt_answer'] = question["gt_answer"]
 
 
     if "step_phase" not in st.session_state:
@@ -364,7 +377,7 @@ def main_study():
     else:
         raise NotImplementedError
     
-    # "Username", "Question idx", "Condition", "Model Reasoning", "Model Answer", "Step 1", "Step 2", "Gt Answer"
+    # "Username", "Question idx", "Condition", "Model Answer", "Step 1", "Step 2", "Gt Answer"
     if st.session_state["next_clicked"]:
         # if not st.session_state[idx]['submitted']:
         #     warning.warning("You need to submit your answer before going to the next question.", icon="⚠️")
@@ -376,12 +389,12 @@ def main_study():
                 raise NotImplementedError
             else:
                 logger.write_to_user_sheet([st.session_state.username, st.session_state.condition, idx,
-                                            st.session_state['Model Reasoning'], st.session_state['answer'],
-                                            st.session_state.step_1_response, st.session_state.step_2_response, st.session_state["gt_answer"],
+                                            st.session_state['Model answer'], st.session_state.step_1_response,
+                                            st.session_state.step_2_response, st.session_state["gt_answer"],
                                             time_spent])
                 
                 st.session_state['Model Reasoning'] = ""
-                st.session_state['answer'] = ""
+                st.session_state['Model answer'] = ""
                 st.session_state['gt_answer'] = ""
                 st.session_state.step_1_response = ""
                 st.session_state.step_2_response = ""
