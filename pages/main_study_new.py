@@ -129,9 +129,9 @@ def show_step_2(index):
         if step_str:
             parts = re.split(r"Step\s*\d+:", step_str)
             steps_list = [part.strip() for part in parts if part.strip()]
-            with st.expander("Model chain of thought"):
-                for i, step_text in enumerate(steps_list, start=1):
-                    st.write(f"**Step {i}:** {step_text}")
+            # Directly display all steps without an expander
+            for i, step_text in enumerate(steps_list, start=1):
+                st.write(f"**Step {i}:** {step_text}")
         else:
             st.info("No step-by-step CoT available.")
         
