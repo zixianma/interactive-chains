@@ -3,11 +3,12 @@ import streamlit as st
 st.set_page_config(layout="wide")
 
 from pages.login import login
-from pages.main_study import main_study
+# from pages.main_study import main_study
 from pages.survey import survey
 from pages.demographics import demographics
 from pages.instruction import instruction
 from pages.tutorial import begin_tutorial, end_tutorial
+from pages.main_study_new import main_study
 import streamlit.components.v1 as components
 
 def main():
@@ -89,16 +90,16 @@ def main():
         login()
     elif st.session_state.page == "instruction":
         instruction()
-    elif st.session_state.page == "begin_tutorial":
-        begin_tutorial()
-    elif st.session_state.page == "end_tutorial":
-        end_tutorial()
+    # elif st.session_state.page == "begin_tutorial":
+    #     begin_tutorial()
+    # elif st.session_state.page == "end_tutorial":
+    #     end_tutorial()
     elif st.session_state.page == 'main_study':
         main_study()
     elif st.session_state.page == 'demographics':
         demographics()
-    elif st.session_state.page == 'survey':
-        survey()
+    # elif st.session_state.page == 'survey':
+    #     survey()
 
 if __name__ == "__main__":
     main()
