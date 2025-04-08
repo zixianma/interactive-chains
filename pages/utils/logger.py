@@ -35,7 +35,7 @@ def create_user_worksheet():
         if st.session_state.condition.find("verifiasble") > -1:
             header_list = []  # Not implement yet
         else:
-            header_list = ["Username", "Condition", "Question idx", "Model Answer", "Step 1", "Step 2", "Gt Answer", "Time Spent", "Question Answered"]
+            header_list = ["Username", "Condition", "Question idx", "Model Answer", "Step 1", "Step 2", "Gt Answer", "Time Spent", "Question Answered", "Question ids"]
         
         exponential_backoff(worksheet.append_row, header_list)  
     

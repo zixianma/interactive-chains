@@ -10,103 +10,96 @@ def load_examples():
     return examples
 
 def instruction():
-
     st.title("Task Instruction")
-    st.subheader("Please take at least 1 minute to read the task instructions below carefully before proceeding.")
-    st.text("A Next button will show up at the bottom after 1 minute for you to go to the next page.")
-    ph = st.empty()
-    goal = st.markdown("In this study, you will decide with the help of an AI model if there is evidence in the **Observation** that SUPPORTS or REFUTES a **Claim**, or if there is NOT ENOUGH INFORMATION.")
-    definitions = st.markdown("""An **Observation** is some text returned by an **Action**, which includes *Search*, *Lookup* and *Finish*.""")
-                  
-    action_definitions = st.markdown('''
-    - The *Search* action searches for the document that's the most related to the keyword you enter. 
-    - The *Lookup* action looks up a text in the last document found by Search and returns sentences that contain the text or “no more results” if the text is not found. You should only perform Lookup after Search.  
-    - The *Finish* action submits one of the three answers: SUPPORTS, REFUTES, or NOT ENOUGH INFO about the claim.''')
+    st.subheader("Please read the task instructions below carefully before proceeding.")
+    st.markdown(
+        "In this study, you will first attempt to solve a mathematical problem using your own knowledge. Then, you will review an AI model's answer along with its reasoning. "
+        "Your task is to critically evaluate the solution and determine whether to **ACCEPT** it (if the answer and reasoning are correct) or **REJECT** it (if you identify any errors in the logic or result). "
+        "Below are examples that illustrate when to choose each option."
+    )
+
+    # Check the current condition, defaulting to "C. Step-by-step CoT -- All at once" if not set.
+    condition = st.session_state.get("condition", "C. Step-by-step CoT -- All at once")
     
-    # if st.session_state.condition == "C. hai-answer":
-    #     left_inst = "On the left, you are given the AI model's suggested answer, which may be incorrect."
-    #     left_inst = st.markdown(left_inst)
-
-    #     right_inst = "On the right, you can perform either a Search or Lookup action to gather information about this claim and verify the AI's answer. "
-    #     right_inst = st.markdown(right_inst)
-    # elif st.session_state.condition == "D. hai-static-chain":
-    #     left_inst = "On the left, you are given the AI model's suggested answer along with its reasoning chain, which may be incorrect. "
-    #     left_inst += "A reasoning chain is a list of thoughts, actions, and observations that help the model reason and reach its final answer. "
-    #     left_inst = st.markdown(left_inst)
-
-    #     right_inst = "On the right, you can perform either a Search or Lookup action to gather information about this claim and verify the AI's answer. "
-    #     right_inst = st.markdown(right_inst)
-        
-    # elif st.session_state.condition == "I. hai-regenerate":
-    #     left_inst = "On the left, you are given the AI model's suggested answer along with its reasoning chain, which may be incorrect. "
-    #     left_inst += "A reasoning chain is a list of thoughts, actions, and observations that help the model reason and reach its final answer. "
-    #     left_inst = st.markdown(left_inst)
-
-    #     right_inst = st.markdown("On the right, you can edit the AI model's thought or action anywhere in the reasoning chain.")
-    #     right_inst_details = st.markdown(''' 
-    #     - If you edit a thought and submit it, the action will be automatically updated by the AI. 
-    #     - If you edit an action and submit it, the observation will be automatically updated. 
-    #     - If you edit AI's thought or action at step $i$, all the steps at $i+1$ and after will be gone. You can then “Update the AI model's output” to complete the reasoning chain and obtain a new answer. ''')
-
-    # else:
-    #     raise NotImplementedError
+    # Display condition-specific instructions.
+    if condition == "A. Answer only":
+        st.markdown(
+            "**Instructions for Answer only:** Please decide based solely on the question and the AI model's answer. "
+            "You may reveal the ground truth solution for an explanation."
+        )
+    elif condition == "B. Paragraph CoT":
+        st.markdown(
+            "**Instructions for Paragraph CoT:** Evaluate the provided paragraph reasoning along with the model's answer. "
+            "For correct examples, note that both the reasoning and answer are correct. For incorrect examples, you can review the ground truth solution that explains the error."
+        )
+    elif condition in ["C. Step-by-step CoT -- All at once", "D. Step-by-step CoT -- Sequential"]:
+        st.markdown(
+            "**Instructions for Step-by-step CoT:** Evaluate the detailed step-by-step reasoning, the question, and the model's answer. "
+            "For rejected examples, check the ground truth solution that highlights the mistakes."
+        )
     
-    note = st.markdown(":red[Note that you should make your decision based ONLY on the **Observations** on this interface. You will reach wrong answers if you rely on information from Wikipedia or ChatGPT.]")
-    ex_str = st.markdown("You can find examples for SUPPORTS, REFUTES, and NOT ENOUGH INFO below.")
-    expander = st.expander("Examples:", expanded=True)
+    # Create an outer expander for the examples.
+    with st.expander("Examples", expanded=True):
+        examples = load_examples()
     
-    examples = load_examples()
-    for k, ex in examples.items():
-        expander.markdown(f"#### {k}")
-        expander.write(ex['claim'])
-        model_output = ex['steps']
-        for i, step_str in enumerate(model_output):
-            keywords = ['thought', 'action', 'observation']
-            if i == len(model_output) - 1:
-                keywords = ['thought', 'action']
-
-            if st.session_state.condition.find("hai-answer") > -1:
-                # step_container = expander.chat_message("user")
-                step_container = expander.container()
-                keywords = ["action", "observation"]
-            else:
-                step_container = expander.chat_message("assistant")
-            
-
-            for kw in keywords:
-                if len(step_str[kw]) == 0:
-                    continue
-                if st.session_state.condition.find("hai-answer") > -1:
-                    content_str = step_str[kw]
+        # Display examples based on condition.
+        for key in examples:  # key is expected to be "ACCEPT" or "REJECT"
+            ex = examples[key]
+    
+            st.markdown(f"#### {key} Example")
+            st.markdown(f"**Question:** {ex['question']}")
+    
+            if condition == "A. Answer only":
+                st.markdown(f"**Model Answer:** {ex['model_answer']}")
+                if key == "ACCEPT":
+                    st.markdown("**Instruction:** Choose **ACCEPT** because the model's answer is correct.")
                 else:
-                    content_str = f"{kw[0].upper()+kw[1:]} {i+1}: " + step_str[kw]
-
-                if kw == "observation":
-                    expander.chat_message("user", avatar="🌐").write(content_str)
-
-                elif kw == "action":
-                    step_container.text_input("text_input", content_str, label_visibility="collapsed", disabled=True)
+                    st.markdown("**Instruction:** Choose **REJECT** because the model's answer (or its underlying reasoning) is incorrect.")
+                    if st.checkbox("Show Ground Truth Solution", key=f"gt_{key}"):
+                        st.markdown(ex['gt_solution'])
+    
+            elif condition == "B. Paragraph CoT":
+                st.markdown(f"**Paragraph Reasoning:** {ex['paragraph_reasoning']}")
+                st.markdown(f"**Model Answer:** {ex['model_answer']}")
+                if key == "ACCEPT":
+                    st.markdown("**Instruction:** Choose **ACCEPT** because the model's reasoning and answer are correct.")
                 else:
-                    step_container.text_area("text_area", content_str, label_visibility="collapsed", disabled=True)
-        expander.divider()
+                    if st.checkbox("Show Ground Truth Solution", key=f"gt_{key}"):
+                        st.markdown(ex['gt_solution'])
+                    st.markdown("**Instruction:** Choose **REJECT** because there are errors in the model's reasoning or answer.")
+    
+            elif condition in ["C. Step-by-step CoT -- All at once", "D. Step-by-step CoT -- Sequential"]:
+                st.markdown("**Step-by-Step Reasoning:**")
+                st.markdown(ex['reasoning_steps'])
+                st.markdown(f"**Model Answer:** {ex['model_answer']}")
+                if key == "ACCEPT":
+                    st.markdown("**Instruction:** Choose **ACCEPT** because the step-by-step reasoning and answer are correct.")
+                else:
+                    if st.checkbox("Show Ground Truth Solution", key=f"gt_{key}"):
+                        st.markdown(ex['gt_solution'])
+                    st.markdown("**Instruction:** Choose **REJECT** because there are errors in the step-by-step reasoning or answer.")
+
+    # Countdown timer before the "Next" button appears.
     if "instruction_done" not in st.session_state:
         st.session_state["instruction_done"] = False
     if "remaining_time" not in st.session_state:
-        st.session_state["remaining_time"] = 5  # Change back to 60
-    
+        st.session_state["remaining_time"] = 5  # Set to 60 seconds or desired duration.
+
+    placeholder = st.empty()
+
     def click_next():
-        st.session_state['instruction_done'] = True
-        
-    if not st.session_state['instruction_done']:
-        N = st.session_state["remaining_time"]
-        for secs in range(N,0,-1):
-            secs = secs - 1
-            st.session_state["remaining_time"] -= 1
-            mm, ss = secs//60, secs%60
-            ph.metric("Remaining Time", f"{mm:02d}:{ss:02d}", label_visibility="collapsed")
+        st.session_state["instruction_done"] = True
+
+    if not st.session_state["instruction_done"]:
+        for secs in range(st.session_state["remaining_time"], 0, -1):
+            st.session_state["remaining_time"] = secs
+            mm, ss = divmod(secs, 60)
+            placeholder.metric("Remaining Time", f"{mm:02d}:{ss:02d}")
             time.sleep(1)
-    print(st.session_state["remaining_time"])
-    next = st.button("Next", on_click=click_next)
-    if st.session_state['instruction_done']:
-        st.session_state.page =  "main_study" # "begin_tutorial" #"main_study" "survey" # 
+    next_button = st.button("Next", on_click=click_next)
+    if st.session_state["instruction_done"]:
+        st.session_state.page = "main_study"
         st.rerun()
+
+if __name__ == "__main__":
+    instruction()

@@ -1,7 +1,6 @@
 import streamlit as st
-from openai import OpenAI
 import json
-import requests
+import random
 from streamlit_float import *
 import re
 from datetime import datetime
@@ -35,14 +34,85 @@ def load_data(path="./data/training_questions.json"):
         raise ValueError("Unsupported file format. Please use .json or .jsonl")
 
 
+def select_indices(file_path="question_bank.jsonl"):
+    """
+    Loads a JSONL file with questions and returns a list of indices that:
+      1. First includes all indices where is_correct == True and dataset != "train"
+      2. Then includes 5 random indices where is_correct == False and dataset == "math"
+      3. Then includes 5 random indices where is_correct == False and dataset == "gsm8k"
+    
+    Args:
+        file_path (str): Path to the JSONL file.
+    
+    Returns:
+        list: A list of selected indices.
+    """
+    # Load the dataset from JSONL file into a list of dictionaries
+    with open(file_path, "r", encoding="utf-8") as f:
+        data = [json.loads(line.strip()) for line in f]
+    
+    # Get indices for correct answers and dataset not 'train'
+    correct_indices = [
+        i for i, entry in enumerate(data)
+        if entry.get("is_correct") is True and entry.get("dataset") != "train"
+    ]
+    
+    # Get indices for incorrect answers where dataset is 'math'
+    math_incorrect_indices = [
+        i for i, entry in enumerate(data)
+        if entry.get("is_correct") is False and entry.get("dataset").lower() == "math"
+    ]
+    
+    # Get indices for incorrect answers where dataset is 'gsm8k'
+    gsm_incorrect_indices = [
+        i for i, entry in enumerate(data)
+        if entry.get("is_correct") is False and entry.get("dataset").lower() == "gsm8k"
+    ]
+    
+    # Randomly sample 5 indices from math_incorrect_indices if available
+    math_sampled = random.sample(math_incorrect_indices, 5) if len(math_incorrect_indices) >= 5 else math_incorrect_indices
+    
+    # Randomly sample 5 indices from gsm_incorrect_indices if available
+    gsm_sampled = random.sample(gsm_incorrect_indices, 5) if len(gsm_incorrect_indices) >= 5 else gsm_incorrect_indices
+    
+    # Concatenate the indices list in the specified order
+    selected_indices = correct_indices + math_sampled + gsm_sampled
+    
+    random.shuffle(selected_indices)
+    
+    return selected_indices
+
+
+def get_test_ids():
+    # Use the already-created user worksheet stored in session state
+    user_ws = st.session_state.get('user_worksheet')
+    if user_ws is None:
+        # Handle the case where the worksheet was not correctly saved.
+        st.error("User worksheet not found!")
+        return None
+    
+    test_ids_cell = user_ws.acell("J2").value
+    if test_ids_cell:
+        try:
+            test_ids = json.loads(test_ids_cell)
+        except Exception as e:
+            st.error(f"Error parsing test IDs: {e}")
+            return None
+    else:
+        # If the test IDs are not already there, generate and store them.
+        test_ids = select_indices("data/question_bank.jsonl")
+    
+    return test_ids
+    
+
 def show_step_1(index):
     st.subheader("Step 1: Initial Questions")
 
     question = st.session_state.questions[index]
 
     st.write("**Question:**", question["question"])
-    if index in st.session_state.idxtoimage:
-        st.image(st.session_state.idxtoimage[index], caption=f"Image for the above question", use_container_width=True)
+    # if index in st.session_state.idxtoimage:
+    #     st.image(st.session_state.idxtoimage[index], caption=f"Image for the above question", use_container_width=True)
     
     st.markdown("**Do you know how to solve this question?**")
 
@@ -113,19 +183,24 @@ def show_step_2(index):
     
     elif condition == "B. Paragraph CoT":
         st.markdown("**Model's Paragraph Chain-of-thought**")
-        st.info(question.get("model_explanation", "No paragraph CoT available"))
+        st.info(question.get("paragraph_reasoning", "No paragraph CoT available"))
+        
+        '''
         if index in st.session_state.idxtoimage:
             st.image(
                 st.session_state.idxtoimage[index],
                 caption="Image for the above question",
                 use_container_width=True,
             )
+        '''
+        
         st.markdown("**Model's Final Answer:**")
         st.warning(question.get("model_answer", "No answer available."))
     
     elif condition == "C. Step-by-step CoT -- All at once":
         st.markdown("**Model's Step-by-step Chain-of-thought:**")
-        step_str = question.get("model_explanation", "")
+        step_str = question.get("reasoning_steps", "")
+        
         if step_str:
             parts = re.split(r"Step\s*\d+:", step_str)
             steps_list = [part.strip() for part in parts if part.strip()]
@@ -140,7 +215,7 @@ def show_step_2(index):
     
     elif condition == "D. Step-by-step CoT -- Sequential":
         st.markdown("**Model's Step-by-step Chain-of-thought:**")
-        step_str = question.get("model_explanation", "")
+        step_str = question.get("reasoning_steps", "")
         
         if step_str:
             parts = re.split(r"(?:\*\*)?Step\s*\d+:", step_str, flags=re.IGNORECASE)
@@ -236,6 +311,12 @@ def show_step_2(index):
         st.button("Next", key=f"next_disabled_{index}", disabled=True, help="Please submit your response first.")
 
 
+def finished():
+    st.title("Thank you for your time!")
+    st.subheader("You will be compensated after we review your answers and footage. Click the link below to complete the study.")
+    st.write("https://app.prolific.com/submissions/complete?cc=C1IZ4VLN")   ## Need change this!!
+    
+
 def main_study():
 
     if "count" not in st.session_state:
@@ -248,25 +329,28 @@ def main_study():
         st.session_state["question_start_time"] = time.time()
     
 
-    if st.session_state.condition == "A. Answer only":
-        raise NotImplementedError
-    elif st.session_state.condition == "B. Paragraph CoT":
-        questions = load_data(path="data/science_qa_gpt4_wrong_questions.json")
-    elif st.session_state.condition == "E. Verifiable CoT":
-        raise NotImplementedError
-    else:
-        questions = load_data(path="data/GSM8k_incorrect_example.jsonl")  # pass in different path for different questions
-
+    # if st.session_state.condition == "A. Answer only":
+    #     raise NotImplementedError
+    # elif st.session_state.condition == "B. Paragraph CoT":
+    #     questions = load_data(path="data/science_qa_gpt4_wrong_questions.json")
+    # elif st.session_state.condition == "E. Verifiable CoT":
+    #     raise NotImplementedError
+    # else:
+    #     questions = load_data(path="data/GSM8k_incorrect_example.jsonl")  # pass in different path for different questions
+    
+    question = load_data(path="data/question_bank.jsonl")
+    
     if "questions" not in st.session_state:
-        st.session_state.questions = questions
+        st.session_state.questions = question
 
     # Need to finalize when creating the final question bank
     # train_ids = [61, 841]
     # test_ids = [2788, 9120, 20245]
 
-    train_ids = [0, 1, 2]
-    test_ids = [3, 4,  5, 6, 7, 8, 9, 10]
-
+    train_ids = [0, 1, 2, 3, 4, 5]
+    test_ids = get_test_ids()
+    test_ids_str = json.dumps(test_ids)
+    
     if 'train_ids' not in st.session_state:
         st.session_state["train_ids"] = train_ids
     if 'test_ids' not in st.session_state:
@@ -274,6 +358,7 @@ def main_study():
     
     all_ids = train_ids + test_ids
 
+    """
     if "idxtoimage" not in st.session_state:
         st.session_state.idxtoimage = {
             61: "data/images/sciqa_61_image.png",
@@ -282,6 +367,7 @@ def main_study():
             9120: "data/images/sciqa_9120_image.png",
             20245: "data/images/sciqa_20245_image.png"
         }
+    """
 
     all_conditions = ["A. Answer only", "B. Paragraph CoT", "C. Step-by-step CoT -- All at once",
                       "D. Step-bt-step CoT -- Sequential", "E. Verifiable CoT"]
@@ -297,66 +383,43 @@ def main_study():
     # st.session_state.condition = "B. Paragraph CoT"  # now set to condition B for testing
 
     if st.session_state.count >= len(all_ids):
-        st.session_state.page = "end_tutorial"
-        st.rerun()
+        # st.session_state.page = "end_tutorial"
+        # st.rerun()
+        finished()
+        return
     
     if st.session_state.count < len(st.session_state['train_ids']):
         st.title("📚 Training phase")
-        st.markdown("###### During this training phase, you will get to try answering 6 questions. You will see whether your answer is correct or not after you submit it. ")
+        st.markdown("""
+            ###### During this training phase, you will answer 6 questions to help you get familiar with the study process.
+
+            **Step 1:** You will be asked whether you can solve a math problem on your own. Please be honest—your response to Step 1 will not influence the reward you receive.
+
+            **Step 2:** You will be shown the model's answer and (optionally) its explanation. You will decide whether to **ACCEPT** or **REJECT** the model's answer based on the information provided:  
+
+            ✅ Accept when the model is correct.  
+            ❌ Reject when the model is wrong.
+        """)
         total_num = len(st.session_state['train_ids'])
         curr_pos = st.session_state.count + 1
     else:
         st.title("📝 Study phase")
-        st.markdown("###### You are now in the study phase, where you will answer 30 questions in total and be rewarded if you answer more questions correctly. You will NOT see if your answer is correct or not.")
+        st.markdown("###### You are now in the study phase, where you will answer 20 questions in total and be rewarded if you answer more questions correctly. You will NOT see if your answer is correct or not.")
         total_num = len(st.session_state['test_ids'])
 
         curr_pos = st.session_state.count + 1 - len(st.session_state.train_ids)
     
-    with st.expander("***See task instruction**"):
-        st.markdown("In this study, you will decide whether the AI model's answer is correct or not based on the provided information. \
-                    You should ACCEPT the AI model's answer when it is correct and REJECT when it is wrong")
-    
-        note = st.markdown(":red[Note that you should make your decision based ONLY on the **Information** on this interface (AI answer and/or AI chain-of-though). You will reach wrong answers if you rely on information from Wikipedia or ChatGPT.]")
+    with st.expander("***See task instructions***"):
+        st.markdown("""
+            In this study, you will evaluate whether the AI model's answer is correct based on the information provided.
 
-    # Need to formolize the tutorial
-    # with st.expander("**See tutorial**"):
-    #     if st.session_state.condition == "C. hai-answer":
-    #         left_inst = "On the left, you are given the AI model's suggested answer, which may be incorrect."
-    #         left_inst = st.markdown(left_inst)
+            You should **ACCEPT** the AI model's answer when it is correct, and **REJECT** it when it is wrong.
+        """)
 
-    #         right_inst = "On the right, you can perform either a Search or Lookup action to gather information about this claim and verify the AI's answer. "
-    #         right_inst = st.markdown(right_inst)
-    #     elif st.session_state.condition == "D. hai-static-chain":
-    #         left_inst = "On the left, you are given the AI model's suggested answer along with its reasoning chain, which may be incorrect. "
-    #         left_inst += "A reasoning chain is a list of thoughts, actions, and observations that help the model reason and reach its final answer. "
-    #         left_inst = st.markdown(left_inst)
-
-    #         right_inst = "On the right, you can perform either a Search or Lookup action to gather information about this claim and verify the AI's answer. "
-    #         right_inst = st.markdown(right_inst)
-            
-    #     elif st.session_state.condition == "I. hai-regenerate":
-    #         left_inst = "On the left, you are given the AI model's suggested answer along with its reasoning chain, which may be incorrect. "
-    #         left_inst += "A reasoning chain is a list of thoughts, actions, and observations that help the model reason and reach its final answer. "
-    #         left_inst = st.markdown(left_inst)
-
-    #         right_inst = st.markdown("On the right, you can edit the AI model's thought or action anywhere in the reasoning chain.")
-    #         right_inst_details = st.markdown(''' 
-    #         - If you edit a thought and submit it, the action will be automatically updated by the AI. 
-    #         - If you edit an action and submit it, the observation will be automatically updated. 
-    #         - If you edit AI's thought or action at step $i$, all the steps at $i+1$ and after will be gone. You can then “Update the AI model's output” to complete the reasoning chain and obtain a new answer. ''')
-
-    #     else:
-    #         raise NotImplementedError
-    #     if "condition2screenshots" not in st.session_state:
-    #         st.session_state['condition2screenshots'] = {
-    #                             "C. hai-answer": ["data/images/hai-answer-1.png", "data/images/hai-answer-2.png", "data/images/hai-answer-3.png", "data/images/hai-answer-4.png"], 
-    #                             "D. hai-static-chain": ["data/images/hai-static-chain-1.png", "data/images/hai-static-chain-2.png", "data/images/hai-static-chain-3.png", "data/images/hai-static-chain-4.png"], 
-    #                             "I. hai-regenerate": ["data/images/hai-regenerate-1.png", "data/images/hai-regenerate-2.png", "data/images/hai-regenerate-3.png", "data/images/hai-regenerate-4.png", "data/images/hai-regenerate-5.png"]
-    #                         }
-    #     screenshots = st.session_state['condition2screenshots'][st.session_state.condition]
-    #     for i, screenshot in enumerate(screenshots):
-    #         st.image(screenshot, caption=f"Step {i+1}")
-    #         st.divider()
+        note = st.markdown("""
+            :red[**Note:** Please base your decision **only** on the information shown in this interface (the AI's answer and/or its chain of thought).  
+            Relying on external sources like Wikipedia or ChatGPT may lead you to incorrect conclusions.]
+        """)
 
 
     if "next_clicked" not in st.session_state:
@@ -376,9 +439,9 @@ def main_study():
     elif st.session_state.condition == "E. Verifiable CoT":
         raise NotImplementedError
     else:
-        st.session_state['Model Reasoning'] = question["model_explanation"]
+        # st.session_state['Model Reasoning'] = question["model_explanation"]
         st.session_state['Model answer'] = question["model_answer"]
-        st.session_state['gt_answer'] = question["gt_answer"]
+        st.session_state['gt_answer'] = question["correct_answer"]
 
 
     if "step_phase" not in st.session_state:
@@ -410,7 +473,7 @@ def main_study():
                 logger.write_to_user_sheet([st.session_state.username, st.session_state.condition, idx,
                                             st.session_state['Model answer'], st.session_state.step_1_response,
                                             st.session_state.step_2_response, st.session_state["gt_answer"],
-                                            time_spent, st.session_state.count + 1])
+                                            time_spent, st.session_state.count + 1, test_ids_str])
                 
                 st.session_state['Model Reasoning'] = ""
                 st.session_state['Model answer'] = ""
