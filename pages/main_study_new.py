@@ -34,7 +34,7 @@ def load_data(path="./data/training_questions.json"):
         raise ValueError("Unsupported file format. Please use .json or .jsonl")
 
 
-def select_indices(file_path="question_bank.jsonl"):
+def select_indices(file_path="question_bank_cleaned.jsonl"):
     """
     Loads a JSONL file with questions and returns a list of indices that:
       1. First includes all indices where is_correct == True and dataset != "train"
@@ -100,7 +100,7 @@ def get_test_ids():
             return None
     else:
         # If the test IDs are not already there, generate and store them.
-        test_ids = select_indices("data/question_bank.jsonl")
+        test_ids = select_indices("data/question_bank_cleaned.jsonl")
     
     return test_ids
     
@@ -338,7 +338,7 @@ def main_study():
     # else:
     #     questions = load_data(path="data/GSM8k_incorrect_example.jsonl")  # pass in different path for different questions
     
-    question = load_data(path="data/question_bank.jsonl")
+    question = load_data(path="data/question_bank_cleaned.jsonl")
     
     if "questions" not in st.session_state:
         st.session_state.questions = question
