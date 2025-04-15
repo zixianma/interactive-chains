@@ -227,8 +227,8 @@ def free_form_questions():
         st.session_state.submitted_once = False
 
     if st.session_state[f"submit_disabled_{survey_page}"]:
-        update_user_data("complete", 5)
-        st.session_state.last_progress = 5
+        update_user_data("complete", 3)
+        st.session_state.last_progress = -1
         st.rerun()
 
     st.title("Final Questions & Feedback")
@@ -236,30 +236,35 @@ def free_form_questions():
 
     # Preserve input across reruns
     st.session_state.strategy = st.text_area(
-        ":red[*]What was your strategy for answering the questions?",
+        ":red[*]What was your strategy for judging AI's answer?",
         value=st.session_state.get('strategy', ''), key='strategy_frq'
     )
     
     st.session_state.ai_model_usage = st.text_area(
-        ":red[*]How did you use the AI model to help you answer the questions?",
+        ":red[*]How did you use the AI's provided information to make the decision?",
         value=st.session_state.get('ai_model_usage', ''), key='ai_model_usage_frq'
     )
     
-    if st.session_state.condition.find("hai-answer") == -1:
-        st.session_state.error_finding = st.text_area(
-            ":red[*]What did you think of the AI model's reasoning chains? Did you find them accurate and helpful? If not, what errors did you find in them?",
-            value=st.session_state.get('error_finding', ''), key='error_finding_frq'
-        )
-    else:
-        st.session_state.error_finding = None
+    st.session_state.ai_info_usage = st.text_area(
+        ":red[*]What did you think of the AI model's provided information? Did you find them helpful assisting you making the decision?",
+        value=st.session_state.get('ai_info_usage', ''), key='ai_info_usage_frq'
+    )
+    
+    # if st.session_state.condition.find("hai-answer") == -1:
+    #     st.session_state.error_finding = st.text_area(
+    #         ":red[*]What did you think of the AI model's reasoning chains? Did you find them accurate and helpful? If not, what errors did you find in them?",
+    #         value=st.session_state.get('error_finding', ''), key='error_finding_frq'
+    #     )
+    # else:
+    #     st.session_state.error_finding = None
 
-    if st.session_state.condition.find("hai-regenerate") > -1:
-        st.session_state.ai_model_interaction_usage = st.text_area(
-            ":red[*]How did you interact with the AI model? Was anything confusing or demanding? If so, what was it and why?",
-            value=st.session_state.get('ai_model_interaction_usage', ''), key='ai_model_interaction_usage_frq'
-        )
-    else:
-        st.session_state.ai_model_interaction_usage = None
+    # if st.session_state.condition.find("hai-regenerate") > -1:
+    #     st.session_state.ai_model_interaction_usage = st.text_area(
+    #         ":red[*]How did you interact with the AI model? Was anything confusing or demanding? If so, what was it and why?",
+    #         value=st.session_state.get('ai_model_interaction_usage', ''), key='ai_model_interaction_usage_frq'
+    #     )
+    # else:
+    #     st.session_state.ai_model_interaction_usage = None
 
     st.session_state.misc_comments = st.text_area(
         "[Optional] Any other comments or remarks regarding the study?",
@@ -267,39 +272,44 @@ def free_form_questions():
     )
 
     # Perform validation and submission
-    if st.button("Submit", key="submit_answers", disabled=st.session_state[f"submit_disabled_{survey_page}"]):
-        # Immediately disable the submit button
+    if st.button("Submit", key="submit_answers", disabled=st.session_state.get(f"submit_disabled_{survey_page}", False)):
+        # Immediately disable the submit button.
         st.session_state[f"submit_disabled_{survey_page}"] = True
 
-        # Validation
+        # Validation: Check if any of the required fields are empty.
         if any([
             st.session_state.strategy.strip() == '',
-            st.session_state.error_finding is not None and st.session_state.error_finding.strip() == '',
             st.session_state.ai_model_usage.strip() == '',
-            st.session_state.ai_model_interaction_usage is not None and st.session_state.ai_model_interaction_usage.strip() == '',
+            st.session_state.ai_info_usage.strip() == '',
         ]):
             st.error("Please answer all the required questions before submitting.")
-            st.session_state[f"submit_disabled_{survey_page}"] = False  # Re-enable on validation error
+            st.session_state[f"submit_disabled_{survey_page}"] = False  # Re-enable the button on error.
         elif count_words(st.session_state.strategy) < 10:
             st.error("Please write at least 10 words for your strategy.")
             st.session_state[f"submit_disabled_{survey_page}"] = False
-        elif st.session_state.condition.find("hai-answer") == -1 and count_words(st.session_state.error_finding) < 10:
-            st.error("Please write at least 10 words regarding errors.")
-            st.session_state[f"submit_disabled_{survey_page}"] = False
         elif count_words(st.session_state.ai_model_usage) < 10:
-            st.error("Please write at least 10 words for how you used the AI model.")
+            st.error("Please write at least 10 words describing how you used the AI model.")
             st.session_state[f"submit_disabled_{survey_page}"] = False
-        elif st.session_state.condition.find("hai-regenerate") > -1 and count_words(st.session_state.ai_model_interaction_usage) < 10:
-            st.error("Please write at least 10 words regarding how you interacted with the model.")
+        elif count_words(st.session_state.ai_info_usage) < 10:
+            st.error("Please write at least 10 words describing your thoughts on the AI model's provided information.")
             st.session_state[f"submit_disabled_{survey_page}"] = False
         else:
-            # Ensure values are preserved before proceeding
-            st.session_state.submitted_once = True  # Prevent multiple submissions
+            # Mark that the submission has occurred to prevent multiple submissions.
+            st.session_state.submitted_once = True
+            
+            # Calculate elapsed time.
             end_time = datetime.now()
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             
-            # Submit the data
-            record_data_clear_state(['strategy', 'ai_model_usage', 'error_finding', 'ai_model_interaction_usage', 'misc_comments', 'elapsed_time'], survey_page=survey_page)
+            # Submit the data and clear state for selected fields.
+            record_data_clear_state(
+                ['strategy', 'ai_model_usage', 'ai_info_usage', 'misc_comments', 'elapsed_time'],
+                survey_page=survey_page
+            )
+        
+        update_user_data("complete", 3)
+        st.session_state.last_progress = -1
+        st.rerun()
 
 
 def interaction_questions():
@@ -587,9 +597,9 @@ def survey():
             tasks_demand_questions()
         elif st.session_state.last_progress == 2:
             ai_usage_questions()
+        # elif st.session_state.last_progress == 3:
+        #     interaction_questions()
         elif st.session_state.last_progress == 3:
-            interaction_questions()
-        elif st.session_state.last_progress == 4:
             free_form_questions()
-        elif st.session_state.last_progress == 5:
-            video_submission()
+        # elif st.session_state.last_progress == 5:
+        #     video_submission()

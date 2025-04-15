@@ -501,10 +501,10 @@ def show_step_2(index):
         st.button("Next", key=f"next_disabled_{index}", disabled=True, help="Please submit your response first.")
 
 
-def finished():
-    st.title("Thank you for your time!")
-    st.subheader("You will be compensated after we review your answers and footage. Click the link below to complete the study.")
-    st.write("https://app.prolific.com/submissions/complete?cc=C1IZ4VLN")   ## Need change this!!
+# def finished():
+#     st.title("Thank you for your time!")
+#     st.subheader("You will be compensated after we review your answers and footage. Click the link below to complete the study.")
+#     st.write("https://app.prolific.com/submissions/complete?cc=C1IZ4VLN")   ## Need change this!!
     
 
 def main_study():
@@ -556,10 +556,10 @@ def main_study():
                       "D. Step-bt-step CoT -- Sequential", "E. Verifiable CoT"]
 
     if st.session_state.count >= len(all_ids):
-        # st.session_state.page = "end_tutorial"
-        # st.rerun()
-        finished()
-        return
+        st.session_state.page = "survey"
+        st.rerun()
+        # finished()
+        # return
     
     if st.session_state.count < len(st.session_state['train_ids']):
         # Training Phase.
