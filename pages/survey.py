@@ -307,9 +307,6 @@ def free_form_questions():
                 survey_page=survey_page
             )
         
-        update_user_data("complete", 3)
-        st.session_state.last_progress = -1
-        st.rerun()
 
 
 def interaction_questions():

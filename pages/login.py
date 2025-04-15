@@ -156,9 +156,7 @@ def submit_consent(username_input):
                     st.session_state.page = "demographics" # begin_tutorial or instruction?
                 elif len(all_values) >= 26:
                     st.session_state.questions_done = 26
-                    finished()
-                    return
-                    # st.session_state.page = "end_tutorial"
+                    st.session_state.page = "survey"
                 else:
                     last_question_answered = all_values[-1]
                     print(f'last_question_answered: {last_question_answered}')
@@ -205,12 +203,6 @@ def submit_consent(username_input):
                 st.session_state.page = "demographics"
 
         # st.session_state.page =   "main_study" # "end_tutorial" #"instruction" "main_study" "survey" # "demographics" #
-
-
-def finished():
-    st.title("Thank you for your time!")
-    st.subheader("You will be compensated after we review your answers and footage. Click the link below to complete the study.")
-    st.write("https://app.prolific.com/submissions/complete?cc=C1IZ4VLN")   ## Need change this!!
 
 
 def login():
