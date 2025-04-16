@@ -98,8 +98,8 @@ def main():
         main_study()
     elif st.session_state.page == 'demographics':
         demographics()
-    # elif st.session_state.page == 'survey':
-    #     survey()
+    elif st.session_state.page == 'survey':
+        survey()
 
 if __name__ == "__main__":
     main()

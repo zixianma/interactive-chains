@@ -54,12 +54,35 @@ def ensure_demo_worksheet():
         exponential_backoff(demographics_sheet.append_row, ["Username", "Gender", "Self-Described Gender", "Race/Ethnicity", "Other Race/Ethnicity", "Age", "Job Title"])  
     
     return demographics_sheet
+        
 
 def write_demo_response(data):
     print(st.session_state)
     demo_worksheet = st.session_state['demographics']
     
     responses = [tuple[1] for tuple in data]
-    exponential_backoff(demo_worksheet.append_row, responses)  
+    exponential_backoff(demo_worksheet.append_row, responses)
+    
+
+def ensure_eval_worksheet():
+    sheet = st.session_state['sheet']
+    try:
+        # Try to get the "Evaluation" worksheet
+        eval_sheet = exponential_backoff(sheet.worksheet, "Evaluation")
+    except gspread.exceptions.WorksheetNotFound:
+        # Create the eval sheet if not found
+        eval_sheet = exponential_backoff(sheet.add_worksheet, title="Evaluation", rows=100, cols=20)
+        # Add a header row for the eval sheet
+        exponential_backoff(eval_sheet.append_row, ["Username", "Condition", "Question idx", "Question Answered", "Choices", "Chosen Answer", "gt Answer", "IsCorrect"])
+    
+    return eval_sheet
+
+
+def write_eval_response(data):
+    print(st.session_state)
+    eval_worksheet = st.session_state['evaluation']
+    
+    # responses = [tuple[1] for tuple in data]
+    exponential_backoff(eval_worksheet.append_row, data)
 
 

@@ -70,10 +70,12 @@ def select_indices(file_path="question_bank_cleaned.jsonl"):
     ]
     
     # Randomly sample 5 indices from math_incorrect_indices if available
-    math_sampled = random.sample(math_incorrect_indices, 5) if len(math_incorrect_indices) >= 5 else math_incorrect_indices
+    math_sampled = random.sample(math_incorrect_indices, 3) if len(math_incorrect_indices) >= 5 else math_incorrect_indices
     
     # Randomly sample 5 indices from gsm_incorrect_indices if available
-    gsm_sampled = random.sample(gsm_incorrect_indices, 5) if len(gsm_incorrect_indices) >= 5 else gsm_incorrect_indices
+    gsm_sampled = random.sample(gsm_incorrect_indices, 3) if len(gsm_incorrect_indices) >= 5 else gsm_incorrect_indices
+    
+    correct_indices = random.sample(correct_indices, 6) if len(correct_indices) >= 6 else correct_indices
     
     # Concatenate the indices list in the specified order
     selected_indices = correct_indices + math_sampled + gsm_sampled
@@ -103,7 +105,195 @@ def get_test_ids():
         test_ids = select_indices("data/question_bank_cleaned.jsonl")
     
     return test_ids
-    
+
+
+def evaluation_stage():
+    # Show the transition page for the evaluation stage.
+    if show_transition(
+        stage_key="eval_transition_done",
+        stage_title="the Evaluation Stage",
+        instructions=(
+            "In this stage, you'll be evaluated on your math abilities. Please answer the following 4 math questions "
+            "to the best of your ability. You'll need to answer most of them correctly in order to continue with the study. "
+            "Good luck!"
+        ),
+        button_label="Proceed to Evaluation"
+    ):
+        return
+
+    st.title("Evaluation Stage")
+    st.write("Please answer the following math questions. Your accuracy must be at least 75% to continue with the study.")
+
+    # Ensure that the evaluation worksheet is stored in session_state.
+    if 'evaluation' not in st.session_state:
+        st.session_state['evaluation'] = logger.ensure_eval_worksheet()
+    eval_sheet = st.session_state['evaluation']
+
+    # Load evaluation questions from the JSONL file.
+    evaluation_questions = load_data(path="data/evaluation_with_choices.jsonl")
+    total_eval_questions = len(evaluation_questions)
+
+    # On first entry, attempt to resume the user's progress.
+    if "evaluation_index" not in st.session_state:
+        records = eval_sheet.get_all_records()  # Retrieve all records.
+        user_records = [record for record in records if record.get("Username") == st.session_state.username]
+        st.session_state.evaluation_index = len(user_records)
+        st.session_state.evaluation_results = [
+            record.get("IsCorrect") in (True, "True", "true") for record in user_records
+        ]
+        st.session_state.evaluation_submitted = False
+        if st.session_state.evaluation_index >= total_eval_questions:
+            st.session_state.evaluation_completed = True
+
+    # If evaluation has been completed, display results.
+    if st.session_state.get("evaluation_completed", False):
+        st.success("You have already completed the evaluation.")
+        total = total_eval_questions
+        correct_count = sum(st.session_state.evaluation_results)
+        accuracy = correct_count / total if total > 0 else 0
+        st.write(f"You answered {correct_count} out of {total} correctly. Accuracy: {accuracy * 100:.1f}%")
+        if accuracy < 0.75:
+            st.error("Sorry, your accuracy is below 75%. You are not allowed to continue the study.")
+            st.write("Thank you for your participation!")
+            st.write("Please close this window to exit the study.")
+            st.stop()
+        else:
+            if st.button("Continue to Study"):
+                st.session_state.page = "instruction"
+                st.rerun()
+        return
+
+    # Otherwise, show the current evaluation question.
+    current_idx = st.session_state.evaluation_index
+    if current_idx < total_eval_questions:
+        current_question = evaluation_questions[current_idx]
+        st.subheader(f"Evaluation Question {current_idx + 1} of {total_eval_questions}")
+        st.write(current_question["question"])
+
+        # Hide the placeholder text for the radio button.
+        st.markdown(
+            """
+            <style>
+                div[role=radiogroup] label:first-of-type {
+                    visibility: hidden;
+                    height: 0px;
+                }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+        option_placeholder = "Select an answer"
+
+        # If an answer has not yet been submitted, show the radio widget.
+        if not st.session_state.get("evaluation_submitted", False):
+            answer = st.radio(
+                "Your answer",
+                options=[option_placeholder] + current_question["Choices"],
+                key=f"eval_{current_idx}",
+                label_visibility="collapsed"
+            )
+        else:
+            # Once submitted, display the submitted answer and lock input.
+            answer = st.session_state.get("submitted_answer", None)
+            st.write(f"Your answer: **{answer}**")
+
+        # Manage the submit button.
+        submit_disabled = st.session_state.get("evaluation_submitted", False)
+        if not st.session_state.get("evaluation_submitted", False):
+            if st.button("Submit", key=f"submit_eval_{current_idx}", disabled=submit_disabled):
+                if answer is not None and answer != option_placeholder:
+                    is_correct = (answer == current_question["correct_answer"])
+                    st.session_state.evaluation_results.append(is_correct)
+                    st.session_state.evaluation_submitted = True
+                    st.session_state.submitted_answer = answer  # Store the submitted answer.
+
+                    # Record the response in the evaluation worksheet.
+                    row = [
+                        st.session_state.username,
+                        st.session_state.condition,
+                        current_idx,
+                        current_question["question"],
+                        json.dumps(current_question["Choices"]),
+                        answer,
+                        current_question["correct_answer"],
+                        is_correct
+                    ]
+                    logger.write_eval_response(row)
+
+                    # Provide immediate feedback.
+                    if is_correct:
+                        st.success("Correct!")
+                    else:
+                        st.error("Incorrect!")
+                    st.info(f"Correct Answer: {current_question['correct_answer']}")
+                    st.markdown(f"**Explanation:** {current_question['gt_solution']}")
+                else:
+                    st.warning("Please select an answer before submitting.")
+        else:
+            st.button("Submit", key=f"submit_eval_{current_idx}", disabled=True)
+
+        # The Next button: allow proceeding only after submission.
+        if st.session_state.get("evaluation_submitted", False):
+            if st.button("Next", key=f"next_eval_{current_idx}"):
+                st.session_state.evaluation_index += 1
+                st.session_state.evaluation_submitted = False
+                st.session_state.pop("submitted_answer", None)  # Clear submitted answer.
+                st.rerun()
+        else:
+            st.button("Next", key=f"next_eval_disabled_{current_idx}", disabled=True,
+                      help="Please submit your answer first.")
+    else:
+        # After all evaluation questions have been answered, show the results.
+        total = total_eval_questions
+        correct_count = sum(st.session_state.evaluation_results)
+        accuracy = correct_count / total if total > 0 else 0
+        st.subheader("Evaluation Results")
+        st.write(f"You answered {correct_count} out of {total} correctly. Accuracy: {accuracy * 100:.1f}%")
+        st.session_state.evaluation_completed = True
+
+        if accuracy < 0.75:
+            st.error("Sorry, your accuracy is below 75%. You are not allowed to continue the study.")
+            st.write("Thank you for your participation!")
+            st.write("Please close this window to exit the study.")
+            st.stop()
+        else:
+            st.success("Congratulations! You passed the evaluation.")
+            if st.button("Continue to Study"):
+                st.rerun()
+
+
+def show_transition(stage_key, stage_title, instructions, button_label):
+    """
+    Displays a transition page for a given stage if not already done.
+
+    Parameters:
+      - stage_key: The key in session state that indicates if the transition is done.
+      - stage_title: The large title to display.
+      - instructions: A short text of instructions for the stage.
+      - button_label: The label for the button to continue.
+      
+    Returns True if the transition screen was shown (and therefore the rest of the stage should be skipped).
+    """
+    if not st.session_state.get(stage_key, False):
+        # Center the title in an h1 tag
+        st.markdown(
+            f"<h1 style='text-align: center;'>Hi, welcome to {stage_title}!</h1>",
+            unsafe_allow_html=True
+        )
+        # Center the instructions with a larger font in an h2 tag
+        st.markdown(
+            f"<h2 style='text-align: center;'>{instructions}</h2>",
+            unsafe_allow_html=True
+        )
+        # Use columns to center the button
+        col1, col2, col3 = st.columns([1, 1, 2])
+        with col3:
+            if st.button(button_label):
+                st.session_state[stage_key] = True
+                st.rerun()
+        return True
+    return False
+
 
 def show_step_1(index):
     st.subheader("Step 1: Initial Questions")
@@ -311,13 +501,19 @@ def show_step_2(index):
         st.button("Next", key=f"next_disabled_{index}", disabled=True, help="Please submit your response first.")
 
 
-def finished():
-    st.title("Thank you for your time!")
-    st.subheader("You will be compensated after we review your answers and footage. Click the link below to complete the study.")
-    st.write("https://app.prolific.com/submissions/complete?cc=C1IZ4VLN")   ## Need change this!!
+# def finished():
+#     st.title("Thank you for your time!")
+#     st.subheader("You will be compensated after we review your answers and footage. Click the link below to complete the study.")
+#     st.write("https://app.prolific.com/submissions/complete?cc=C1IZ4VLN")   ## Need change this!!
     
 
 def main_study():
+    
+    # Before proceeding, ensure that the evaluation stage is complete.
+    # If not, call the evaluation_stage() so the user can finish it.
+    if "evaluation_completed" not in st.session_state or not st.session_state.evaluation_completed:
+        evaluation_stage()
+        return
 
     if "count" not in st.session_state:
         if st.session_state.questions_done == -1:
@@ -328,26 +524,13 @@ def main_study():
     if "question_start_time" not in st.session_state:
         st.session_state["question_start_time"] = time.time()
     
-
-    # if st.session_state.condition == "A. Answer only":
-    #     raise NotImplementedError
-    # elif st.session_state.condition == "B. Paragraph CoT":
-    #     questions = load_data(path="data/science_qa_gpt4_wrong_questions.json")
-    # elif st.session_state.condition == "E. Verifiable CoT":
-    #     raise NotImplementedError
-    # else:
-    #     questions = load_data(path="data/GSM8k_incorrect_example.jsonl")  # pass in different path for different questions
-    
-    question = load_data(path="data/question_bank_cleaned.jsonl")
+    question = load_data(path="data/question_bank.jsonl")
     
     if "questions" not in st.session_state:
         st.session_state.questions = question
 
     # Need to finalize when creating the final question bank
-    # train_ids = [61, 841]
-    # test_ids = [2788, 9120, 20245]
-
-    train_ids = [0, 1, 2, 3, 4, 5]
+    train_ids = [1, 2, 3, 4]
     test_ids = get_test_ids()
     test_ids_str = json.dumps(test_ids)
     
@@ -371,27 +554,31 @@ def main_study():
 
     all_conditions = ["A. Answer only", "B. Paragraph CoT", "C. Step-by-step CoT -- All at once",
                       "D. Step-bt-step CoT -- Sequential", "E. Verifiable CoT"]
-    # condition = st.radio(
-    #         "Condition",
-    #         all_conditions, # "hai-interact-chain", "hai-interact-chain-delayed", 
-    #         # captions=["A", "C", "D", "E", "F", "G"]
-    #         index=all_conditions.index(st.session_state.condition),
-    # )
-    # st.session_state.condition = condition
-    # print(st.session_state.condition)
-
-    # st.session_state.condition = "B. Paragraph CoT"  # now set to condition B for testing
 
     if st.session_state.count >= len(all_ids):
-        # st.session_state.page = "end_tutorial"
-        # st.rerun()
-        finished()
-        return
+        st.session_state.page = "survey"
+        st.rerun()
+        # finished()
+        # return
     
     if st.session_state.count < len(st.session_state['train_ids']):
+        # Training Phase.
+        # Show the transition screen for training if not already done.
+        if show_transition(
+            stage_key="training_transition_done",
+            stage_title="the Training Phase",
+            instructions=(
+                "In this training phase, you will answer 4 questions to get familiar with the study process. "
+                "In Step 1, indicate whether you can solve the math problem on your own. "
+                "In Step 2, evaluate the AI model's answer by choosing to ACCEPT or REJECT it. Good luck!"
+            ),
+            button_label="Proceed to Training Phase"
+        ):
+            return
+        
         st.title("📚 Training phase")
         st.markdown("""
-            ###### During this training phase, you will answer 6 questions to help you get familiar with the study process.
+            ###### During this training phase, you will answer 4 questions to help you get familiar with the study process.
 
             **Step 1:** You will be asked whether you can solve a math problem on your own. Please be honest—your response to Step 1 will not influence the reward you receive.
 
@@ -403,6 +590,21 @@ def main_study():
         total_num = len(st.session_state['train_ids'])
         curr_pos = st.session_state.count + 1
     else:
+        # Actual Study Phase.
+        # Show the transition screen for study phase if not already done.
+        if show_transition(
+            stage_key="study_transition_done",
+            stage_title="the Study Phase",
+            instructions=(
+                "You have now entered the Study Phase. In this phase, you will answer 12 questions. "
+                "Your performance will determine your reward, and you will NOT be shown whether your answer is correct. "
+                "Good luck!"
+            ),
+            button_label="Proceed to Study Phase"
+        ):
+            return
+        
+        
         st.title("📝 Study phase")
         st.markdown("###### You are now in the study phase, where you will answer 20 questions in total and be rewarded if you answer more questions correctly. You will NOT see if your answer is correct or not.")
         total_num = len(st.session_state['test_ids'])
@@ -434,9 +636,7 @@ def main_study():
     warning = st.empty()
     st.divider()
     
-    if st.session_state.condition == "A. Answer only":
-        st.session_state['Model Reasoning'] = ""
-    elif st.session_state.condition == "E. Verifiable CoT":
+    if st.session_state.condition == "E. Verifiable CoT":
         raise NotImplementedError
     else:
         # st.session_state['Model Reasoning'] = question["model_explanation"]
