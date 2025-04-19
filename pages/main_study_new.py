@@ -148,9 +148,9 @@ def show_step_1(index):
         "Your selection",
         options=options,
         key=f"response_{index}",
-        format_func=lambda x: x if x == response_placeholder else f"{x} – {labels[x]}",
+        format_func=lambda x: x if x == response_placeholder else f"{x} -- {labels[x]}",
         label_visibility="collapsed",
-        horizontal=True
+        horizontal=False
     )
 
     warning = st.empty()
