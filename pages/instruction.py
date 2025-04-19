@@ -3,12 +3,12 @@ from pages.utils.utils import load_data
 import json
 import time
 
-# @st.cache_data
-# def load_examples():
-#     examples_file = 'data/examples.json'
-#     with open(examples_file, 'r') as f:
-#         examples = json.load(f)
-#     return examples
+@st.cache_data
+def load_examples():
+    examples_file = 'data/examples.json'
+    with open(examples_file, 'r') as f:
+        examples = json.load(f)
+    return examples
 
 def instruction():
     st.title("Task Tutorial")
@@ -42,7 +42,7 @@ def instruction():
     
     # Create an outer expander for the examples.
     with st.expander("Examples", expanded=True):
-        examples = load_data(path='data/examples.json')
+        examples = load_examples()
     
         # Display examples based on condition.
         for key in examples:  # key is expected to be "ACCEPT" or "REJECT"
@@ -61,7 +61,7 @@ def instruction():
                         st.markdown(ex['gt_solution'])
     
             elif condition == "B. Paragraph CoT":
-                st.markdown(f"**Model's Reasoning:** {ex['paragraph_reasoning']}")
+                st.markdown(f"** Reasoning:** {ex['paragraph_reasoning']}")
                 st.markdown(f"**Model Answer:** {ex['model_answer']}")
                 if key == "ACCEPT":
                     st.markdown("**Instruction:** Choose **ACCEPT** because the model's reasoning and answer are correct.")
