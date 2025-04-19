@@ -14,16 +14,18 @@ def evaluation():
         stage_key="eval_transition_done",
         stage_title="the Evaluation Stage",
         instructions=(
-            "In this stage, you'll be evaluated on your math abilities. Please answer the following 4 math questions "
-            "to the best of your ability. You'll need to answer most of them correctly in order to continue with the study. "
-            "Good luck!"
+            "In this stage, you'll answer 4 math questions to help us understand your math abilities. "
+            "Please do your best and do NOT rely on external sources like Google or ChatGPT, as they may lead you to incorrect answers. Good luck!"
         ),
         button_label="Proceed to Evaluation"
     ):
         return
 
     st.title("Evaluation Stage")
-    st.write("Please answer the following math questions. Your accuracy must be at least 75% to continue with the study.")
+    st.write(
+        "Please answer the following math questions carefully. Remember to rely on your own knowledge and do not use external tools like ChatGPT or Google."
+        "We really appreciate your honesty!"
+    )
 
     # Ensure evaluation worksheet
     if 'evaluation' not in st.session_state:
@@ -48,14 +50,14 @@ def evaluation():
     if st.session_state.get("evaluation_completed", False):
         correct_count = sum(st.session_state.evaluation_results)
         accuracy = correct_count / total_eval_questions if total_eval_questions else 0
-        st.success("You have already completed the evaluation.")
+        st.success("Thank you for completing the evaluation!")
         st.write(f"You answered {correct_count} out of {total_eval_questions} correctly. Accuracy: {accuracy*100:.1f}%")
         if accuracy < 0.75:
-            st.error("Sorry, your accuracy is below 75%. You are not allowed to continue the study.")
-            st.write("Thank you for your participation!")
+            st.error("Sorry, unfortunately your accuracy did not meet the required threshold to continue the study. Thank you very much for your participation—we really appreciate your effort!")
             st.write("Please close this window to exit the study.")
             st.stop()
         else:
+            st.write("We appreciate your effort. Click below to continue to the main study.")
             if st.button("Continue to Study"):
                 st.session_state.page = "instruction"
                 st.rerun()
@@ -158,17 +160,15 @@ def evaluation():
         # All done: show final results
         correct_count = sum(st.session_state.evaluation_results)
         accuracy = correct_count / total_eval_questions if total_eval_questions else 0
-        st.subheader("Evaluation Results")
+        st.success("Thank you for completing the evaluation!")
         st.write(f"You answered {correct_count} out of {total_eval_questions} correctly. Accuracy: {accuracy*100:.1f}%")
-        st.session_state.evaluation_completed = True
-
         if accuracy < 0.75:
-            st.error("Sorry, your accuracy is below 75%. You are not allowed to continue the study.")
-            st.write("Thank you for your participation!")
+            st.error("Sorry, unfortunately your accuracy did not meet the required threshold to continue the study. Thank you very much for your participation—we really appreciate your effort!")
             st.write("Please close this window to exit the study.")
             st.stop()
         else:
-            st.success("Congratulations! You passed the evaluation.")
+            st.write("We appreciate your effort. Click below to continue to the main study.")
             if st.button("Continue to Study"):
                 st.session_state.page = "instruction"
                 st.rerun()
+        return
