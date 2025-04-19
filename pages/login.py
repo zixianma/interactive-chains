@@ -149,13 +149,13 @@ def submit_consent(username_input):
                 st.session_state['sheet'] = exponential_backoff(client.open, sheet_condition)  
                 st.session_state['user_worksheet'] = exponential_backoff(st.session_state['sheet'].worksheet, st.session_state.username)
                 st.session_state['demographics'] = exponential_backoff(st.session_state['sheet'].worksheet, 'Demographics')
-                all_values = exponential_backoff(st.session_state['user_worksheet'].get, 'I2:I27') ## need to change to current set up
+                all_values = exponential_backoff(st.session_state['user_worksheet'].get, 'I2:I17') ## need to change to current set up
                 print(f'all values: {all_values}, len: {len(all_values)}')
                 if not all_values or (len(all_values) == 1 and not all_values[0]):
                     st.session_state.questions_done = -1
                     st.session_state.page = "demographics" # begin_tutorial or instruction?
-                elif len(all_values) >= 26:
-                    st.session_state.questions_done = 26
+                elif len(all_values) >= 16:
+                    st.session_state.questions_done = 16
                     st.session_state.page = "survey"
                 else:
                     last_question_answered = all_values[-1]

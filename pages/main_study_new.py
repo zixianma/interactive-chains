@@ -4,34 +4,33 @@ import random
 from streamlit_float import *
 import re
 from datetime import datetime
-import time
 import pages.utils.logger as logger
+from pages.utils.utils import *
 import time
-import os
 
 
-@st.cache_data
-def load_data(path="./data/training_questions.json"):
-    """Loads the training and main-study questions from JSON or JSONL files."""
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"File not found: {path}")
+# @st.cache_data
+# def load_data(path="./data/training_questions.json"):
+#     """Loads the training and main-study questions from JSON or JSONL files."""
+#     if not os.path.exists(path):
+#         raise FileNotFoundError(f"File not found: {path}")
 
-    # Handle JSONL files
-    if path.endswith(".jsonl"):
-        data = []
-        with open(path, "r", encoding="utf-8") as f:
-            for line in f:
-                data.append(json.loads(line.strip()))
-        return data
+#     # Handle JSONL files
+#     if path.endswith(".jsonl"):
+#         data = []
+#         with open(path, "r", encoding="utf-8") as f:
+#             for line in f:
+#                 data.append(json.loads(line.strip()))
+#         return data
 
-    # Handle standard JSON files
-    elif path.endswith(".json"):
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return {int(k): v for k, v in data.items()}
+#     # Handle standard JSON files
+#     elif path.endswith(".json"):
+#         with open(path, "r", encoding="utf-8") as f:
+#             data = json.load(f)
+#         return {int(k): v for k, v in data.items()}
 
-    else:
-        raise ValueError("Unsupported file format. Please use .json or .jsonl")
+#     else:
+#         raise ValueError("Unsupported file format. Please use .json or .jsonl")
 
 
 def select_indices(file_path="question_bank_cleaned.jsonl"):
@@ -107,208 +106,20 @@ def get_test_ids():
     return test_ids
 
 
-def evaluation_stage():
-    # Show the transition page for the evaluation stage.
-    if show_transition(
-        stage_key="eval_transition_done",
-        stage_title="the Evaluation Stage",
-        instructions=(
-            "In this stage, you'll be evaluated on your math abilities. Please answer the following 4 math questions "
-            "to the best of your ability. You'll need to answer most of them correctly in order to continue with the study. "
-            "Good luck!"
-        ),
-        button_label="Proceed to Evaluation"
-    ):
-        return
-
-    st.title("Evaluation Stage")
-    st.write("Please answer the following math questions. Your accuracy must be at least 75% to continue with the study.")
-
-    # Ensure that the evaluation worksheet is stored in session_state.
-    if 'evaluation' not in st.session_state:
-        st.session_state['evaluation'] = logger.ensure_eval_worksheet()
-    eval_sheet = st.session_state['evaluation']
-
-    # Load evaluation questions from the JSONL file.
-    evaluation_questions = load_data(path="data/evaluation_with_choices.jsonl")
-    total_eval_questions = len(evaluation_questions)
-
-    # On first entry, attempt to resume the user's progress.
-    if "evaluation_index" not in st.session_state:
-        records = eval_sheet.get_all_records()  # Retrieve all records.
-        user_records = [record for record in records if record.get("Username") == st.session_state.username]
-        st.session_state.evaluation_index = len(user_records)
-        st.session_state.evaluation_results = [
-            record.get("IsCorrect") in (True, "True", "true") for record in user_records
-        ]
-        st.session_state.evaluation_submitted = False
-        if st.session_state.evaluation_index >= total_eval_questions:
-            st.session_state.evaluation_completed = True
-
-    # If evaluation has been completed, display results.
-    if st.session_state.get("evaluation_completed", False):
-        st.success("You have already completed the evaluation.")
-        total = total_eval_questions
-        correct_count = sum(st.session_state.evaluation_results)
-        accuracy = correct_count / total if total > 0 else 0
-        st.write(f"You answered {correct_count} out of {total} correctly. Accuracy: {accuracy * 100:.1f}%")
-        if accuracy < 0.75:
-            st.error("Sorry, your accuracy is below 75%. You are not allowed to continue the study.")
-            st.write("Thank you for your participation!")
-            st.write("Please close this window to exit the study.")
-            st.stop()
-        else:
-            if st.button("Continue to Study"):
-                st.session_state.page = "instruction"
-                st.rerun()
-        return
-
-    # Otherwise, show the current evaluation question.
-    current_idx = st.session_state.evaluation_index
-    if current_idx < total_eval_questions:
-        current_question = evaluation_questions[current_idx]
-        st.subheader(f"Evaluation Question {current_idx + 1} of {total_eval_questions}")
-        st.write(current_question["question"])
-
-        # Hide the placeholder text for the radio button.
-        st.markdown(
-            """
-            <style>
-                div[role=radiogroup] label:first-of-type {
-                    visibility: hidden;
-                    height: 0px;
-                }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-        option_placeholder = "Select an answer"
-
-        # If an answer has not yet been submitted, show the radio widget.
-        if not st.session_state.get("evaluation_submitted", False):
-            answer = st.radio(
-                "Your answer",
-                options=[option_placeholder] + current_question["Choices"],
-                key=f"eval_{current_idx}",
-                label_visibility="collapsed"
-            )
-        else:
-            # Once submitted, display the submitted answer and lock input.
-            answer = st.session_state.get("submitted_answer", None)
-            st.write(f"Your answer: **{answer}**")
-
-        # Manage the submit button.
-        submit_disabled = st.session_state.get("evaluation_submitted", False)
-        if not st.session_state.get("evaluation_submitted", False):
-            if st.button("Submit", key=f"submit_eval_{current_idx}", disabled=submit_disabled):
-                if answer is not None and answer != option_placeholder:
-                    is_correct = (answer == current_question["correct_answer"])
-                    st.session_state.evaluation_results.append(is_correct)
-                    st.session_state.evaluation_submitted = True
-                    st.session_state.submitted_answer = answer  # Store the submitted answer.
-
-                    # Record the response in the evaluation worksheet.
-                    row = [
-                        st.session_state.username,
-                        st.session_state.condition,
-                        current_idx,
-                        current_question["question"],
-                        json.dumps(current_question["Choices"]),
-                        answer,
-                        current_question["correct_answer"],
-                        is_correct
-                    ]
-                    logger.write_eval_response(row)
-
-                    # Provide immediate feedback.
-                    if is_correct:
-                        st.success("Correct!")
-                    else:
-                        st.error("Incorrect!")
-                    st.info(f"Correct Answer: {current_question['correct_answer']}")
-                    st.markdown(f"**Explanation:** {current_question['gt_solution']}")
-                else:
-                    st.warning("Please select an answer before submitting.")
-        else:
-            st.button("Submit", key=f"submit_eval_{current_idx}", disabled=True)
-
-        # The Next button: allow proceeding only after submission.
-        if st.session_state.get("evaluation_submitted", False):
-            if st.button("Next", key=f"next_eval_{current_idx}"):
-                st.session_state.evaluation_index += 1
-                st.session_state.evaluation_submitted = False
-                st.session_state.pop("submitted_answer", None)  # Clear submitted answer.
-                st.rerun()
-        else:
-            st.button("Next", key=f"next_eval_disabled_{current_idx}", disabled=True,
-                      help="Please submit your answer first.")
-    else:
-        # After all evaluation questions have been answered, show the results.
-        total = total_eval_questions
-        correct_count = sum(st.session_state.evaluation_results)
-        accuracy = correct_count / total if total > 0 else 0
-        st.subheader("Evaluation Results")
-        st.write(f"You answered {correct_count} out of {total} correctly. Accuracy: {accuracy * 100:.1f}%")
-        st.session_state.evaluation_completed = True
-
-        if accuracy < 0.75:
-            st.error("Sorry, your accuracy is below 75%. You are not allowed to continue the study.")
-            st.write("Thank you for your participation!")
-            st.write("Please close this window to exit the study.")
-            st.stop()
-        else:
-            st.success("Congratulations! You passed the evaluation.")
-            if st.button("Continue to Study"):
-                st.rerun()
-
-
-def show_transition(stage_key, stage_title, instructions, button_label):
-    """
-    Displays a transition page for a given stage if not already done.
-
-    Parameters:
-      - stage_key: The key in session state that indicates if the transition is done.
-      - stage_title: The large title to display.
-      - instructions: A short text of instructions for the stage.
-      - button_label: The label for the button to continue.
-      
-    Returns True if the transition screen was shown (and therefore the rest of the stage should be skipped).
-    """
-    if not st.session_state.get(stage_key, False):
-        # Center the title in an h1 tag
-        st.markdown(
-            f"<h1 style='text-align: center;'>Hi, welcome to {stage_title}!</h1>",
-            unsafe_allow_html=True
-        )
-        # Center the instructions with a larger font in an h2 tag
-        st.markdown(
-            f"<h2 style='text-align: center;'>{instructions}</h2>",
-            unsafe_allow_html=True
-        )
-        # Use columns to center the button
-        col1, col2, col3 = st.columns([1, 1, 2])
-        with col3:
-            if st.button(button_label):
-                st.session_state[stage_key] = True
-                st.rerun()
-        return True
-    return False
-
-
 def show_step_1(index):
-    st.subheader("Step 1: Initial Questions")
+    st.subheader("Step 1: Perceived Difficulty")
 
     question = st.session_state.questions[index]
-
     st.write("**Question:**", question["question"])
-    # if index in st.session_state.idxtoimage:
-    #     st.image(st.session_state.idxtoimage[index], caption=f"Image for the above question", use_container_width=True)
-    
-    st.markdown("**Do you know how to solve this question?**")
 
+    st.markdown("**How hard do you find this question?**  \n"
+                "1 = Very Easy, 2 = Easy, 3 = Neither Easy nor Hard, 4 = Hard, 5 = Very Hard / No idea")
+
+    # Initialize submission flag
     if "step_1_submitted" not in st.session_state:
         st.session_state.step_1_submitted = False
 
+    # Hide the default radio placeholder label
     st.markdown(
         """
         <style>
@@ -317,43 +128,54 @@ def show_step_1(index):
                 height: 0px;
             }
         </style>
-    """,
+        """,
         unsafe_allow_html=True,
     )
 
-    response_placeholder = "Select your response"
+    # Build options and labels
+    response_placeholder = "Select difficulty"
+    labels = {
+        "1": "Very Easy",
+        "2": "Easy",
+        "3": "Neutral",
+        "4": "Hard",
+        "5": "Very Hard / No idea"
+    }
+    options = [response_placeholder] + list(labels.keys())
 
+    # Render the radio with formatted labels
     response = st.radio(
         "Your selection",
-        options=[response_placeholder, "Yes, I know how to solve it", "I am not sure / I don't know"],
+        options=options,
         key=f"response_{index}",
-        label_visibility="collapsed"
+        format_func=lambda x: x if x == response_placeholder else f"{x} – {labels[x]}",
+        label_visibility="collapsed",
+        horizontal=True
     )
-
-    mapping = {
-        "Yes, I know how to solve it": "Yes",
-        "I am not sure / I don't know": "No"
-    }
 
     warning = st.empty()
     st.divider()
 
+    # Submit button
     if st.button("Submit", key=f"submit_{index}"):
-        if response and response != response_placeholder:
-            st.session_state.step_1_response = mapping[response]
+        if response != response_placeholder:
+            # Store as integer 1–5
+            st.session_state.step_1_response = int(response)
             st.session_state.step_1_submitted = True
-            st.success("Response submitted!")
+            st.success(f"Response submitted: {response} – {labels[response]}")
         else:
-            warning.warning("Please select an option before submitting.")
+            warning.warning("Please select a difficulty before submitting.")
 
+    # Next button: only enabled after submission
     if st.session_state.step_1_submitted:
         if st.button("Next", key=f"next_{index}"):
             st.session_state.step_phase = 2
-            # reset the submission flag for the next question.
+            # reset the submission flag for the next question
             st.session_state.step_1_submitted = False
             st.rerun()
     else:
         st.button("Next", key=f"next_disabled_{index}", disabled=True, help="Please submit your response first.")
+
 
     
 def show_step_2(index):
@@ -373,7 +195,7 @@ def show_step_2(index):
     
     elif condition == "B. Paragraph CoT":
         st.markdown("**Model's Paragraph Chain-of-thought**")
-        st.info(question.get("paragraph_reasoning", "No paragraph CoT available"))
+        st.write(question.get("paragraph_reasoning", "No paragraph CoT available"))
         
         '''
         if index in st.session_state.idxtoimage:
@@ -423,7 +245,7 @@ def show_step_2(index):
             # If not at the final step, show the "Next Step" button centered
             if st.session_state.current_step < total_steps - 1:
                 left_spacer, mid_col, right_spacer = st.columns([1, 2, 1])
-                with mid_col:
+                with left_spacer:
                     if st.button("Next Step", key="next_step"):
                         st.session_state.current_step += 1
                         st.rerun()
@@ -511,9 +333,9 @@ def main_study():
     
     # Before proceeding, ensure that the evaluation stage is complete.
     # If not, call the evaluation_stage() so the user can finish it.
-    if "evaluation_completed" not in st.session_state or not st.session_state.evaluation_completed:
-        evaluation_stage()
-        return
+    # if "evaluation_completed" not in st.session_state or not st.session_state.evaluation_completed:
+    #     evaluation_stage()
+    #     return
 
     if "count" not in st.session_state:
         if st.session_state.questions_done == -1:
@@ -619,7 +441,7 @@ def main_study():
         """)
 
         note = st.markdown("""
-            :red[**Note:** Please base your decision **only** on the information shown in this interface (the AI's answer and/or its chain of thought).  
+            :red[**Note:** Please base your decision **only** on the information shown in this interface (the AI's answer and/or its explanations).  
             Relying on external sources like Wikipedia or ChatGPT may lead you to incorrect conclusions.]
         """)
 

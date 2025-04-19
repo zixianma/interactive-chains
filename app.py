@@ -9,6 +9,7 @@ from pages.demographics import demographics
 from pages.instruction import instruction
 from pages.tutorial import begin_tutorial, end_tutorial
 from pages.main_study_new import main_study
+from pages.evaluation import evaluation
 import streamlit.components.v1 as components
 
 def main():
@@ -90,6 +91,8 @@ def main():
         login()
     elif st.session_state.page == "instruction":
         instruction()
+    elif st.session_state.page == "evaluation":
+        evaluation()
     # elif st.session_state.page == "begin_tutorial":
     #     begin_tutorial()
     # elif st.session_state.page == "end_tutorial":
