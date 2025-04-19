@@ -61,7 +61,7 @@ def instruction():
                         st.markdown(ex['gt_solution'])
     
             elif condition == "B. Paragraph CoT":
-                st.markdown(f"** Reasoning:** {ex['paragraph_reasoning']}")
+                st.markdown(f"** Reasoning:** {ex['paragraph_reasoning']}", unsafe_allow_html=True)
                 st.markdown(f"**Model Answer:** {ex['model_answer']}")
                 if key == "ACCEPT":
                     st.markdown("**Instruction:** Choose **ACCEPT** because the model's reasoning and answer are correct.")
@@ -72,7 +72,7 @@ def instruction():
     
             elif condition in ["C. Step-by-step CoT -- All at once", "D. Step-by-step CoT -- Sequential"]:
                 st.markdown("**Model's Reasoning:**")
-                st.markdown(ex['reasoning_steps'])
+                st.markdown(ex['reasoning_steps'], unsafe_allow_html=True)
                 st.markdown(f"**Model Answer:** {ex['model_answer']}")
                 if key == "ACCEPT":
                     st.markdown("**Instruction:** Choose **ACCEPT** because the step-by-step reasoning and answer are correct.")

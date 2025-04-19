@@ -41,7 +41,7 @@ def evaluation():
         records = eval_sheet.get_all_records()
         user_records = [r for r in records if r.get("Username") == st.session_state.username]
         st.session_state.evaluation_index = len(user_records)
-        st.session_state.evaluation_results = [r.get("IsCorrect") in (True, "True", "true") for r in user_records]
+        st.session_state.evaluation_results = [r.get("IsCorrect") in (True, "True", "true", "TRUE") for r in user_records]
         st.session_state.evaluation_submitted = False
         if st.session_state.evaluation_index >= total_eval_questions:
             st.session_state.evaluation_completed = True
