@@ -11,6 +11,7 @@ from googleapiclient.discovery import build
 from pages.utils.exponential_backoff import exponential_backoff
 import time
 import io
+from pages.utils.utils import show_transition
 
 def check_user_data():
     toml_data = st.secrets # toml.load(".streamlit/secrets.toml")
@@ -530,6 +531,18 @@ def tasks_demand_questions():
 
 def survey():
     # st.title("Reflection Questions & Feedback")
+    if show_transition(
+        stage_key="survey_intro_done",
+        stage_title="🎉 Thank You!",
+        instructions=(
+            "Congratulations on completing the main study! 🎉\n\n"
+            "We really appreciate your time and effort.\n\n"
+            "Before you finish, please take a moment to answer a few short survey questions. "
+            "Your responses help us improve future research and understand your experience better. Thank you!"
+        ),
+        button_label="Proceed to Survey"
+    ):
+        return
 
     # Initialize the page in session state if not already set
     if 'qa_page' not in st.session_state:
