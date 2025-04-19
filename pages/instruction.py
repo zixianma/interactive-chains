@@ -15,7 +15,7 @@ def instruction():
     st.subheader("Please read the task instructions below carefully before proceeding.")
     st.markdown(
         "In this study, you will first be shown a math problem and asked to evaluate its difficulty by selecting a value on a Likert scale from 1 (Very Easy) to 5 (Very Hard). "
-        "Next, you will review an AI model’s answer (which may include its reasoning, depending on the condition). "
+        "Next, you will review an AI model's answer (which may include its reasoning, depending on the condition). "
         "Your task is to critically evaluate the solution and decide whether to **ACCEPT** it (if the answer and reasoning are correct) or **REJECT** it (if you find any errors in the logic or result). "
         "Below are examples to help you understand when to choose each option."
     )
@@ -61,7 +61,7 @@ def instruction():
                         st.markdown(ex['gt_solution'])
     
             elif condition == "B. Paragraph CoT":
-                st.markdown(f"**Paragraph Reasoning:** {ex['paragraph_reasoning']}")
+                st.markdown(f"**Model's Reasoning:** {ex['paragraph_reasoning']}")
                 st.markdown(f"**Model Answer:** {ex['model_answer']}")
                 if key == "ACCEPT":
                     st.markdown("**Instruction:** Choose **ACCEPT** because the model's reasoning and answer are correct.")
@@ -71,7 +71,7 @@ def instruction():
                     st.markdown("**Instruction:** Choose **REJECT** because the model's answer and its reasoning are incorrect. The incorrect or flawed part of the model's reasoning is highlighted in red for your reference.")
     
             elif condition in ["C. Step-by-step CoT -- All at once", "D. Step-by-step CoT -- Sequential"]:
-                st.markdown("**Step-by-Step Reasoning:**")
+                st.markdown("**Model's Reasoning:**")
                 st.markdown(ex['reasoning_steps'])
                 st.markdown(f"**Model Answer:** {ex['model_answer']}")
                 if key == "ACCEPT":
