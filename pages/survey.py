@@ -227,7 +227,7 @@ def free_form_questions():
         st.session_state.submitted_once = False
 
     if st.session_state[f"submit_disabled_{survey_page}"]:
-        update_user_data("complete", 3)
+        update_user_data("complete", 5)
         st.session_state.last_progress = -1
         st.rerun()
 
@@ -236,41 +236,25 @@ def free_form_questions():
 
     # Preserve input across reruns
     st.session_state.strategy = st.text_area(
-        ":red[*]What was your strategy for judging AI's answer?",
+        ":red[*]How did you evaluate whether the AI model’s answer was correct?",
         value=st.session_state.get('strategy', ''), key='strategy_frq'
     )
     
     st.session_state.ai_model_usage = st.text_area(
-        ":red[*]How did you use the AI's provided information to make the decision?",
+        ":red[*]In what ways did you use the AI’s information to make your decision?",
         value=st.session_state.get('ai_model_usage', ''), key='ai_model_usage_frq'
     )
     
     st.session_state.ai_info_usage = st.text_area(
-        ":red[*]What did you think of the AI model's provided information? Did you find them helpful assisting you making the decision?",
+        ":red[*]What did you think about the information the AI model provided? Was it helpful in guiding your decision?",
         value=st.session_state.get('ai_info_usage', ''), key='ai_info_usage_frq'
     )
-    
-    # if st.session_state.condition.find("hai-answer") == -1:
-    #     st.session_state.error_finding = st.text_area(
-    #         ":red[*]What did you think of the AI model's reasoning chains? Did you find them accurate and helpful? If not, what errors did you find in them?",
-    #         value=st.session_state.get('error_finding', ''), key='error_finding_frq'
-    #     )
-    # else:
-    #     st.session_state.error_finding = None
-
-    # if st.session_state.condition.find("hai-regenerate") > -1:
-    #     st.session_state.ai_model_interaction_usage = st.text_area(
-    #         ":red[*]How did you interact with the AI model? Was anything confusing or demanding? If so, what was it and why?",
-    #         value=st.session_state.get('ai_model_interaction_usage', ''), key='ai_model_interaction_usage_frq'
-    #     )
-    # else:
-    #     st.session_state.ai_model_interaction_usage = None
 
     st.session_state.misc_comments = st.text_area(
-        "[Optional] Any other comments or remarks regarding the study?",
+        "Optional: Do you have any additional comments or feedback about the study?",
         value=st.session_state.get('misc_comments', ''), key='misc_comments_frq'
     )
-
+    
     # Perform validation and submission
     if st.button("Submit", key="submit_answers", disabled=st.session_state.get(f"submit_disabled_{survey_page}", False)):
         # Immediately disable the submit button.
@@ -305,8 +289,7 @@ def free_form_questions():
             record_data_clear_state(
                 ['strategy', 'ai_model_usage', 'ai_info_usage', 'misc_comments', 'elapsed_time'],
                 survey_page=survey_page
-            )
-        
+            )        
 
 
 def interaction_questions():
@@ -319,66 +302,63 @@ def interaction_questions():
     st.title("Interaction Reflection Questions")
     st.subheader("Note: You cannot go back, please take your time answering these.")
 
-    options = ['Select an Option', 'Strongly Disagree', 'Disagree', 'Somewhat Disagree', 'Neutral', 'Somewhat Agree', 'Agree', 'Strongly Agree'] 
-    st.subheader("Rate the following statements")
-    st.markdown(
-        """
-        <style>
-            div[role=radiogroup] label:first-of-type {
-                visibility: hidden;
-                height: 0px;
-                width: 0px;
-            }
-        </style>
-    """,
-        unsafe_allow_html=True,
-    )
+    # --- Custom Likert scales for each type ---
+    confidence_scale = [
+        "Select an Option",
+        "1 - Very un-confident",
+        "2 - Slightly confident",
+        "3 - Somewhat confident",
+        "4 - Confident",
+        "5 - Very confident"
+    ]
 
-    st.session_state.answer_helpful = st.radio("I found it helpful to **read the AI model's answer** when answering the question.", options, horizontal=True, key='answer_helpful_radio')
-    # condition based
-    if st.session_state.condition.find("hai-answer") == -1:
-        # st.write("I found the AI's highlights helpful in determining what to edit")
-        st.session_state.chain_helpful = st.radio("I found it helpful to **read the AI model's reasoning chain** when answering the question (A reasoning chain is the list of thoughts, actions, and observations that help the model reason and reach its final answer).", options, horizontal=True, key='chain_helpful_radio')
-    else:
-        st.session_state.chain_helpful = None
-    st.session_state.search_helpful = st.radio("I found **Search** helpful when answering the question.", options, horizontal=True, key='search_helpful_radio')
-    st.session_state.lookup_helpful = st.radio("I found **Lookup** helpful when answering the question.", options, horizontal=True, key='lookup_helpful_radio')
-    if st.session_state.condition.find("hai-regenerate") > -1:
-        st.session_state.interaction_helpful = st.radio("I found it helpful to **interact with the AI model** when answering the question (Interaction includes editing AI's thought/action and updating its output).", options, horizontal=True, key='interact_helpful_radio')
-        st.session_state.chain_edit_helpful = st.radio("I found it helpful to **edit the AI model's reasoning chain** when answering the question.", options, horizontal=True, key='edit_chain_helpful_radio')
-        st.session_state.thought_edit_helpful = st.radio("I found it helpful to **edit the AI model's thought(s)** when answering the question.", options, horizontal=True, key='edit_thought_helpful_radio')
-        st.session_state.action_edit_helpful = st.radio("I found it helpful to **edit the AI model's action(s)** when answering the question.", options, horizontal=True, key='edit_action_helpful_radio')
-        st.session_state.update_output_helpful = st.radio("I found it helpful to **update the AI model's output** when answering the question.", options, horizontal=True, key='update_helpful_radio')
-    else:
-        st.session_state.interaction_helpful = None
-        st.session_state.chain_edit_helpful = None
-        st.session_state.thought_edit_helpful = None
-        st.session_state.action_edit_helpful  = None
-        st.session_state.update_output_helpful = None
-    # st.session_state.willing_to_pay = st.radio("I would be willing to pay to access the AI’s code completions.", options, horizontal=True, key='willing_to_pay_radio')
-    # st.session_state.willing_to_pay_highlights = st.radio("I would be willing to pay to access the AI’s highlights.", options, horizontal=True, key='willing_to_pay_highlights_radio')
-    # st.session_state.code_completion_distracting = st.radio("I found the AI’s code completions distracting.", options, horizontal=True, key='code_completion_distracting_radio')
-    # st.session_state.highlights_distracting = st.radio("I found the AI’s highlights distracting.", options, horizontal=True, key='highlights_distracting_radio')
+    accuracy_scale = [
+        "Select an Option",
+        "1 - 0-20% accurate",
+        "2 - 20-40% accurate",
+        "3 - 40-60% accurate",
+        "4 - 60-80% accurate",
+        "5 - 80-100% accurate"
+    ]
 
+    helpfulness_scale = [
+        "Select an Option",
+        "1 - Not at all helpful",
+        "2 - Slightly helpful",
+        "3 - Somewhat helpful",
+        "4 - Helpful",
+        "5 - Very helpful"
+    ]
+
+    # --- Helper function to render a question with markdown label and radio ---
+    def ask_question(label, key, scale):
+        st.markdown(f"### {label}")
+        return st.radio("", scale, index=0, horizontal=False, key=key)
+
+    # --- Questions ---
+    st.session_state.confidence = ask_question("How confident were you about completing the tasks?", "confidence_radio", confidence_scale)
+    st.session_state.self_accuracy = ask_question("How accurate do you think your answers were?", "self_accuracy_radio", accuracy_scale)
+    st.session_state.ai_accuracy = ask_question("How accurate do you think the AI model's answers were?", "ai_accuracy_radio", accuracy_scale)
+    st.session_state.ai_helpfulness = ask_question("How helpful do you think the AI model's outputs were?", "ai_helpfulness_radio", helpfulness_scale)
+
+    # --- Submit ---
     if st.button("Next", key="interaction_questions_next", disabled=st.session_state[f"submit_disabled_{survey_page}"]):
         if (
-            st.session_state.answer_helpful == 'Select an Option' or
-            st.session_state.chain_helpful == 'Select an Option' or
-            st.session_state.search_helpful == 'Select an Option' or
-            st.session_state.lookup_helpful == 'Select an Option' or
-            st.session_state.interaction_helpful == 'Select an Option' or
-            st.session_state.chain_edit_helpful == 'Select an Option' or
-            st.session_state.thought_edit_helpful == 'Select an Option' or
-            st.session_state.action_edit_helpful == 'Select an Option' or
-            st.session_state.update_output_helpful == 'Select an Option'
+            st.session_state.confidence == 'Select an Option' or
+            st.session_state.self_accuracy == 'Select an Option' or
+            st.session_state.ai_accuracy == 'Select an Option' or
+            st.session_state.ai_helpfulness == 'Select an Option'
         ):
             st.error("Please make sure to select an option for all questions before submitting.")
         else:
             end_time = datetime.now()
             st.session_state[f"submit_disabled_{survey_page}"] = True
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
-            # log data
-            record_data_clear_state(['answer_helpful', 'chain_helpful', 'search_helpful', 'lookup_helpful', 'interaction_helpful', 'chain_edit_helpful', 'thought_edit_helpful', 'action_edit_helpful', 'update_output_helpful' ,'elapsed_time'], survey_page = survey_page)
+
+            record_data_clear_state([
+                'confidence', 'self_accuracy', 'ai_accuracy', 'ai_helpfulness', 'elapsed_time'
+            ], survey_page=survey_page)
+
             update_user_data("complete", 4)
             st.session_state.last_progress = 4
             st.rerun()
@@ -389,144 +369,124 @@ def ai_usage_questions():
         st.session_state.time_spent = datetime.now()
     if f"submit_disabled_{survey_page}" not in st.session_state:
         st.session_state[f"submit_disabled_{survey_page}"] = False
-    
-    st.markdown(
-        """
-        <style>
-            div[role=radiogroup] label:first-of-type {
-                visibility: hidden;
-                height: 0px;
-                width: 0px;
-            }
-        </style>
-    """,
-        unsafe_allow_html=True,
-    )
 
     st.title("AI Usage Reflection Questions")
     st.subheader("Note: You cannot go back, please take your time answering these.")
-    options_frequency = ['Select an Option', 'Never', 'Rarely (10%)', 'Occasionally (30%)', 'Sometimes (50%)', 'Frequently (70%)', 'Usually (90%)', 'Always']
-    # options_helpful = ['Select an Option', 'Very Unhelpful', 'Not Helpful', 'Sometimes', 'Neutral', 'Helpful', 'Very helpful']
 
-    st.session_state.ai_frequency = st.radio("How often do you use AI models (e.g. ChatGPT, DaLLE, CoPilot)?", ['Select an Option', 'Never', 'Rarely (once a year)', 'Occasionally (once a few months)', 'Sometimes (once a month)', 'Frequently (once a week)', 'Usually (once a few days)', 'Always (at least once a day)'], horizontal=True, key='ai_frequency_radio')
-    st.session_state.ai_answer_usage = st.radio("How often did you use the **AI model's answer** to help answer the question?", options_frequency, horizontal=True, key='ai_answer_usage_radio')
-    # st.session_state.ai_answer_helpful = st.radio("How helpful did you find the AI model's answer chain when trying to come to an answer?", options_helpful, horizontal=True, key='ai_answer_helpful_radio')
-    if st.session_state.condition.find("hai-answer") == -1:
-        st.session_state.ai_reasoning_chain_usage = st.radio("How often did you use the **AI model's reasoning chain** to help answer the question?", options_frequency, horizontal=True, key='ai_reasoning_chain_usage_radio')
-    else:
-        st.session_state.ai_reasoning_chain_usage = None
-    # st.session_state.ai_reasoning_chain_helpful = st.radio("How helpful did you find the AI model's reasoning chain when trying to come to an answer?", options_helpful, horizontal=True, key='ai_reasoning_chain_helpful_radio')
-    if st.session_state.condition.find("regenerate") > -1:
-        st.session_state.interaction_usage = st.radio("How often did you **interact with the AI model** to help answer the question?", options_frequency, horizontal=True, key='interaction_usage_radio')
-        st.session_state.human_search = None
-        st.session_state.human_lookup = None
-    else:
-        st.session_state.interaction_usage = None
-        st.session_state.human_search = st.radio("How often did you perform a **Search** action to help answer the question?", options_frequency, horizontal=True, key='human_search_radio')
-        st.session_state.human_lookup = st.radio("How often did you perform a **Lookup** action to help answer the question?", options_frequency, horizontal=True, key='human_lookup_radio')
-    # st.session_state.interaction_helpfulness = st.radio("How helpful did you find the interactions with the model when trying to come to an answer?", options_helpful, horizontal=True, key='interaction_helpfulness_radio')
-    # st.session_state.explanation_usage = st.radio("How often did you use the AI model's explanations to come to an answer?", options_frequency, horizontal=True, key='explanation_usage_radio')
-    # st.session_state.explanation_helpfulness = st.radio("How helpful did you find the AI model's explanations when trying to come to an answer?", options_helpful, horizontal=True, key='explanation_helpfulness_radio')
+    # Likert scale options
+    frequency_options = [
+        'Select an Option',
+        'Never',
+        'Rarely (once a year)',
+        'Occasionally (once every few months)',
+        'Sometimes (once a month)',
+        'Frequently (once a week)',
+        'Usually (once every few days)',
+        'Always (at least once a day)'
+    ]
 
+    # Frequency question as vertical (column)
+    st.markdown("**1. How often do you use AI models (e.g. ChatGPT, Claude, Gemini)?**")
+    st.session_state.ai_frequency = st.radio(
+        label="",
+        options=frequency_options,
+        index=0,
+        horizontal=False,
+        key='ai_frequency_radio'
+    )
+
+    # Open-ended: Which models
+    st.markdown("**2. Which AI models have you used before?** *(e.g., ChatGPT, Claude, Gemini, etc.)*")
+    st.session_state.ai_models_used = st.text_area("Your answer:", key='ai_models_used')
+
+    # Open-ended: Accuracy perception
+    st.markdown("**3. How accurate do you think AI models are in general?**")
+    st.session_state.ai_accuracy_opinion = st.text_area("Your answer:", key='ai_accuracy_opinion')
+
+    # Submit button and validation
     if st.button("Next", key="ai_usage_questions_next", disabled=st.session_state[f"submit_disabled_{survey_page}"]):
         if (
             st.session_state.ai_frequency == 'Select an Option' or
-            st.session_state.ai_answer_usage == 'Select an Option' or
-            # st.session_state.ai_answer_helpful == 'Select an Option' or
-            st.session_state.ai_reasoning_chain_usage == 'Select an Option' or
-            # st.session_state.ai_reasoning_chain_helpful == 'Select an Option' or
-            st.session_state.interaction_usage == 'Select an Option' or
-            # st.session_state.interaction_helpfulness == 'Select an Option' or
-            st.session_state.human_search == 'Select an Option' or
-            st.session_state.human_lookup == 'Select an Option'
-            # st.session_state.explanation_helpfulness == 'Select an Option'
+            not st.session_state.ai_models_used.strip() or
+            not st.session_state.ai_accuracy_opinion.strip()
         ):
-            st.error("Please make sure to select an option for all questions before submitting.")
+            st.error("Please make sure to answer all questions before continuing.")
         else:
             end_time = datetime.now()
             st.session_state[f"submit_disabled_{survey_page}"] = True
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
-            # log data
-            record_data_clear_state(['ai_frequency', 'ai_answer_usage', 'ai_reasoning_chain_usage', 'interaction_usage', 'human_search', 'human_lookup', 'elapsed_time'], survey_page = survey_page)
+
+            # Record answers
+            record_data_clear_state([
+                'ai_frequency', 
+                'ai_models_used', 
+                'ai_accuracy_opinion', 
+                'elapsed_time'
+            ], survey_page=survey_page)
+
             update_user_data("complete", 3)
             st.session_state.last_progress = 3
             st.rerun()
+
 
 def tasks_demand_questions():
     survey_page = "Task Demand Questions"
     if 'time_spent' not in st.session_state:
         st.session_state.time_spent = datetime.now()    
-    if 'mental_moved' not in st.session_state:
-        st.session_state.mental_moved = False
-    if 'success_moved' not in st.session_state:
-        st.session_state.success_moved = False
-    if 'effort_moved' not in st.session_state:
-        st.session_state.effort_moved = False
-    if 'pace_moved' not in st.session_state:
-        st.session_state.pace_moved = False
-    if 'stress_moved' not in st.session_state:
-        st.session_state.stress_moved = False
+    for slider_key in ['mental_moved', 'success_moved', 'effort_moved', 'pace_moved', 'stress_moved']:
+        if slider_key not in st.session_state:
+            st.session_state[slider_key] = False
     if f"submit_disabled_{survey_page}" not in st.session_state:
         st.session_state[f"submit_disabled_{survey_page}"] = False
 
-    # Function to update slider movement state
     def check_slider_movement(slider_name, slider_value):
         if slider_value != 50:
             st.session_state[slider_name] = True
-    
-    st.markdown(
-        """
-        <style>
-            div[role=radiogroup] label:first-of-type {
-                visibility: hidden;
-                height: 0px;
-                width: 0px;
-            }
-        </style>
-    """,
-        unsafe_allow_html=True,
-    )
 
-    st.title("Task Reflection Questions")
-    st.subheader("Note: You must answer all of the questions here to be paid. You cannot go back, please take your time answering these.")
-    
-    st.subheader("Answer the following in terms of your general preferences (NOT related to the questions you just did)")  
-    options = ['Select an Option', 'Strongly Disagree', 'Disagree', 'Somewhat Disagree', 'Neutral', 'Somewhat Agree', 'Agree', 'Strongly Agree'] 
-    st.session_state.complex_to_simple = st.radio("I would prefer complex to simple problems.", options, horizontal=True, key="complex_to_simple_slider")
-    st.session_state.thinking = st.radio("I like to have the responsibility of handling a situation that requires a lot of thinking.", options, horizontal=True, key="thinking_slider")
-    st.session_state.thinking_fun = st.radio("Thinking is not my idea of fun.", options, horizontal=True, key="thinking_fun_slider")
-    st.session_state.thought = st.radio("I would rather do something that requires little thought than something that is sure to challenge my thinking abilities.", options, horizontal=True, key="thought_slider")
-    st.session_state.new_solutions = st.radio("I really enjoy a task that involves coming up with new solutions to problems.", options, horizontal=True, key="new_solutions_slider")
-    st.session_state.difficulty = st.radio("I would prefer a task that is intellectual, difficult, and important to one that is somewhat important but does not require much thought.", options, horizontal=True, key="difficulty_slider")
+    st.title("🧠 Task Reflection Questions")
+    st.subheader("Note: You must answer all of the questions here to be paid. You cannot go back, so please take your time.")
 
-    # Display the sliders and update movement state directly
-    st.subheader("Reflect on how you feel after answering all of the questions")
+    # --- Likert Section: Preferences ---
+    st.subheader("Answer the following in terms of your general preferences (NOT related to the tasks you just did):")
+    likert_options = ['Select an Option', 'Strongly Disagree', 'Disagree', 'Somewhat Disagree', 'Neutral', 'Somewhat Agree', 'Agree', 'Strongly Agree']
 
-    st.session_state.mental_demand = st.slider(
-        "How mentally demanding were the tasks?", 0, 100, step=5, key="mental_slider", value=50)
-    check_slider_movement('mental_moved', st.session_state.mental_demand)
-    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
+    # Custom large question formatting
+    def large_question(label):
+        st.markdown(f"### {label}")
 
-    st.session_state.success = st.slider(
-        "How successful were you in accomplishing what you were asked to do?", 0, 100, step=5, key='success_slider', value=50)
-    check_slider_movement('success_moved', st.session_state.success)
-    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
+    large_question("I would prefer complex to simple problems.")
+    st.session_state.complex_to_simple = st.radio("", likert_options, index=0, horizontal=False, key="complex_to_simple_slider")
 
-    st.session_state.effort = st.slider(
-        "How hard did you have to work to accomplish your level of performance?", 0, 100, step=5, key="effort_slider", value=50)
-    check_slider_movement('effort_moved', st.session_state.effort)
-    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
+    large_question("I like to have the responsibility of handling a situation that requires a lot of thinking.")
+    st.session_state.thinking = st.radio("", likert_options, index=0, horizontal=False, key="thinking_slider")
 
-    st.session_state.pace = st.slider(
-        "How hurried or rushed were the pace of the tasks?", 0, 100, step=5, key="pace_slider", value=50)
-    check_slider_movement('pace_moved', st.session_state.pace)
-    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
+    large_question("Thinking is not my idea of fun.")
+    st.session_state.thinking_fun = st.radio("", likert_options, index=0, horizontal=False, key="thinking_fun_slider")
 
-    st.session_state.stress = st.slider(
-        "How insecure, discouraged, irritated, stressed, and annoyed were you?", 0, 100, step=5, key="stress_slider", value=50)
-    check_slider_movement('stress_moved', st.session_state.stress)
-    st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
-    
+    large_question("I would rather do something that requires little thought than something that is sure to challenge my thinking abilities.")
+    st.session_state.thought = st.radio("", likert_options, index=0, horizontal=False, key="thought_slider")
+
+    large_question("I really enjoy a task that involves coming up with new solutions to problems.")
+    st.session_state.new_solutions = st.radio("", likert_options, index=0, horizontal=False, key="new_solutions_slider")
+
+    large_question("I would prefer a task that is intellectual, difficult, and important to one that is somewhat important but does not require much thought.")
+    st.session_state.difficulty = st.radio("", likert_options, index=0, horizontal=False, key="difficulty_slider")
+
+    # --- Slider Section: Task Reflection ---
+    st.subheader("Now reflect on how you feel after answering all the questions:")
+
+    def slider_with_label(label, key_name):
+        st.markdown(f"### {label}")
+        value = st.slider("", 0, 100, step=5, key=key_name, value=50)
+        check_slider_movement(f"{key_name.split('_')[0]}_moved", value)
+        st.markdown('<div id="custom-slider-container"><div class="slider-text">Not at all</div><div class="slider-text">Extremely</div></div>', unsafe_allow_html=True)
+
+    slider_with_label("How mentally demanding were the tasks?", "mental_slider")
+    slider_with_label("How successful were you in accomplishing what you were asked to do?", "success_slider")
+    slider_with_label("How hard did you have to work to accomplish your level of performance?", "effort_slider")
+    slider_with_label("How hurried or rushed was the pace of the tasks?", "pace_slider")
+    slider_with_label("How insecure, discouraged, irritated, stressed, and annoyed were you?", "stress_slider")
+
     if st.button("Next", key="tasks_demand_questions_next", disabled=st.session_state[f"submit_disabled_{survey_page}"]):
         if (
             st.session_state.complex_to_simple == 'Select an Option' or
@@ -535,21 +495,25 @@ def tasks_demand_questions():
             st.session_state.thought == 'Select an Option' or
             st.session_state.new_solutions == 'Select an Option' or
             st.session_state.difficulty == 'Select an Option'
-            ):
+        ):
             st.error("Please make sure to select an option for all questions before submitting.")
-        elif (any([not st.session_state.mental_moved, not st.session_state.success_moved, 
-                not st.session_state.effort_moved, not st.session_state.pace_moved, 
-                not st.session_state.stress_moved])):
-            st.error("Please interact with the sldiers")
+        elif not all([st.session_state.mental_moved, st.session_state.success_moved,
+                      st.session_state.effort_moved, st.session_state.pace_moved,
+                      st.session_state.stress_moved]):
+            st.error("Please interact with all the sliders before proceeding.")
         else:
             end_time = datetime.now()
             st.session_state[f"submit_disabled_{survey_page}"] = True
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
-            # log data
-            record_data_clear_state( ['complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty', 'mental_demand', 'success', 'effort', 'pace', 'stress','elapsed_time'], survey_page=survey_page)
-            update_user_data() # since this is the first call, we can have this be parameterless
+            record_data_clear_state(
+                ['complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty',
+                 'mental_demand', 'success', 'effort', 'pace', 'stress', 'elapsed_time'],
+                survey_page=survey_page
+            )
+            update_user_data()
             st.session_state.last_progress = 2
             st.rerun()
+
 
 def survey():
     # st.title("Reflection Questions & Feedback")
@@ -594,9 +558,9 @@ def survey():
             tasks_demand_questions()
         elif st.session_state.last_progress == 2:
             ai_usage_questions()
-        # elif st.session_state.last_progress == 3:
-        #     interaction_questions()
         elif st.session_state.last_progress == 3:
+            interaction_questions()
+        elif st.session_state.last_progress == 4:
             free_form_questions()
         # elif st.session_state.last_progress == 5:
         #     video_submission()
