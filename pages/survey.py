@@ -236,12 +236,12 @@ def free_form_questions():
 
     # Preserve input across reruns
     st.session_state.strategy = st.text_area(
-        ":red[*]How did you evaluate whether the AI model’s answer was correct?",
+        ":red[*]How did you evaluate whether the AI model's answer was correct?",
         value=st.session_state.get('strategy', ''), key='strategy_frq'
     )
     
     st.session_state.ai_model_usage = st.text_area(
-        ":red[*]In what ways did you use the AI’s information to make your decision?",
+        ":red[*]In what ways did you use the AI's information to make your decision?",
         value=st.session_state.get('ai_model_usage', ''), key='ai_model_usage_frq'
     )
     
