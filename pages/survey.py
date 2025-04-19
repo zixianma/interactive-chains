@@ -343,7 +343,7 @@ def interaction_questions():
     
     def ask_question(label, key, scale):
         st.markdown(f"### {label}")
-        return st.radio("", scale, index=0, horizontal=False, key=key)
+        return st.radio("please make a selection", scale, index=0, horizontal=False, key=key)
     
     st.session_state.confidence = ask_question("How confident were you about completing the tasks?", "confidence_radio", confidence_scale)
     st.session_state.self_accuracy = ask_question("How accurate do you think your answers were?", "self_accuracy_radio", accuracy_scale)
@@ -406,7 +406,7 @@ def ai_usage_questions():
 
     st.markdown("**1. How often do you use AI models (e.g. ChatGPT, Claude, Gemini)?**")
     st.session_state.ai_frequency = st.radio(
-        label="",
+        label="ai usage frequency",
         options=frequency_options,
         index=0,
         horizontal=False,
@@ -474,7 +474,7 @@ def tasks_demand_questions():
 
     def large_question(label, key):
         st.markdown(f"### {label}")
-        return st.radio("", likert_options, index=0, horizontal=False, key=key)
+        return st.radio("please make a selection", likert_options, index=0, horizontal=False, key=key)
 
     st.session_state.complex_to_simple = large_question("I would prefer complex to simple problems.", "complex_to_simple_slider")
     st.session_state.thinking = large_question("I like to have the responsibility of handling a situation that requires a lot of thinking.", "thinking_slider")
