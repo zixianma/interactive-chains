@@ -380,31 +380,32 @@ def main_study():
     if st.session_state.count >= len(all_ids):
         st.session_state.page = "survey"
         st.rerun()
-        # finished()
-        # return
+
     
     if st.session_state.count < len(st.session_state['train_ids']):
         # Training Phase.
         # Show the transition screen for training if not already done.
         if show_transition(
             stage_key="training_transition_done",
-            stage_title="the Training Phase",
+            stage_title="The Training Phase",
             instructions=(
                 "In this training phase, you will answer 4 questions to get familiar with the study process. "
-                "In Step 1, indicate whether you can solve the math problem on your own. "
+                "In Step 1, rate how difficult you find the math problem on a scale from 1 (Very Easy) to 5 (Very Hard). "
                 "In Step 2, evaluate the AI model's answer by choosing to ACCEPT or REJECT it. Good luck!"
             ),
             button_label="Proceed to Training Phase"
         ):
             return
-        
+
         st.title("📚 Training phase")
         st.markdown("""
             ###### During this training phase, you will answer 4 questions to help you get familiar with the study process.
 
-            **Step 1:** You will be asked whether you can solve a math problem on your own. Please be honest—your response to Step 1 will not influence the reward you receive.
+            **Step 1:** You will be asked to rate how hard you think the question is, on a scale from 1 (Very Easy) to 5 (Very Hard).  
+            Please be honest—your response to Step 1 will not influence the reward you receive.
 
-            **Step 2:** You will be shown the model's answer and (optionally) its explanation. You will decide whether to **ACCEPT** or **REJECT** the model's answer based on the information provided:  
+            **Step 2:** You will be shown the model's answer and (optionally) its explanation.  
+            You will decide whether to **ACCEPT** or **REJECT** the model's answer based on the information provided:
 
             ✅ Accept when the model is correct.  
             ❌ Reject when the model is wrong.
@@ -416,7 +417,7 @@ def main_study():
         # Show the transition screen for study phase if not already done.
         if show_transition(
             stage_key="study_transition_done",
-            stage_title="the Study Phase",
+            stage_title="The Study Phase",
             instructions=(
                 "You have now entered the Study Phase. In this phase, you will answer 12 questions. "
                 "Your performance will determine your reward, and you will NOT be shown whether your answer is correct. "
@@ -425,24 +426,27 @@ def main_study():
             button_label="Proceed to Study Phase"
         ):
             return
-        
-        
+
         st.title("📝 Study phase")
         st.markdown("###### You are now in the study phase, where you will answer 20 questions in total and be rewarded if you answer more questions correctly. You will NOT see if your answer is correct or not.")
         total_num = len(st.session_state['test_ids'])
-
         curr_pos = st.session_state.count + 1 - len(st.session_state.train_ids)
-    
+
     with st.expander("***See task instructions***"):
         st.markdown("""
             In this study, you will evaluate whether the AI model's answer is correct based on the information provided.
 
-            You should **ACCEPT** the AI model's answer when it is correct, and **REJECT** it when it is wrong.
+            **Step 1:** Rate how difficult the math question feels to you, from 1 (Very Easy) to 5 (Very Hard).
+
+            **Step 2:** Decide whether the AI model's answer is correct by choosing to **ACCEPT** or **REJECT** it.
+
+            ✅ Accept when the model is correct.  
+            ❌ Reject when the model is wrong.
         """)
 
         note = st.markdown("""
             :red[**Note:** Please base your decision **only** on the information shown in this interface (the AI's answer and/or its explanations).  
-            Relying on external sources like Wikipedia or ChatGPT may lead you to incorrect conclusions.]
+            Relying on external sources like Google or ChatGPT may lead you to incorrect conclusions.]
         """)
 
 
