@@ -428,7 +428,7 @@ def main_study():
             return
 
         st.title("📝 Study phase")
-        st.markdown("###### You are now in the study phase, where you will answer 20 questions in total and be rewarded if you answer more questions correctly. You will NOT see if your answer is correct or not.")
+        st.markdown("###### You are now in the study phase, where you will answer 20 questions in total and be rewarded if you answer more questions correctly.")
         total_num = len(st.session_state['test_ids'])
         curr_pos = st.session_state.count + 1 - len(st.session_state.train_ids)
 
