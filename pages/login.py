@@ -168,11 +168,11 @@ def submit_consent(username_input):
                 condition_counts = get_condition_counts(pilot_worksheet)
                 # this is to make static chain 2x as likely
                 weights = {
-                    "A. Answer only" : 0.25,
-                    "B. Paragraph CoT" : 0.25,
-                    "C. Step-by-step CoT -- All at once": 0.25,
-                    "D. Step-by-step CoT -- Sequential": 0.25
-                    # "E. Verifiable CoT": 0
+                    "A. Answer only" : 1,
+                    "B. Paragraph CoT" : 0.0,
+                    "C. Step-by-step CoT -- All at once": 0.0,
+                    "D. Step-by-step CoT -- Sequential": 0.0,
+                    "E. Verifiable CoT": 0.0
                 }
                 assigned_condition = assign_condition(condition_counts, weights)
                 update_condition_count(pilot_worksheet, assigned_condition, condition_counts[assigned_condition])
