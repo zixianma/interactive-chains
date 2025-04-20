@@ -54,7 +54,7 @@ def show_transition(stage_key, stage_title, instructions, button_label):
         )
         # Center the instructions with a larger font in an h2 tag
         st.markdown(
-            f"<h2 style='text-align: center;'>{instructions}</h2>",
+            f"<h3 style='text-align: center;'>{instructions}</h3>",
             unsafe_allow_html=True
         )
         # Use columns to center the button
