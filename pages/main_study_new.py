@@ -407,7 +407,7 @@ def main_study():
             **Step 2:** You will be shown the model's answer and (optionally) its explanation.  
             You will decide whether to **ACCEPT** or **REJECT** the model's answer based on the information provided:
 
-            ✅ Accept when the model is correct.  
+            ✅ Accept when the model is correct.
             ❌ Reject when the model is wrong.
         """)
         total_num = len(st.session_state['train_ids'])
@@ -440,7 +440,7 @@ def main_study():
 
             **Step 2:** Decide whether the AI model's answer is correct by choosing to **ACCEPT** or **REJECT** it.
 
-            ✅ Accept when the model is correct.  
+            ✅ Accept when the model is correct. 
             ❌ Reject when the model is wrong.
         """)
 
