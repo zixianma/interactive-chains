@@ -436,8 +436,8 @@ def ai_usage_questions():
                 'ai_accuracy_opinion', 
                 'elapsed_time'
             ], survey_page=survey_page)
-            update_user_data("complete", 3)
-            st.session_state.last_progress = 3
+            update_user_data("complete", 2)
+            st.session_state.last_progress = 2
             st.rerun()
 
 
@@ -524,8 +524,8 @@ def tasks_demand_questions():
                  'mental_slider', 'success_slider', 'effort_slider', 'pace_slider', 'stress_slider', st.session_state["elapsed_time"]],
                 survey_page=survey_page
             )
-            update_user_data()
-            st.session_state.last_progress = 2
+            update_user_data("complete", 3)
+            st.session_state.last_progress = 3
             st.rerun()
 
 
@@ -581,9 +581,9 @@ def survey():
         if st.session_state.last_progress == -1:
             finished()
         elif st.session_state.last_progress == 1:
-            tasks_demand_questions()
-        elif st.session_state.last_progress == 2:
             ai_usage_questions()
+        elif st.session_state.last_progress == 2:
+            tasks_demand_questions()
         elif st.session_state.last_progress == 3:
             interaction_questions()
         elif st.session_state.last_progress == 4:
