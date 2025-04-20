@@ -420,7 +420,9 @@ def main_study():
             stage_title="The Study Phase",
             instructions=(
                 "You have now entered the Study Phase. In this phase, you will answer 12 questions. "
-                "Your performance will determine your reward, and you will NOT be shown whether your answer is correct. "
+                "Your performance will determine your reward, and you will NOT be shown whether your answer is correct.\n\n"
+                ":red[**You will be provided AI assistance throughout the study. Please do not use any other external tools or AI models during the study. "
+                "We might reject your submission if we believe your answers are abnormal due to the use of other tools.**]\n\n"
                 "Good luck!"
             ),
             button_label="Proceed to Study Phase"
