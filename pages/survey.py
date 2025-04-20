@@ -405,19 +405,19 @@ def ai_usage_questions():
     ]
 
     st.markdown("**1. How often do you use AI models (e.g. ChatGPT, Claude, Gemini)?**")
-    st.session_state.ai_frequency = st.radio(
+    st.radio(
         label="",
         options=frequency_options,
         index=0,
         horizontal=False,
-        key='ai_frequency_radio'
+        key='ai_frequency'
     )
 
     st.markdown("**2. Which AI models have you used before?** *(e.g., ChatGPT, Claude, Gemini, etc.)*")
-    st.session_state.ai_models_used = st.text_area("Your answer:", key='ai_models_used')
+    st.text_area("Your answer:", key='ai_models_used')
 
     st.markdown("**3. How accurate do you think AI models are in general?**")
-    st.session_state.ai_accuracy_opinion = st.text_area("Your answer:", key='ai_accuracy_opinion')
+    st.text_area("Your answer:", key='ai_accuracy_opinion')
 
     if st.button("Next", key="ai_usage_questions_next", disabled=st.session_state[f"submit_disabled_{survey_page}"]):
         if (
@@ -521,7 +521,7 @@ def tasks_demand_questions():
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             record_data_clear_state(
                 ['complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty',
-                 'mental_slider', 'success_slider', 'effort_slider', 'pace_slider', 'stress_slider'],
+                 'mental_slider', 'success_slider', 'effort_slider', 'pace_slider', 'stress_slider', st.session_state["elapsed_time"]],
                 survey_page=survey_page
             )
             update_user_data()
