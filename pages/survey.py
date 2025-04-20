@@ -521,7 +521,7 @@ def tasks_demand_questions():
             st.session_state["elapsed_time"] = str((end_time - st.session_state.time_spent).total_seconds())
             record_data_clear_state(
                 ['complex_to_simple', 'thinking', 'thinking_fun', 'thought', 'new_solutions', 'difficulty',
-                 'mental_demand', 'success', 'effort', 'pace', 'stress', 'elapsed_time'],
+                 'mental_slider', 'success_slider', 'effort_slider', 'pace_slider', 'stress_slider'],
                 survey_page=survey_page
             )
             update_user_data()
