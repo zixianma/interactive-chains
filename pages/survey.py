@@ -404,7 +404,7 @@ def ai_usage_questions():
         'Always (at least once a day)'
     ]
 
-    st.markdown("###1. How often do you use AI models (e.g. ChatGPT, Claude, Gemini)?###")
+    st.markdown("### 1. How often do you use AI models (e.g. ChatGPT, Claude, Gemini)?")
     st.radio(
         label="",
         options=frequency_options,
@@ -413,10 +413,10 @@ def ai_usage_questions():
         key='ai_frequency'
     )
 
-    st.markdown("###2. Which AI models have you used before?### *(e.g., ChatGPT, Claude, Gemini, etc.)*")
+    st.markdown("### 2. Which AI models have you used before? *(e.g., ChatGPT, Claude, Gemini, etc.)*")
     st.text_area("Your answer:", key='ai_models_used')
 
-    st.markdown("###3. How accurate do you think AI models are in general?###")
+    st.markdown("### 3. How accurate do you think AI models are in general?")
     st.text_area("Your answer:", key='ai_accuracy_opinion')
 
     if st.button("Next", key="ai_usage_questions_next", disabled=st.session_state[f"submit_disabled_{survey_page}"]):
