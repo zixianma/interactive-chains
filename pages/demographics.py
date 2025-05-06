@@ -208,7 +208,7 @@ def demographics():
 
     with placeholder.container():
         if st.session_state.demo_progress == -1:
-            st.session_state.page = "evaluation"
+            st.session_state.page = "begin_tutorial"  # evaluation
             st.rerun()
         elif st.session_state.demo_progress == 1:
             questions()

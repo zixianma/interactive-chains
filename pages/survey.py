@@ -229,7 +229,7 @@ def free_form_questions():
 
     if st.session_state[f"submit_disabled_{survey_page}"]:
         update_user_data("complete", 5)
-        st.session_state.last_progress = -1
+        st.session_state.last_progress = 5
         st.rerun()
 
     st.title("Final Questions & Feedback")
@@ -588,5 +588,5 @@ def survey():
             interaction_questions()
         elif st.session_state.last_progress == 4:
             free_form_questions()
-        # elif st.session_state.last_progress == 5:
-        #     video_submission()
+        elif st.session_state.last_progress == 5:
+            video_submission()
