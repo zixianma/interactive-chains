@@ -93,10 +93,10 @@ def main():
         instruction()
     elif st.session_state.page == "evaluation":
         evaluation()
-    # elif st.session_state.page == "begin_tutorial":
-    #     begin_tutorial()
-    # elif st.session_state.page == "end_tutorial":
-    #     end_tutorial()
+    elif st.session_state.page == "begin_tutorial":
+        begin_tutorial()
+    elif st.session_state.page == "end_tutorial":
+        end_tutorial()
     elif st.session_state.page == 'main_study':
         main_study()
     elif st.session_state.page == 'demographics':
