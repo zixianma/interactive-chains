@@ -154,7 +154,7 @@ def finished():
 def video_submission():
     st.title("Video Upload")
 
-    st.markdown("Please submit your video through this [Google form](https://docs.google.com/forms/d/e/1FAIpQLSfDRHCootB91wKYUUvq5_qKmzk6lpYg0aS_adslML9dWkCCTQ/viewform).\n")
+    st.markdown("Please submit your video through this [Google form](https://docs.google.com/forms/d/e/1FAIpQLSdDwK1AgKHJGLWQLHQkNnSxINVSWfoQKEmqK13AF9qkz7imIg/viewform?usp=header).\n") 
 
     st.write("After submitting the form, at the end there will be a password for you to enter below to complete the study.")
 
