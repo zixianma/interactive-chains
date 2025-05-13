@@ -329,7 +329,7 @@ def show_step_2(index):
             key=helpful_key
         )
 
-    if st.session_state.get("step_2_submitted", False) and f"helpfulness_{index}" in st.session_state and helpfulness != helpfulness_placeholder:
+    if st.session_state.get("step_2_submitted", False) and f"helpfulness_{index}" in st.session_state and helpfulness != 0:
         if st.button("Next", key=f"next_{index}"):
             st.session_state.step_phase = 1
             st.session_state.step_2_submitted = False
