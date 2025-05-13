@@ -366,7 +366,7 @@ def main_study():
     if "question_start_time" not in st.session_state:
         st.session_state["question_start_time"] = time.time()
     
-    question = load_data(path="data/question_bank_cleaned.jsonl")
+    question = load_data(path="data/question_bank_final.jsonl")
     
     if "questions" not in st.session_state:
         st.session_state.questions = question
