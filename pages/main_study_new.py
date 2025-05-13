@@ -374,8 +374,8 @@ def main_study():
         st.session_state.questions = question
 
     # Need to finalize when creating the final question bank
-    train_ids = [1, 2, 3, 4]
-    test_ids = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    train_ids = [0, 1, 2, 3]
+    test_ids = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
     # test_ids_str = json.dumps(test_ids)
     
     if 'train_ids' not in st.session_state:
