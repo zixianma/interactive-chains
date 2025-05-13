@@ -33,77 +33,77 @@ import time
 #         raise ValueError("Unsupported file format. Please use .json or .jsonl")
 
 
-def select_indices(file_path="question_bank_cleaned.jsonl"):
-    """
-    Loads a JSONL file with questions and returns a list of indices that:
-      1. First includes all indices where is_correct == True and dataset != "train"
-      2. Then includes 5 random indices where is_correct == False and dataset == "math"
-      3. Then includes 5 random indices where is_correct == False and dataset == "gsm8k"
+# def select_indices(file_path="question_bank_cleaned.jsonl"):
+#     """
+#     Loads a JSONL file with questions and returns a list of indices that:
+#       1. First includes all indices where is_correct == True and dataset != "train"
+#       2. Then includes 5 random indices where is_correct == False and dataset == "math"
+#       3. Then includes 5 random indices where is_correct == False and dataset == "gsm8k"
     
-    Args:
-        file_path (str): Path to the JSONL file.
+#     Args:
+#         file_path (str): Path to the JSONL file.
     
-    Returns:
-        list: A list of selected indices.
-    """
-    # Load the dataset from JSONL file into a list of dictionaries
-    with open(file_path, "r", encoding="utf-8") as f:
-        data = [json.loads(line.strip()) for line in f]
+#     Returns:
+#         list: A list of selected indices.
+#     """
+#     # Load the dataset from JSONL file into a list of dictionaries
+#     with open(file_path, "r", encoding="utf-8") as f:
+#         data = [json.loads(line.strip()) for line in f]
     
-    # Get indices for correct answers and dataset not 'train'
-    correct_indices = [
-        i for i, entry in enumerate(data)
-        if entry.get("is_correct") is True and entry.get("dataset") != "train"
-    ]
+#     # Get indices for correct answers and dataset not 'train'
+#     correct_indices = [
+#         i for i, entry in enumerate(data)
+#         if entry.get("is_correct") is True and entry.get("dataset") != "train"
+#     ]
     
-    # Get indices for incorrect answers where dataset is 'math'
-    math_incorrect_indices = [
-        i for i, entry in enumerate(data)
-        if entry.get("is_correct") is False and entry.get("dataset").lower() == "math"
-    ]
+#     # Get indices for incorrect answers where dataset is 'math'
+#     math_incorrect_indices = [
+#         i for i, entry in enumerate(data)
+#         if entry.get("is_correct") is False and entry.get("dataset").lower() == "math"
+#     ]
     
-    # Get indices for incorrect answers where dataset is 'gsm8k'
-    gsm_incorrect_indices = [
-        i for i, entry in enumerate(data)
-        if entry.get("is_correct") is False and entry.get("dataset").lower() == "gsm8k"
-    ]
+#     # Get indices for incorrect answers where dataset is 'gsm8k'
+#     gsm_incorrect_indices = [
+#         i for i, entry in enumerate(data)
+#         if entry.get("is_correct") is False and entry.get("dataset").lower() == "gsm8k"
+#     ]
     
-    # Randomly sample 5 indices from math_incorrect_indices if available
-    math_sampled = random.sample(math_incorrect_indices, 3) if len(math_incorrect_indices) >= 5 else math_incorrect_indices
+#     # Randomly sample 5 indices from math_incorrect_indices if available
+#     math_sampled = random.sample(math_incorrect_indices, 3) if len(math_incorrect_indices) >= 5 else math_incorrect_indices
     
-    # Randomly sample 5 indices from gsm_incorrect_indices if available
-    gsm_sampled = random.sample(gsm_incorrect_indices, 3) if len(gsm_incorrect_indices) >= 5 else gsm_incorrect_indices
+#     # Randomly sample 5 indices from gsm_incorrect_indices if available
+#     gsm_sampled = random.sample(gsm_incorrect_indices, 3) if len(gsm_incorrect_indices) >= 5 else gsm_incorrect_indices
     
-    correct_indices = random.sample(correct_indices, 6) if len(correct_indices) >= 6 else correct_indices
+#     correct_indices = random.sample(correct_indices, 6) if len(correct_indices) >= 6 else correct_indices
     
-    # Concatenate the indices list in the specified order
-    selected_indices = correct_indices + math_sampled + gsm_sampled
+#     # Concatenate the indices list in the specified order
+#     selected_indices = correct_indices + math_sampled + gsm_sampled
     
-    random.shuffle(selected_indices)
+#     random.shuffle(selected_indices)
     
-    return selected_indices
+#     return selected_indices
 
 
-def get_test_ids():
-    # Use the already-created user worksheet stored in session state
-    user_ws = st.session_state.get('user_worksheet')
-    if user_ws is None:
-        # Handle the case where the worksheet was not correctly saved.
-        st.error("User worksheet not found!")
-        return None
+# def get_test_ids():
+#     # Use the already-created user worksheet stored in session state
+#     user_ws = st.session_state.get('user_worksheet')
+#     if user_ws is None:
+#         # Handle the case where the worksheet was not correctly saved.
+#         st.error("User worksheet not found!")
+#         return None
     
-    test_ids_cell = user_ws.acell("J2").value
-    if test_ids_cell:
-        try:
-            test_ids = json.loads(test_ids_cell)
-        except Exception as e:
-            st.error(f"Error parsing test IDs: {e}")
-            return None
-    else:
-        # If the test IDs are not already there, generate and store them.
-        test_ids = select_indices("data/question_bank_cleaned.jsonl")
+#     test_ids_cell = user_ws.acell("J2").value
+#     if test_ids_cell:
+#         try:
+#             test_ids = json.loads(test_ids_cell)
+#         except Exception as e:
+#             st.error(f"Error parsing test IDs: {e}")
+#             return None
+#     else:
+#         # If the test IDs are not already there, generate and store them.
+#         test_ids = select_indices("data/question_bank_cleaned.jsonl")
     
-    return test_ids
+#     return test_ids
 
 
 def show_step_1(index):
@@ -311,16 +311,36 @@ def show_step_2(index):
         else:
             warning.warning("Please select an option before submitting.")
 
-    if st.session_state.step_2_submitted:
+    # As soon as step_2_submitted is True, show the helpfulness radio
+    if st.session_state.get("step_2_submitted", False):
+        st.markdown("**Step 3: How helpful was the AI model’s information for your decision?**")
+        helpful_key = f"helpfulness_{index}"
+        helpfulness = st.radio(
+            "", options=[1,2,3,4,5],
+            format_func=lambda x: {
+                1:"1 — Very unhelpful",
+                2:"2 — Somewhat unhelpful",
+                3:"3 — Neutral",
+                4:"4 — Somewhat helpful",
+                5:"5 — Very helpful"
+            }[x],
+            key=helpful_key
+        )
+
+    if st.session_state.get("step_2_submitted", False) and f"helpfulness_{index}" in st.session_state:
         if st.button("Next", key=f"next_{index}"):
             st.session_state.step_phase = 1
-            # Reset for next question
             st.session_state.step_2_submitted = False
             st.session_state.current_step = 0
-            st.session_state["next_clicked"] = True
+            st.session_state.next_clicked = True
             return
     else:
-        st.button("Next", key=f"next_disabled_{index}", disabled=True, help="Please submit your response first.")
+        st.button(
+            "Next",
+            key=f"next_disabled_{index}",
+            disabled=True,
+            help="Please submit your decision and rate helpfulness first."
+        )
 
 
 # def finished():
@@ -353,8 +373,8 @@ def main_study():
 
     # Need to finalize when creating the final question bank
     train_ids = [1, 2, 3, 4]
-    test_ids = get_test_ids()
-    test_ids_str = json.dumps(test_ids)
+    test_ids = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    # test_ids_str = json.dumps(test_ids)
     
     if 'train_ids' not in st.session_state:
         st.session_state["train_ids"] = train_ids
@@ -399,16 +419,20 @@ def main_study():
 
         st.title("📚 Training phase")
         st.markdown("""
-            ###### During this training phase, you will answer 4 questions to help you get familiar with the study process.
+        ###### During this training phase, you will answer 4 questions to help you get familiar with the study process.
 
-            **Step 1:** You will be asked to rate how hard you think the question is, on a scale from 1 (Very Easy) to 5 (Very Hard).  
-            Please be honest—your response to Step 1 will not influence the reward you receive.
+        **Step 1:** You will be asked to rate how hard you think the question is, on a scale from 1 (Very Easy) to 5 (Very Hard).  
+        Please be honest—your response to Step 1 will not influence the reward you receive.
 
-            **Step 2:** You will be shown the model's answer and (optionally) its explanation.  
-            You will decide whether to **ACCEPT** or **REJECT** the model's answer based on the information provided:
+        **Step 2:** You will be shown the model's answer and (optionally) its explanation.  
+        You will decide whether to **ACCEPT** or **REJECT** the model's answer based on the information provided:
 
-            ✅ Accept when the model is correct.
-            ❌ Reject when the model is wrong.
+        ✅ Accept when the model is correct.  
+        ❌ Reject when the model is wrong.
+
+        **Step 3:** After each question, you will answer a brief survey about how helpful the AI model's information was in guiding your decision.  
+        This refers to whether the explanation made it easier to identify an error (and reject the answer) or helped you follow the reasoning to a correct answer (and accept it).  
+        You will rate this from 1 (Very unhelpful) to 5 (Very helpful).
         """)
         total_num = len(st.session_state['train_ids'])
         curr_pos = st.session_state.count + 1
@@ -436,14 +460,20 @@ def main_study():
 
     with st.expander("***See task instructions***"):
         st.markdown("""
-            In this study, you will evaluate whether the AI model's answer is correct based on the information provided.
+        ###### During this training phase, you will answer 4 questions to help you get familiar with the study process.
 
-            **Step 1:** Rate how difficult the math question feels to you, from 1 (Very Easy) to 5 (Very Hard).
+        **Step 1:** You will be asked to rate how hard you think the question is, on a scale from 1 (Very Easy) to 5 (Very Hard).  
+        Please be honest—your response to Step 1 will not influence the reward you receive.
 
-            **Step 2:** Decide whether the AI model's answer is correct by choosing to **ACCEPT** or **REJECT** it.
+        **Step 2:** You will be shown the model's answer and (optionally) its explanation.  
+        You will decide whether to **ACCEPT** or **REJECT** the model's answer based on the information provided:
 
-            ✅ Accept when the model is correct. 
-            ❌ Reject when the model is wrong.
+        ✅ Accept when the model is correct.  
+        ❌ Reject when the model is wrong.
+
+        **Step 3:** After each question, you will answer a brief survey about how helpful the AI model's information was in guiding your decision.  
+        This refers to whether the explanation made it easier to identify an error (and reject the answer) or helped you follow the reasoning to a correct answer (and accept it).  
+        You will rate this from 1 (Very unhelpful) to 5 (Very helpful).
         """)
 
         note = st.markdown("""
@@ -498,16 +528,21 @@ def main_study():
             if st.session_state.condition == "E. Verifiable CoT":
                 raise NotImplementedError
             else:
+                help_score = st.session_state.get(f"helpfulness_{idx}", "")
                 logger.write_to_user_sheet([st.session_state.username, st.session_state.condition, idx,
                                             st.session_state['Model answer'], st.session_state.step_1_response,
-                                            st.session_state.step_2_response, st.session_state["gt_answer"],
-                                            time_spent, st.session_state.count + 1, test_ids_str])
+                                            st.session_state.step_2_response, help_score, st.session_state["gt_answer"],
+                                            time_spent, st.session_state.count + 1])
                 
                 st.session_state['Model Reasoning'] = ""
                 st.session_state['Model answer'] = ""
                 st.session_state['gt_answer'] = ""
                 st.session_state.step_1_response = ""
                 st.session_state.step_2_response = ""
+                # remove the helpfulness rating
+                st.session_state.pop(f"helpfulness_{idx}", None)
+                # optionally also clear the radio selection itself
+                st.session_state.pop(f"response_{idx}",    None)
                 st.session_state.step_phase = 1
                 st.session_state.count += 1
                 st.session_state["question_start_time"] = time.time()
