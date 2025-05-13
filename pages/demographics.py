@@ -191,7 +191,7 @@ def questions():
                         'job_title',
                     ])
                     update_user_data()
-                    st.session_state.page = "evaluation"
+                    st.session_state.page = "begin_tutorial"  # evaluation
                     st.rerun()
             except ValueError:
                 st.error("Please enter a valid numeric age.")

@@ -313,11 +313,13 @@ def show_step_2(index):
 
     # As soon as step_2_submitted is True, show the helpfulness radio
     if st.session_state.get("step_2_submitted", False):
-        st.markdown("**Step 3: How helpful was the AI model’s information for your decision?**")
+        st.markdown("## Step 3: How helpful was the AI model's information for your decision?", unsafe_allow_html=True)
+        helpfulness_placeholder = "Select helpfulness"
         helpful_key = f"helpfulness_{index}"
         helpfulness = st.radio(
             "", options=[1,2,3,4,5],
             format_func=lambda x: {
+                0:helpfulness_placeholder,
                 1:"1 — Very unhelpful",
                 2:"2 — Somewhat unhelpful",
                 3:"3 — Neutral",
@@ -327,7 +329,7 @@ def show_step_2(index):
             key=helpful_key
         )
 
-    if st.session_state.get("step_2_submitted", False) and f"helpfulness_{index}" in st.session_state:
+    if st.session_state.get("step_2_submitted", False) and f"helpfulness_{index}" in st.session_state and helpfulness != helpfulness_placeholder:
         if st.button("Next", key=f"next_{index}"):
             st.session_state.step_phase = 1
             st.session_state.step_2_submitted = False

@@ -90,7 +90,7 @@ def begin_tutorial():
         return
     
     st.markdown(
-        "### :red[IMPORTANT! It’s highly recommended that you complete the study in one sitting and avoid refreshing the page unless necessary. "
+        "### :red[IMPORTANT! It's highly recommended that you complete the study in one sitting and avoid refreshing the page unless necessary. "
         "Next, please carefully follow the instructions below to start recording your screen. "
         "You will need to upload this recording at the end of the study to complete your participation.]"
     )
