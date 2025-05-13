@@ -317,7 +317,7 @@ def show_step_2(index):
         helpfulness_placeholder = "Select helpfulness"
         helpful_key = f"helpfulness_{index}"
         helpfulness = st.radio(
-            "", options=[1,2,3,4,5],
+            "", options=[0,1,2,3,4,5],
             format_func=lambda x: {
                 0:helpfulness_placeholder,
                 1:"1 — Very unhelpful",

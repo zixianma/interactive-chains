@@ -14,7 +14,7 @@ def end_tutorial():
 
     for i in range(len(record_screenshots)):
         image_path = record_screenshots[i]
-        image = cent_col.image(image_path, caption=f"Step {i+1}", use_column_width=True)
+        image = cent_col.image(image_path, caption=f"Step {i+1}", use_container_width=True)
     
     left_col, _, right_col = st.columns([2, 8, 2])
     next = right_col.button("Next", use_container_width=True)
@@ -136,7 +136,7 @@ def begin_tutorial():
     
     for i in range(len(record_screenshots)):
         image_path = record_screenshots[i]
-        image = cent_col.image(image_path, caption=f"Step {i+1}", use_column_width=True)
+        image = cent_col.image(image_path, caption=f"Step {i+1}", use_container_width=True)
 
     left_col, _, right_col = st.columns([2, 8, 2])
 

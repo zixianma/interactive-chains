@@ -85,7 +85,7 @@ def instruction():
     if "instruction_done" not in st.session_state:
         st.session_state["instruction_done"] = False
     if "remaining_time" not in st.session_state:
-        st.session_state["remaining_time"] = 45  # Set to 60 seconds or desired duration.
+        st.session_state["remaining_time"] = 5  # Set to 60 seconds or desired duration.
 
     placeholder = st.empty()
 

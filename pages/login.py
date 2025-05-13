@@ -170,8 +170,8 @@ def submit_consent(username_input):
                 weights = {
                     "A. Answer only" : 0.0,
                     "B. Paragraph CoT" : 0.0,
-                    "C. Step-by-step CoT -- All at once": 0.0,
-                    "D. Step-by-step CoT -- Sequential": 1.0,
+                    "C. Step-by-step CoT -- All at once": 1.0,
+                    "D. Step-by-step CoT -- Sequential": 0.0,
                     "E. Verifiable CoT": 0.0
                 }
                 assigned_condition = assign_condition(condition_counts, weights)
