@@ -9,30 +9,6 @@ from pages.utils.utils import *
 import time
 
 
-# @st.cache_data
-# def load_data(path="./data/training_questions.json"):
-#     """Loads the training and main-study questions from JSON or JSONL files."""
-#     if not os.path.exists(path):
-#         raise FileNotFoundError(f"File not found: {path}")
-
-#     # Handle JSONL files
-#     if path.endswith(".jsonl"):
-#         data = []
-#         with open(path, "r", encoding="utf-8") as f:
-#             for line in f:
-#                 data.append(json.loads(line.strip()))
-#         return data
-
-#     # Handle standard JSON files
-#     elif path.endswith(".json"):
-#         with open(path, "r", encoding="utf-8") as f:
-#             data = json.load(f)
-#         return {int(k): v for k, v in data.items()}
-
-#     else:
-#         raise ValueError("Unsupported file format. Please use .json or .jsonl")
-
-
 # def select_indices(file_path="question_bank_cleaned.jsonl"):
 #     """
 #     Loads a JSONL file with questions and returns a list of indices that:
