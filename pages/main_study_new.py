@@ -84,26 +84,31 @@ import time
 #     return selected_indices
 
 
-# def get_test_ids():
-#     # Use the already-created user worksheet stored in session state
-#     user_ws = st.session_state.get('user_worksheet')
-#     if user_ws is None:
-#         # Handle the case where the worksheet was not correctly saved.
-#         st.error("User worksheet not found!")
-#         return None
+def get_test_ids():
+    # Use the already-created user worksheet stored in session state
+    user_ws = st.session_state.get('user_worksheet')
+    if user_ws is None:
+        # Handle the case where the worksheet was not correctly saved.
+        st.error("User worksheet not found!")
+        return None
     
-#     test_ids_cell = user_ws.acell("J2").value
-#     if test_ids_cell:
-#         try:
-#             test_ids = json.loads(test_ids_cell)
-#         except Exception as e:
-#             st.error(f"Error parsing test IDs: {e}")
-#             return None
-#     else:
-#         # If the test IDs are not already there, generate and store them.
-#         test_ids = select_indices("data/question_bank_cleaned.jsonl")
-    
-#     return test_ids
+    test_ids_cell = user_ws.acell("K2").value
+    if test_ids_cell:
+        try:
+            test_ids = json.loads(test_ids_cell)
+        except Exception as e:
+            st.error(f"Error parsing test IDs: {e}")
+            return None
+    else:
+        # If the test IDs are not already there, generate and store them.
+        fixed_id = [4, 5, 6]
+        ids = [7, 8, 9, 10, 11, 12, 13, 14, 15]
+        random_test_ids =  random.sample(ids, len(ids))
+        test_ids = fixed_id + random_test_ids
+        
+        user_ws.update_acell("K2", json.dumps(test_ids))
+
+    return test_ids
 
 
 def show_step_1(index):
@@ -352,12 +357,6 @@ def show_step_2(index):
     
 
 def main_study():
-    
-    # Before proceeding, ensure that the evaluation stage is complete.
-    # If not, call the evaluation_stage() so the user can finish it.
-    # if "evaluation_completed" not in st.session_state or not st.session_state.evaluation_completed:
-    #     evaluation_stage()
-    #     return
 
     if "count" not in st.session_state:
         if st.session_state.questions_done == -1:
@@ -375,8 +374,9 @@ def main_study():
 
     # Need to finalize when creating the final question bank
     train_ids = [0, 1, 2, 3]
-    test_ids = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # test_ids_str = json.dumps(test_ids)
+    test_ids = get_test_ids()
+
+    test_ids_str = json.dumps(test_ids)
     
     if 'train_ids' not in st.session_state:
         st.session_state["train_ids"] = train_ids
@@ -534,7 +534,7 @@ def main_study():
                 logger.write_to_user_sheet([st.session_state.username, st.session_state.condition, idx,
                                             st.session_state['Model answer'], st.session_state.step_1_response,
                                             st.session_state.step_2_response, help_score, st.session_state["gt_answer"],
-                                            time_spent, st.session_state.count + 1])
+                                            time_spent, st.session_state.count + 1, test_ids_str])
                 
                 st.session_state['Model Reasoning'] = ""
                 st.session_state['Model answer'] = ""
