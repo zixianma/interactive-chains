@@ -247,7 +247,7 @@ def free_form_questions():
     )
     
     st.session_state.ai_info_usage = st.text_area(
-        ":red[*]What did you think about the information the AI model provided? Was it helpful in guiding your decision?",
+        ":red[*]What did you think about the information the AI model provided? Was it helpful in guiding your decision? Please explain why you think it is helpful or not.", 
         value=st.session_state.get('ai_info_usage', ''), key='ai_info_usage_frq'
     )
 
