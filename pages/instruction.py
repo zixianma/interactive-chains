@@ -85,7 +85,7 @@ def instruction():
     if "instruction_done" not in st.session_state:
         st.session_state["instruction_done"] = False
     if "remaining_time" not in st.session_state:
-        st.session_state["remaining_time"] = 5  # Set to 60 seconds or desired duration.
+        st.session_state["s"] = 45  # Set to 60 seconds or desired duration.
 
     placeholder = st.empty()
 
@@ -95,7 +95,7 @@ def instruction():
     if not st.session_state["instruction_done"]:
         for secs in range(st.session_state["remaining_time"], 0, -1):
             st.session_state["remaining_time"] = secs
-            mm, ss = divmod(secs, 60)
+            mm, ss = divmod(secs, 45)
             placeholder.metric("Remaining Time", f"{mm:02d}:{ss:02d}")
             time.sleep(1)
     next_button = st.button("Next", on_click=click_next)
