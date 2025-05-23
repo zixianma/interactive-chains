@@ -168,9 +168,9 @@ def submit_consent(username_input):
                 condition_counts = get_condition_counts(pilot_worksheet)
                 # this is to make static chain 2x as likely
                 weights = {
-                    "A. Answer only" : 0.0,
+                    "A. Answer only" : 1.0,
                     "B. Paragraph CoT" : 0.0,
-                    "C. Step-by-step CoT -- All at once": 1.0,
+                    "C. Step-by-step CoT -- All at once": 0.0,
                     "D. Step-by-step CoT -- Sequential": 0.0,
                     "E. Verifiable CoT": 0.0
                 }
