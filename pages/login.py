@@ -156,7 +156,7 @@ def submit_consent(username_input):
                     st.session_state.page = "demographics" # begin_tutorial or instruction?
                 elif len(all_values) >= 16:
                     st.session_state.questions_done = 16
-                    st.session_state.page = "survey"
+                    st.session_state.page = "end_tutorial"
                 else:
                     last_question_answered = all_values[-1]
                     print(f'last_question_answered: {last_question_answered}')
