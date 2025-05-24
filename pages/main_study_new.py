@@ -374,7 +374,7 @@ def main_study():
                       "D. Step-bt-step CoT -- Sequential", "E. Verifiable CoT"]
 
     if st.session_state.count >= len(all_ids):
-        st.session_state.page = "survey"
+        st.session_state.page = "end_tutorial"
         st.rerun()
 
     
