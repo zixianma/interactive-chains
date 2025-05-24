@@ -81,8 +81,6 @@ def get_test_ids():
         ids = [7, 8, 9, 10, 11, 12, 13, 14, 15]
         random_test_ids =  random.sample(ids, len(ids))
         test_ids = fixed_id + random_test_ids
-        
-        user_ws.update_acell("K2", json.dumps(test_ids))
 
     return test_ids
 
