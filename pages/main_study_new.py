@@ -1,3 +1,4 @@
+import openai
 import streamlit as st
 import json
 import random
@@ -7,7 +8,6 @@ from datetime import datetime
 import pages.utils.logger as logger
 from pages.utils.utils import *
 import time
-
 
 # def select_indices(file_path="question_bank_cleaned.jsonl"):
 #     """
@@ -238,11 +238,137 @@ def show_step_2(index):
         else:
             st.info("No step-by-step CoT available.")
             can_accept_reject = False
-    
-    elif condition == "E. Verifiable CoT":
-        raise NotImplementedError
+   
+    elif condition == "E. Editable Local Suggestion":
+        st.markdown("**Model's Verifiable Chain-of-thought (Step-by-step)**")
 
-    st.markdown("---")  # Divider
+        # Initialize session state variables
+        if "text_input_buffer" not in st.session_state:
+            st.session_state.text_input_buffer = ""
+        if "last_sent_input" not in st.session_state:
+            st.session_state.last_sent_input = ""
+        if "completion" not in st.session_state:
+            st.session_state.completion = ""
+
+        st.session_state.text_input_buffer = st.text_area(
+            "Your answer",
+            value=st.session_state.text_input_buffer,
+            key="text_input_F",
+            height=200
+        )
+
+        # If "Final Answer:" is in the answer box, show and stop generating
+        if "Final Answer:" in st.session_state.text_input_buffer:
+            st.markdown("**Model's Final Answer:**")
+            final_answer = st.session_state.text_input_buffer.split("Final Answer:")[-1].strip()
+            st.warning(final_answer if final_answer else "No final answer found.")
+            can_accept_reject = True
+        else:
+            # Only generate if user changed input
+            if st.session_state.text_input_buffer.strip() != st.session_state.last_sent_input.strip():
+                prompt = f"""
+                You are a helpful and concise math tutor assisting a student with step-by-step problem solving. The student has already completed some steps. Your task is to generate only the next logical step from where they left off. Do not repeat previous steps or jump ahead. Use clear, concise reasoning suitable for a student. Maintain the "Step X" format if applicable. Provide pure text only, no code or special formatting.
+
+
+
+                Question: {question["question"]}
+
+                Current step: "{st.session_state.text_input_buffer}"
+                Instructions: Continue directly from the end of the current step and provide only the next step.
+        """
+                try:
+                    from openai import OpenAI
+                    client = OpenAI(api_key=st.secrets["openai"]["api_key"])
+                    response = client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[{"role": "user", "content": prompt}],
+                        max_tokens=200,
+                        temperature=0.4
+                    )
+                    reply = response.choices[0].message.content.strip()
+                    st.session_state.completion = reply
+                    st.session_state.last_sent_input = st.session_state.text_input_buffer
+                except Exception as e:
+                    st.error(f"Error fetching completion: {e}")
+
+            # accept/clear suggestion
+            if st.session_state.completion:
+                st.markdown("Suggestion")
+                st.write(st.session_state.completion)
+                if st.button("Accept this suggestion"):
+                    st.session_state.text_input_buffer += " " + st.session_state.completion
+                    st.session_state.completion = ""
+                    st.session_state.last_sent_input = st.session_state.text_input_buffer
+                    st.rerun()
+                if st.button("Clear suggestion"):
+                    st.session_state.completion = ""
+                    st.rerun()
+
+    elif condition == "F. Editable Global Suggestion":
+        st.markdown("**Model's Verifiable Chain-of-thought (Step-by-step)**")
+
+        # Initialize session state variables
+        if "text_input_buffer" not in st.session_state:
+            st.session_state.text_input_buffer = ""
+        if "last_sent_input" not in st.session_state:
+            st.session_state.last_sent_input = ""
+        if "completion" not in st.session_state:
+            st.session_state.completion = ""
+
+        st.session_state.text_input_buffer = st.text_area(
+            "Your answer",
+            value=st.session_state.text_input_buffer,
+            key="text_input_F",
+            height=200
+        )
+
+        # If "Final Answer:" is in the answer box, show and stop generating
+        if "Final Answer:" in st.session_state.text_input_buffer:
+            st.markdown("**Model's Final Answer:**")
+            final_answer = st.session_state.text_input_buffer.split("Final Answer:")[-1].strip()
+            st.warning(final_answer if final_answer else "No final answer found.")
+            can_accept_reject = True
+        else:
+            # Only generate if user changed input
+            if st.session_state.text_input_buffer.strip() != st.session_state.last_sent_input.strip():
+                prompt = f"""
+    You are a helpful and concise math tutor assisting a student with step-by-step problem solving.
+    Question: {question["question"]}
+    So far, we have completed "{st.session_state.text_input_buffer}"
+    Your task:
+        -First autocomplete the current step, and then complete the rest until you got the final answer.
+        -Continue naturally from the student's wording, DON'T repeat what the student already said.
+        -pure text only, no highlight, markdown or other decorations.
+        -try to solve this problem in an easy way , and mark "Step X:" before a new step, end each step with a newline.
+        -If it's your final step, include the final answer in your response, and start the sentence with "Final Answer: " in a separate line.
+    """
+                try:
+                    from openai import OpenAI
+                    client = OpenAI(api_key=st.secrets["openai"]["api_key"])
+                    response = client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[{"role": "user", "content": prompt}],
+                        max_tokens=700,
+                        temperature=0.4
+                    )
+                    reply = response.choices[0].message.content.strip()
+                    st.session_state.completion = reply
+                    st.session_state.last_sent_input = st.session_state.text_input_buffer
+                except Exception as e:
+                    st.error(f"Error fetching completion: {e}")
+
+            # accept/clear suggestion
+            if st.session_state.completion:
+                st.markdown("Suggestion")
+                st.write(st.session_state.completion)
+                if st.button("Accept this suggestion"):
+                    st.session_state.text_input_buffer += " " + st.session_state.completion
+                    st.session_state.completion = ""
+                    st.session_state.last_sent_input = st.session_state.text_input_buffer
+                    st.rerun()
+                if st.button("Clear suggestion"):
+                    st.session_state.completion = ""
+                    st.rerun()
 
     # Accept/Reject Section: Only available if allowed
     if not can_accept_reject:
@@ -371,7 +497,7 @@ def main_study():
     """
 
     all_conditions = ["A. Answer only", "B. Paragraph CoT", "C. Step-by-step CoT -- All at once",
-                      "D. Step-bt-step CoT -- Sequential", "E. Verifiable CoT"]
+                      "D. Step-bt-step CoT -- Sequential", "E. Editable Local Suggestion", "F. Editable Global Suggestion"]
 
     if st.session_state.count >= len(all_ids):
         st.session_state.page = "end_tutorial"
@@ -470,12 +596,10 @@ def main_study():
     warning = st.empty()
     st.divider()
     
-    if st.session_state.condition == "E. Verifiable CoT":
-        raise NotImplementedError
-    else:
-        # st.session_state['Model Reasoning'] = question["model_explanation"]
-        st.session_state['Model answer'] = question["model_answer"]
-        st.session_state['gt_answer'] = question["correct_answer"]
+
+    # st.session_state['Model Reasoning'] = question["model_explanation"]
+    st.session_state['Model answer'] = question["model_answer"]
+    st.session_state['gt_answer'] = question["correct_answer"]
 
 
     if "step_phase" not in st.session_state:
