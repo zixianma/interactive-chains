@@ -8,7 +8,7 @@ from datetime import datetime
 import pages.utils.logger as logger
 from pages.utils.utils import *
 import time
-
+import unicodedata
 # def select_indices(file_path="question_bank_cleaned.jsonl"):
 #     """
 #     Loads a JSONL file with questions and returns a list of indices that:
@@ -155,8 +155,17 @@ def show_step_1(index):
     else:
         st.button("Next", key=f"next_disabled_{index}", disabled=True, help="Please submit your response first.")
 
+def normalize_text(text):
+    # 1. Normalize Unicode
+    text = unicodedata.normalize("NFKC", text)
+    # 2. Remove Markdown symbols (*, _, $, `)
+    text = re.sub(r'[*_$`]', '', text)
+    # 3. Replace any remaining fancy Unicode (like 𝑎, 𝑏) with ASCII equivalents
+    return ''.join(
+        c if ord(c) < 128 else unicodedata.normalize("NFKD", c).encode("ascii", "ignore").decode("ascii")
+        for c in text
+    )
 
-    
 def show_step_2(index):
     st.subheader("Step 2: Model's Help & Your Decision")
 
@@ -239,6 +248,7 @@ def show_step_2(index):
             st.info("No step-by-step CoT available.")
             can_accept_reject = False
    
+    
     elif condition == "E. Editable Local Suggestion":
         st.markdown("**Model's Verifiable Chain-of-thought (Step-by-step)**")
 
@@ -267,7 +277,11 @@ def show_step_2(index):
             # Only generate if user changed input
             if st.session_state.text_input_buffer.strip() != st.session_state.last_sent_input.strip():
                 prompt = f"""
-                You are a helpful and concise math tutor assisting a student with step-by-step problem solving. The student has already completed some steps. Your task is to generate only the next logical step from where they left off. Do not repeat previous steps or jump ahead. Use clear, concise reasoning suitable for a student. Maintain the "Step X" format if applicable. Provide pure text only, no code or special formatting.
+                You are a helpful and concise math tutor assisting a student with step-by-step problem solving. 
+                The student has already completed some steps. Your task is to generate only the next logical step from where they left off.
+                Do not repeat previous steps or jump ahead. Use clear, concise reasoning suitable for a student. 
+                Maintain the "Step X" format if applicable. Provide pure text only, no code or special formatting.
+                If it's your final step, include the final answer in your response, and start the sentence with "Final Answer: " in a separate line.
 
 
 
@@ -283,10 +297,12 @@ def show_step_2(index):
                         model="gpt-4o",
                         messages=[{"role": "user", "content": prompt}],
                         max_tokens=200,
-                        temperature=0.4
+                        temperature=0.4,
+                        #stop=["\n"]#
                     )
-                    reply = response.choices[0].message.content.strip()
-                    st.session_state.completion = reply
+                    reply = normalize_text(response.choices[0].message.content.strip())
+                    cleaned_reply = normalize_text(reply)
+                    st.session_state.completion = cleaned_reply
                     st.session_state.last_sent_input = st.session_state.text_input_buffer
                 except Exception as e:
                     st.error(f"Error fetching completion: {e}")
@@ -338,7 +354,7 @@ def show_step_2(index):
     Your task:
         -First autocomplete the current step, and then complete the rest until you got the final answer.
         -Continue naturally from the student's wording, DON'T repeat what the student already said.
-        -pure text only, no highlight, markdown or other decorations.
+        -pure text only, no highlight, LaTex, italic, markdown or other decorations.
         -try to solve this problem in an easy way , and mark "Step X:" before a new step, end each step with a newline.
         -If it's your final step, include the final answer in your response, and start the sentence with "Final Answer: " in a separate line.
     """
@@ -351,8 +367,9 @@ def show_step_2(index):
                         max_tokens=700,
                         temperature=0.4
                     )
-                    reply = response.choices[0].message.content.strip()
-                    st.session_state.completion = reply
+                    reply = normalize_text(response.choices[0].message.content.strip())
+                    cleaned_reply = normalize_text(reply)
+                    st.session_state.completion = cleaned_reply
                     st.session_state.last_sent_input = st.session_state.text_input_buffer
                 except Exception as e:
                     st.error(f"Error fetching completion: {e}")
