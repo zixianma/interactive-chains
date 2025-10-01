@@ -182,7 +182,7 @@ def show_step_2(index):
         st.warning(question.get("model_answer", "No answer available"))
     
     elif condition == "B. Paragraph CoT":
-        st.markdown("**Model's Paragraph Chain-of-thought**")
+        #st.markdown("**Model's Paragraph Chain-of-thought**")
         st.write(question.get("paragraph_reasoning", "No paragraph CoT available"))
         
         '''
@@ -198,7 +198,7 @@ def show_step_2(index):
         st.warning(question.get("model_answer", "No answer available."))
     
     elif condition == "C. Step-by-step CoT -- All at once":
-        st.markdown("**Model's Step-by-step Chain-of-thought:**")
+        #st.markdown("**Model's Step-by-step Chain-of-thought:**")
         step_str = question.get("reasoning_steps", "")
         
         if step_str:
@@ -214,7 +214,7 @@ def show_step_2(index):
         st.warning(question.get("model_answer", "No answer available."))
     
     elif condition == "D. Step-by-step CoT -- Sequential":
-        st.markdown("**Model's Step-by-step Chain-of-thought:**")
+        #st.markdown("**Model's Step-by-step Chain-of-thought:**")
         step_str = question.get("reasoning_steps", "")
         
         if step_str:
@@ -250,7 +250,7 @@ def show_step_2(index):
    
     
     elif condition == "E. Editable Local Suggestion":
-        st.markdown("**Model's Verifiable Chain-of-thought (Step-by-step)**")
+        #st.markdown("**Model's Editable Local Chain-of-thought (Step-by-step)**")
 
         # Initialize session state variables
         if "text_input_buffer" not in st.session_state:
@@ -259,13 +259,23 @@ def show_step_2(index):
             st.session_state.last_sent_input = ""
         if "completion" not in st.session_state:
             st.session_state.completion = ""
-
-        st.session_state.text_input_buffer = st.text_area(
+        new_text = st.text_area(
             "Your answer",
             value=st.session_state.text_input_buffer,
             key="text_input_F",
             height=200
         )
+
+        # Only update if user typed something new
+        if new_text != st.session_state.text_input_buffer:
+            st.session_state.text_input_buffer = new_text
+        st.session_state["Answer in text"] = st.session_state.get("text_input_buffer", "")
+        # st.session_state.text_input_buffer = st.text_area(
+        #     "Your answer",
+        #     value=st.session_state.text_input_buffer,
+        #     key="text_input_F",
+        #     height=200
+        # )
 
         # If "Final Answer:" is in the answer box, show and stop generating
         if "Final Answer:" in st.session_state.text_input_buffer:
@@ -277,10 +287,11 @@ def show_step_2(index):
             # Only generate if user changed input
             if st.session_state.text_input_buffer.strip() != st.session_state.last_sent_input.strip():
                 prompt = f"""
-                You are a helpful and concise math tutor assisting a student with step-by-step problem solving. 
-                The student has already completed some steps. Your task is to generate only the next logical step from where they left off.
-                Do not repeat previous steps or jump ahead. Use clear, concise reasoning suitable for a student. 
-                Maintain the "Step X" format if applicable. Provide pure text only, no code or special formatting.
+                You are a helpful and concise math tutor. 
+                The student may has already completed some steps. Your task is autocomplete the current step.
+                Do not repeat previous words or jump ahead to the next step.  
+                Maintain the "Step X" format if applicable.
+                Provide pure text only, no highlight, LaTex, italic, markdown or other decorations.
                 If it's your final step, include the final answer in your response, and start the sentence with "Final Answer: " in a separate line.
 
 
@@ -288,7 +299,7 @@ def show_step_2(index):
                 Question: {question["question"]}
 
                 Current step: "{st.session_state.text_input_buffer}"
-                Instructions: Continue directly from the end of the current step and provide only the next step.
+                Instructions: Continue directly from the the current step orovide  the next step.
         """
                 try:
                     from openai import OpenAI
@@ -315,13 +326,14 @@ def show_step_2(index):
                     st.session_state.text_input_buffer += " " + st.session_state.completion
                     st.session_state.completion = ""
                     st.session_state.last_sent_input = st.session_state.text_input_buffer
+                    st.session_state["Answer in text"] = st.session_state.text_input_buffer
                     st.rerun()
                 if st.button("Clear suggestion"):
                     st.session_state.completion = ""
                     st.rerun()
 
     elif condition == "F. Editable Global Suggestion":
-        st.markdown("**Model's Verifiable Chain-of-thought (Step-by-step)**")
+        #st.markdown("**Model's Editable Global Chain-of-thought (Step-by-step)**")
 
         # Initialize session state variables
         if "text_input_buffer" not in st.session_state:
@@ -337,7 +349,9 @@ def show_step_2(index):
             key="text_input_F",
             height=200
         )
-
+        
+        st.session_state["Answer in text"] = st.session_state.get("text_input_buffer", "")
+        
         # If "Final Answer:" is in the answer box, show and stop generating
         if "Final Answer:" in st.session_state.text_input_buffer:
             st.markdown("**Model's Final Answer:**")
@@ -353,9 +367,9 @@ def show_step_2(index):
     So far, we have completed "{st.session_state.text_input_buffer}"
     Your task:
         -First autocomplete the current step, and then complete the rest until you got the final answer.
-        -Continue naturally from the student's wording, DON'T repeat what the student already said.
+        -DON'T repeat what the student already said.
         -pure text only, no highlight, LaTex, italic, markdown or other decorations.
-        -try to solve this problem in an easy way , and mark "Step X:" before a new step, end each step with a newline.
+        -mark "Step X:" before a new step, end each step with a newline.
         -If it's your final step, include the final answer in your response, and start the sentence with "Final Answer: " in a separate line.
     """
                 try:
@@ -364,7 +378,7 @@ def show_step_2(index):
                     response = client.chat.completions.create(
                         model="gpt-4o",
                         messages=[{"role": "user", "content": prompt}],
-                        max_tokens=700,
+                        #max_tokens=700,
                         temperature=0.4
                     )
                     reply = normalize_text(response.choices[0].message.content.strip())
@@ -382,6 +396,7 @@ def show_step_2(index):
                     st.session_state.text_input_buffer += " " + st.session_state.completion
                     st.session_state.completion = ""
                     st.session_state.last_sent_input = st.session_state.text_input_buffer
+                    st.session_state["Answer in text"] = st.session_state.text_input_buffer
                     st.rerun()
                 if st.button("Clear suggestion"):
                     st.session_state.completion = ""
@@ -421,7 +436,6 @@ def show_step_2(index):
         "Yes, I ACCEPT the model's answer": "Accept",
         "No, I REJECT the model's answer": "Reject"
     }
-
     warning = st.empty()
     st.divider()
 
@@ -432,6 +446,10 @@ def show_step_2(index):
             st.success("Response submitted!")
         else:
             warning.warning("Please select an option before submitting.")
+    # clear the buffer at the end of a full question
+    # if st.session_state.get("step_2_submitted", False) and "text_input_buffer" in st.session_state:
+    #     st.session_state.text_input_buffer = ""
+    #     st.session_state.completion = ""
 
     # As soon as step_2_submitted is True, show the helpfulness radio
     if st.session_state.get("step_2_submitted", False):
@@ -457,6 +475,9 @@ def show_step_2(index):
             st.session_state.step_2_submitted = False
             st.session_state.current_step = 0
             st.session_state.next_clicked = True
+            st.session_state["Answer in text"] = st.session_state.get("text_input_buffer", "")
+            st.session_state.text_input_buffer = ""
+            st.session_state.completion = ""
             return
     else:
         st.button(
@@ -464,8 +485,7 @@ def show_step_2(index):
             key=f"next_disabled_{index}",
             disabled=True,
             help="Please submit your decision and rate helpfulness first."
-        )
-
+        )       
 
 # def finished():
 #     st.title("Thank you for your time!")
@@ -483,6 +503,9 @@ def main_study():
 
     if "question_start_time" not in st.session_state:
         st.session_state["question_start_time"] = time.time()
+
+    if "completion" not in st.session_state:
+        st.session_state["completion"] = ""
     
     question = load_data(path="data/question_bank_final_cleaned.jsonl")
     
@@ -514,7 +537,7 @@ def main_study():
     """
 
     all_conditions = ["A. Answer only", "B. Paragraph CoT", "C. Step-by-step CoT -- All at once",
-                      "D. Step-bt-step CoT -- Sequential", "E. Editable Local Suggestion", "F. Editable Global Suggestion"]
+                      "D. Step-by-step CoT -- Sequential", "E. Editable Local Suggestion", "F. Editable Global Suggestion"]
 
     if st.session_state.count >= len(all_ids):
         st.session_state.page = "end_tutorial"
@@ -535,24 +558,45 @@ def main_study():
             button_label="Proceed to Training Phase"
         ):
             return
+    #for method ef
+        if st.session_state.condition in ["E. Editable Local Suggestion", "F. Editable Global Suggestion"]:
+            st.title("📚 Training phase")
+            # st.markdown("""
+            # ###### During this training phase, you will answer 4 questions to help you get familiar with the study process.
 
-        st.title("📚 Training phase")
-        st.markdown("""
-        ###### During this training phase, you will answer 4 questions to help you get familiar with the study process.
+            # **Step 1:** You will be asked to rate how hard you think the question is, on a scale from 1 (Very Easy) to 5 (Very Hard).  
+            # Please be honest—your response to Step 1 will not influence the reward you receive.
 
-        **Step 1:** You will be asked to rate how hard you think the question is, on a scale from 1 (Very Easy) to 5 (Very Hard).  
-        Please be honest—your response to Step 1 will not influence the reward you receive.
+            # **Step 2:** You will then see a text box where you can write your answer.  
+            # As you type, the AI model may **autocomplete your response** (either step-by-step or all at once, depending on your condition).  
+            # When you reach your final answer, please clearly mark it with:  **`Final Answer:`**  
+            # You will decide whether to **ACCEPT** or **REJECT** the model's answer based on the information provided:
+            # ✅ Accept when the model is correct.  
+            # ❌ Reject when the model is wrong.
 
-        **Step 2:** You will be shown the model's answer and (optionally) its explanation.  
-        You will decide whether to **ACCEPT** or **REJECT** the model's answer based on the information provided:
+            # **Step 3:** After each question, you will answer a brief survey about how helpful the AI model's information was in guiding your decision.  
+            # This refers to whether the explanation made it easier to identify an error (and reject the answer) or helped you follow the reasoning to a correct answer (and accept it).  
+            # You will rate this from 1 (Very unhelpful) to 5 (Very helpful).
+            # """)
+        #for method cd     
+        else:
+            st.title("📚 Training phase")
+            # st.markdown("""
+            # ###### During this training phase, you will answer 4 questions to help you get familiar with the study process.
 
-        ✅ Accept when the model is correct.  
-        ❌ Reject when the model is wrong.
+            # **Step 1:** You will be asked to rate how hard you think the question is, on a scale from 1 (Very Easy) to 5 (Very Hard).  
+            # Please be honest—your response to Step 1 will not influence the reward you receive.
 
-        **Step 3:** After each question, you will answer a brief survey about how helpful the AI model's information was in guiding your decision.  
-        This refers to whether the explanation made it easier to identify an error (and reject the answer) or helped you follow the reasoning to a correct answer (and accept it).  
-        You will rate this from 1 (Very unhelpful) to 5 (Very helpful).
-        """)
+            # **Step 2:** You will be shown the model's answer and (optionally) its explanation.  
+            # You will decide whether to **ACCEPT** or **REJECT** the model's answer based on the information provided:
+
+            # ✅ Accept when the model is correct.  
+            # ❌ Reject when the model is wrong.
+
+            # **Step 3:** After each question, you will answer a brief survey about how helpful the AI model's information was in guiding your decision.  
+            # This refers to whether the explanation made it easier to identify an error (and reject the answer) or helped you follow the reasoning to a correct answer (and accept it).  
+            # You will rate this from 1 (Very unhelpful) to 5 (Very helpful).
+            # """)
         total_num = len(st.session_state['train_ids'])
         curr_pos = st.session_state.count + 1
     else:
@@ -578,23 +622,41 @@ def main_study():
         curr_pos = st.session_state.count + 1 - len(st.session_state.train_ids)
 
     with st.expander("***See task instructions***"):
-        st.markdown("""
-        ###### During this training phase, you will answer 4 questions to help you get familiar with the study process.
+        #for method ef
+        if st.session_state.condition in ["E. Editable Local Suggestion", "F. Editable Global Suggestion"]:
+            st.title("📚 Training phase")
+            st.markdown("""
+            ###### During this training phase, you will answer 4 questions to help you get familiar with the study process.
 
-        **Step 1:** You will be asked to rate how hard you think the question is, on a scale from 1 (Very Easy) to 5 (Very Hard).  
-        Please be honest—your response to Step 1 will not influence the reward you receive.
+            **Step 1:** You will be asked to rate how hard you think the question is, on a scale from 1 (Very Easy) to 5 (Very Hard).  
+            Please be honest—your response to Step 1 will not influence the reward you receive.
 
-        **Step 2:** You will be shown the model's answer and (optionally) its explanation.  
-        You will decide whether to **ACCEPT** or **REJECT** the model's answer based on the information provided:
+            **Step 2:** You will then see a text box where you can write your answer.  
+            As you type, the AI model may **autocomplete your response**, and you can choose to accept or ignore its suggestions.
+            When you reach your final answer, please clearly mark it with:  **`Final Answer:`**  
+            You will decide whether to **ACCEPT** or **REJECT** the model's answer based on the AI response.
 
-        ✅ Accept when the model is correct.  
-        ❌ Reject when the model is wrong.
+            **Step 3:** After each question, you will answer a brief survey about how helpful the AI model's information was in guiding your decision.  
+            """)
+        #for method cd     
+        else:
+            st.title("📚 Training phase")
+            st.markdown("""
+            ###### During this training phase, you will answer 4 questions to help you get familiar with the study process.
 
-        **Step 3:** After each question, you will answer a brief survey about how helpful the AI model's information was in guiding your decision.  
-        This refers to whether the explanation made it easier to identify an error (and reject the answer) or helped you follow the reasoning to a correct answer (and accept it).  
-        You will rate this from 1 (Very unhelpful) to 5 (Very helpful).
-        """)
+            **Step 1:** You will be asked to rate how hard you think the question is, on a scale from 1 (Very Easy) to 5 (Very Hard).  
+            Please be honest—your response to Step 1 will not influence the reward you receive.
 
+            **Step 2:** You will be shown the model's answer and (optionally) its explanation.  
+            You will decide whether to **ACCEPT** or **REJECT** the model's answer based on the information provided:
+
+            ✅ Accept when the model is correct.  
+            ❌ Reject when the model is wrong.
+
+            **Step 3:** After each question, you will answer a brief survey about how helpful the AI model's information was in guiding your decision.  
+            This refers to whether the explanation made it easier to identify an error (and reject the answer) or helped you follow the reasoning to a correct answer (and accept it).  
+            You will rate this from 1 (Very unhelpful) to 5 (Very helpful).
+            """)
         note = st.markdown("""
             :red[**Note:** Please base your decision **only** on the information shown in this interface (the AI's answer and/or its explanations).  
             Relying on external sources like Google or ChatGPT may lead you to incorrect conclusions.]
@@ -617,7 +679,7 @@ def main_study():
     # st.session_state['Model Reasoning'] = question["model_explanation"]
     st.session_state['Model answer'] = question["model_answer"]
     st.session_state['gt_answer'] = question["correct_answer"]
-
+    st.session_state['Answer in text'] = st.session_state.completion
 
     if "step_phase" not in st.session_state:
         st.session_state.step_phase = 1
@@ -642,27 +704,49 @@ def main_study():
         #     st.session_state["next_clicked"] = False
         # else:
             time_spent = time.time() - st.session_state["question_start_time"]
-            if st.session_state.condition == "E. Verifiable CoT":
-                raise NotImplementedError
-            else:
-                help_score = st.session_state.get(f"helpfulness_{idx}", "")
-                logger.write_to_user_sheet([st.session_state.username, st.session_state.condition, idx,
-                                            st.session_state['Model answer'], st.session_state.step_1_response,
-                                            st.session_state.step_2_response, help_score, st.session_state["gt_answer"],
-                                            time_spent, st.session_state.count + 1, test_ids_str])
-                
-                st.session_state['Model Reasoning'] = ""
-                st.session_state['Model answer'] = ""
-                st.session_state['gt_answer'] = ""
-                st.session_state.step_1_response = ""
-                st.session_state.step_2_response = ""
-                # remove the helpfulness rating
-                st.session_state.pop(f"helpfulness_{idx}", None)
-                # optionally also clear the radio selection itself
-                st.session_state.pop(f"response_{idx}",    None)
-                st.session_state.step_phase = 1
-                st.session_state.count += 1
-                st.session_state["question_start_time"] = time.time()
-                st.session_state["next_clicked"] = False
-                st.rerun()
+        
+            help_score = st.session_state.get(f"helpfulness_{idx}", "")
+        
+
+            answer_text = st.session_state.get("Answer in text", "") or st.session_state.get("text_input_buffer", "")
+            final_answer_from_text = ""
+        # Check if the "Final Answer:" substring exists in the user's input
+            if "Final Answer:" in answer_text:
+            # Split the string and get the part after "Final Answer:", then strip whitespace
+                final_answer_from_text = answer_text.split("Final Answer:")[-1].strip()
+            logger.write_to_user_sheet(
+                [
+                    st.session_state.username,
+                    st.session_state.condition,
+                    idx,
+                    final_answer_from_text,
+                    st.session_state.step_1_response,
+                    st.session_state.step_2_response,
+                    help_score,
+                    st.session_state["gt_answer"],
+                    time_spent,
+                    st.session_state.count + 1,
+                    test_ids_str,
+                    answer_text
+                ],
+                #answer_text=answer_text
+            )
+
+            
+            st.session_state['Model Reasoning'] = ""
+            st.session_state['Model answer'] = ""
+            st.session_state['gt_answer'] = ""
+            # if st.session_state.condition in ["E. Editable Local Suggestion", "F. Editable Global Suggestion"]:
+            #     st.session_state['Answer in text'] = ""
+            st.session_state.step_1_response = ""
+            st.session_state.step_2_response = ""
+            # remove the helpfulness rating
+            st.session_state.pop(f"helpfulness_{idx}", None)
+            # optionally also clear the radio selection itself
+            st.session_state.pop(f"response_{idx}",    None)
+            st.session_state.step_phase = 1
+            st.session_state.count += 1
+            st.session_state["question_start_time"] = time.time()
+            st.session_state["next_clicked"] = False
+            st.rerun()
     
