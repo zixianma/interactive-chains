@@ -624,10 +624,11 @@ def main_study():
     with st.expander("***See task instructions***"):
         #for method ef
         if st.session_state.condition in ["E. Editable Local Suggestion", "F. Editable Global Suggestion"]:
-            st.title("📚 Training phase")
+            # st.title("📚 Training phase")
+            # During this training phase, you will answer 4 questions to help you get familiar with the study process.
             st.markdown("""
-            ###### During this training phase, you will answer 4 questions to help you get familiar with the study process.
-
+            ###### For each question, please follow the steps below:
+                        
             **Step 1:** You will be asked to rate how hard you think the question is, on a scale from 1 (Very Easy) to 5 (Very Hard).  
             Please be honest—your response to Step 1 will not influence the reward you receive.
 
@@ -640,10 +641,10 @@ def main_study():
             """)
         #for method cd     
         else:
-            st.title("📚 Training phase")
+            # st.title("📚 Training phase")
+            # During this training phase, you will answer 4 questions to help you get familiar with the study process.
             st.markdown("""
-            ###### During this training phase, you will answer 4 questions to help you get familiar with the study process.
-
+            ###### For each question, please follow the steps below:
             **Step 1:** You will be asked to rate how hard you think the question is, on a scale from 1 (Very Easy) to 5 (Very Hard).  
             Please be honest—your response to Step 1 will not influence the reward you receive.
 
