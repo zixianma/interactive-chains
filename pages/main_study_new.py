@@ -322,15 +322,26 @@ def show_step_2(index):
             if st.session_state.completion:
                 st.markdown("Suggestion")
                 st.write(st.session_state.completion)
-                if st.button("Accept this suggestion"):
-                    st.session_state.text_input_buffer += " " + st.session_state.completion
-                    st.session_state.completion = ""
-                    st.session_state.last_sent_input = st.session_state.text_input_buffer
-                    st.session_state["Answer in text"] = st.session_state.text_input_buffer
-                    st.rerun()
-                if st.button("Clear suggestion"):
-                    st.session_state.completion = ""
-                    st.rerun()
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Accept this suggestion"):
+                            st.session_state.text_input_buffer += " " + st.session_state.completion
+                            st.session_state.completion = ""
+                            st.session_state.last_sent_input = st.session_state.text_input_buffer
+                            st.session_state["Answer in text"] = st.session_state.text_input_buffer
+                            user_id = st.session_state.get("user_id", "test_user")
+                            q_id = question.get("id", "Q_unknown")
+                            logger.log_user_action(st.session_state.get("user_worksheet"), user_id, "Accept", st.session_state["Answer in text"], q_id)
+    
+                            st.rerun()
+                with col2:
+                    if st.button("Clear suggestion"):
+                        st.session_state.completion = ""
+                        user_id = st.session_state.get("user_id", "test_user")
+                        q_id = question.get("id", "Q_unknown")
+                        logger.log_user_action(st.session_state.get("user_worksheet"), user_id, "Clear", st.session_state["Answer in text"], q_id)
+
+                        st.rerun()
 
     elif condition == "F. Editable Global Suggestion":
         #st.markdown("**Model's Editable Global Chain-of-thought (Step-by-step)**")
@@ -392,15 +403,26 @@ def show_step_2(index):
             if st.session_state.completion:
                 st.markdown("Suggestion")
                 st.write(st.session_state.completion)
-                if st.button("Accept this suggestion"):
-                    st.session_state.text_input_buffer += " " + st.session_state.completion
-                    st.session_state.completion = ""
-                    st.session_state.last_sent_input = st.session_state.text_input_buffer
-                    st.session_state["Answer in text"] = st.session_state.text_input_buffer
-                    st.rerun()
-                if st.button("Clear suggestion"):
-                    st.session_state.completion = ""
-                    st.rerun()
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Accept this suggestion"):
+                        st.session_state.text_input_buffer += " " + st.session_state.completion
+                        st.session_state.completion = ""
+                        st.session_state.last_sent_input = st.session_state.text_input_buffer
+                        st.session_state["Answer in text"] = st.session_state.text_input_buffer
+                        user_id = st.session_state.get("user_id", "test_user")
+                        q_id = question.get("id", "Q_unknown")
+                        logger.log_user_action(st.session_state.get("user_worksheet"), user_id, "Accept", st.session_state["Answer in text"], q_id)
+
+                        st.rerun()
+                with col2:
+                    if st.button("Clear suggestion"):
+                        st.session_state.completion = ""
+                        user_id = st.session_state.get("user_id", "test_user")
+                        q_id = question.get("id", "Q_unknown")
+                        logger.log_user_action(st.session_state.get("user_worksheet"), user_id, "Accept", st.session_state["Answer in text"], q_id)
+
+                        st.rerun()
 
     # Accept/Reject Section: Only available if allowed
     if not can_accept_reject:

@@ -36,6 +36,36 @@ def write_to_user_sheet(data, answer_text=None):
     user_data_sheet = st.session_state['sheet']
     all_actions_sheet = exponential_backoff(user_data_sheet.worksheet, 'Main Study')
     exponential_backoff(all_actions_sheet.append_row, row_data)
+def log_user_action(sheet, user_id: str, action: str, text: str):
+    """
+    Logs user action in their personal tab by appending two columns: 
+    one for action label, one for text content.
+    """
+    if not text:
+        text = "(empty)"
+    
+    try:
+        # Open the worksheet for the user
+        ws = sheet.worksheet(user_id)
+    except Exception as e:
+        print(f"Worksheet for {user_id} not found, creating new one.")
+        ws = sheet.add_worksheet(title=user_id, rows="100", cols="50")
+        ws.update_cell(1, 1, "Question")
+
+    # Find current number of columns
+    num_cols = len(ws.row_values(1))
+    new_col_action = num_cols + 1
+    new_col_text = num_cols + 2
+
+    # Create headers
+    ws.update_cell(1, new_col_action, f"{action}_{(new_col_action-1)//2 + 1}")
+    ws.update_cell(1, new_col_text, f"Answer_{(new_col_text-2)//2 + 1}")
+
+    # Fill data (you can decide which row to write to if each question is a new row)
+    ws.update_cell(2, new_col_action, action)
+    ws.update_cell(2, new_col_text, text)
+
+    print(f"Logged for {user_id}: {action} - {text}")
 
 def write_survey_response(data, sheet, key_list):
     responses = []
