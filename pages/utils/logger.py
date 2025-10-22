@@ -36,44 +36,133 @@ def write_to_user_sheet(data, answer_text=None):
     user_data_sheet = st.session_state['sheet']
     all_actions_sheet = exponential_backoff(user_data_sheet.worksheet, 'Main Study')
     exponential_backoff(all_actions_sheet.append_row, row_data)
-def log_user_action(sheet, user_id: str, action: str, text: str, question_id=None):
+
+
+def log_user_action(sheet, user_id: str, action: str, text: str, question_id: int):
     """
-    Logs user action in their personal tab by appending two columns: 
-    one for action label, one for text content.
+    Logs user actions on the SAME ROW (question_id row).
+    Each new action adds two new columns: Action_#, Text_#.
+    Robust implementation: uses exponential_backoff for gspread calls,
+    ensures headers exist, and computes next Action index by scanning headers.
     """
+    # Basic validation and sanitization
     if sheet is None:
         raise TypeError("log_user_action: 'sheet' is None")
     if not hasattr(sheet, "worksheet"):
         raise TypeError(f"log_user_action: 'sheet' does not have worksheet(); got {type(sheet)}")
     if user_id is None:
         raise TypeError("log_user_action: 'user_id' is None")
-   
 
-    if not text:
-        text = "(empty)"
-    
+    user_id = str(user_id)
+    action = str(action)
+    text = str(text) if text is not None and text != "" else "(empty)"
+    qid_str = str(question_id)
+
+    # Get or create user's worksheet
     try:
-        # Open the worksheet for the user
-        ws = sheet.worksheet(user_id)
-    except Exception as e:
-        print(f"Worksheet for {user_id} not found, creating new one.")
-        ws = sheet.add_worksheet(title=user_id, rows="100", cols="50")
-        ws.update_cell(1, 1, "Question")
+        ws = exponential_backoff(sheet.worksheet, user_id)
+    except Exception:
+        # create with a reasonable size
+        ws = exponential_backoff(sheet.add_worksheet, title=user_id, rows=200, cols=50)
+        # ensure a minimal header
+        exponential_backoff(ws.update_cell, 1, 1, "Question ID")
 
-    # Find current number of columns
-    num_cols = len(ws.row_values(1))
-    new_col_action = num_cols + 1
-    new_col_text = num_cols + 2
+    # --- Find row for this question (col 1 values) ---
+    try:
+        col1_vals = exponential_backoff(ws.col_values, 1)
+    except Exception:
+        col1_vals = []
 
-    # Create headers
-    ws.update_cell(1, new_col_action, f"{action}_{(new_col_action-1)//2 + 1}")
-    ws.update_cell(1, new_col_text, f"Answer_{(new_col_text-2)//2 + 1}")
+    # If header present but not actual data, col1_vals may contain only header.
+    if qid_str in col1_vals:
+        row_idx = col1_vals.index(qid_str) + 1  # gspread is 1-indexed
+    else:
+        # append new row at the end (next empty row)
+        row_idx = len(col1_vals) + 1
+        exponential_backoff(ws.update_cell, row_idx, 1, qid_str)
 
-    # Fill data (you can decide which row to write to if each question is a new row)
-    ws.update_cell(2, new_col_action, action)
-    ws.update_cell(2, new_col_text, text)
+    # --- Determine next Action/Text index by scanning header row ---
+    try:
+        header = exponential_backoff(ws.row_values, 1)
+    except Exception:
+        header = []
 
-    print(f"Logged for {user_id}: {action} - {text}")
+    # Find existing Action_# headers and compute next number
+    max_action_n = 0
+    for h in header:
+        if isinstance(h, str) and h.startswith("Action_"):
+            try:
+                n = int(h.split("_", 1)[1])
+                if n > max_action_n:
+                    max_action_n = n
+            except Exception:
+                continue
+    next_action_n = max_action_n + 1
+
+    # Determine columns where to write new Action and Text headers/data
+    action_col = len(header) + 1
+    text_col = len(header) + 2
+
+    # Write header names (Action_#, Text_#)
+    exponential_backoff(ws.update_cell, 1, action_col, f"Action_{next_action_n}")
+    exponential_backoff(ws.update_cell, 1, text_col, f"Text_{next_action_n}")
+
+    # Write the action and text into the row for this question
+    exponential_backoff(ws.update_cell, row_idx, action_col, action)
+    exponential_backoff(ws.update_cell, row_idx, text_col, text)
+
+    # Optional: small print for server logs
+    print(f"Logged for {user_id}: {action} - {text} (Question {qid_str})")
+
+# def log_user_action(sheet, user_id: str, action: str, text: str, question_id: int):
+#     """
+#     Logs user actions on the SAME ROW (question_id row).
+#     Each new action adds two new columns: Action_#, Text_#.
+#     """
+#     if sheet is None:
+#         raise TypeError("log_user_action: 'sheet' is None")
+#     if not hasattr(sheet, "worksheet"):
+#         raise TypeError(f"log_user_action: 'sheet' does not have worksheet(); got {type(sheet)}")
+#     if user_id is None:
+#         raise TypeError("log_user_action: 'user_id' is None")
+
+#     if not text:
+#         text = "(empty)"
+
+#     # Open or create worksheet for the user
+#     try:
+#         ws = sheet.worksheet(user_id)
+#     except Exception:
+#         print(f"Worksheet for {user_id} not found, creating new one.")
+#         ws = sheet.add_worksheet(title=user_id, rows="100", cols="100")
+#         ws.update_cell(1, 1, "Question ID")
+
+#     # --- Find the correct row for this question ---
+#     all_qids = ws.col_values(1)
+#     if str(question_id) in all_qids:
+#         row_idx = all_qids.index(str(question_id)) + 1  # +1 because gspread is 1-indexed
+#     else:
+#         # New question — create a new row
+#         row_idx = len(all_qids) + 1
+#         ws.update_cell(row_idx, 1, str(question_id))  # store question id in first col
+
+#     # --- Determine new columns to write ---
+#     header_row = ws.row_values(1)
+#     num_cols = len(header_row)
+#     next_action_idx = (num_cols - 1) // 2 + 1  # each action has 2 columns
+
+#     action_col = num_cols + 1
+#     text_col = num_cols + 2
+
+#     # --- Update header row ---
+#     ws.update_cell(1, action_col, f"Action_{next_action_idx}")
+#     ws.update_cell(1, text_col, f"Text_{next_action_idx}")
+
+#     # --- Update data row for this question ---
+#     ws.update_cell(row_idx, action_col, action)
+#     ws.update_cell(row_idx, text_col, text)
+
+#     print(f"Logged for {user_id}: {action} - {text} (Question {question_id})")
 
 def write_survey_response(data, sheet, key_list):
     responses = []
