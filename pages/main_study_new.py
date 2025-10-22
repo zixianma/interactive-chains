@@ -303,6 +303,13 @@ def show_step_2(index):
         """
                 try:
                     from openai import OpenAI
+#client = OpenAI(api_key=st.secrets["openai"]["api_key"])
+                    
+                    #openai.api_key = st.secrets["openai"]["api_key"]
+
+#respond=client.chat.completions.create
+                    #client = OpenAI(api_key=st.secrets["openai"]["api_key"])
+                                        
                     client = OpenAI(api_key=st.secrets["openai"]["api_key"])
                     response = client.chat.completions.create(
                         model="gpt-4o",
@@ -331,7 +338,7 @@ def show_step_2(index):
                             st.session_state["Answer in text"] = st.session_state.text_input_buffer
                             user_id = st.session_state.get("user_id", "test_user")
                             q_id = question.get("id", "Q_unknown")
-                            logger.log_user_action(st.session_state.get("user_worksheet"), user_id, "Accept", st.session_state["Answer in text"], q_id)
+                            logger.log_user_action(st.session_state['sheet'], user_id, "Accept", st.session_state["Answer in text"], q_id)
     
                             st.rerun()
                 with col2:
@@ -339,7 +346,7 @@ def show_step_2(index):
                         st.session_state.completion = ""
                         user_id = st.session_state.get("user_id", "test_user")
                         q_id = question.get("id", "Q_unknown")
-                        logger.log_user_action(st.session_state.get("user_worksheet"), user_id, "Clear", st.session_state["Answer in text"], q_id)
+                        logger.log_user_action( st.session_state['sheet'], user_id, "Clear", st.session_state["Answer in text"], q_id)
 
                         st.rerun()
 
@@ -385,6 +392,12 @@ def show_step_2(index):
     """
                 try:
                     from openai import OpenAI
+#client = OpenAI(api_key=st.secrets["openai"]["api_key"])
+                    
+                    #openai.api_key = st.secrets["openai"]["api_key"]
+
+#respond=client.chat.completions.create
+
                     client = OpenAI(api_key=st.secrets["openai"]["api_key"])
                     response = client.chat.completions.create(
                         model="gpt-4o",
@@ -412,7 +425,7 @@ def show_step_2(index):
                         st.session_state["Answer in text"] = st.session_state.text_input_buffer
                         user_id = st.session_state.get("user_id", "test_user")
                         q_id = question.get("id", "Q_unknown")
-                        logger.log_user_action(st.session_state.get("user_worksheet"), user_id, "Accept", st.session_state["Answer in text"], q_id)
+                        logger.log_user_action( st.session_state['sheet'], user_id, "Accept", st.session_state["Answer in text"], q_id)
 
                         st.rerun()
                 with col2:
@@ -420,7 +433,7 @@ def show_step_2(index):
                         st.session_state.completion = ""
                         user_id = st.session_state.get("user_id", "test_user")
                         q_id = question.get("id", "Q_unknown")
-                        logger.log_user_action(st.session_state.get("user_worksheet"), user_id, "Accept", st.session_state["Answer in text"], q_id)
+                        logger.log_user_action( st.session_state['sheet'], user_id, "Accept", st.session_state["Answer in text"], q_id)
 
                         st.rerun()
 
