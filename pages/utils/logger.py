@@ -36,11 +36,19 @@ def write_to_user_sheet(data, answer_text=None):
     user_data_sheet = st.session_state['sheet']
     all_actions_sheet = exponential_backoff(user_data_sheet.worksheet, 'Main Study')
     exponential_backoff(all_actions_sheet.append_row, row_data)
-def log_user_action(sheet, user_id: str, action: str, text: str):
+def log_user_action(sheet, user_id: str, action: str, text: str, question_id=None):
     """
     Logs user action in their personal tab by appending two columns: 
     one for action label, one for text content.
     """
+    if sheet is None:
+        raise TypeError("log_user_action: 'sheet' is None")
+    if not hasattr(sheet, "worksheet"):
+        raise TypeError(f"log_user_action: 'sheet' does not have worksheet(); got {type(sheet)}")
+    if user_id is None:
+        raise TypeError("log_user_action: 'user_id' is None")
+   
+
     if not text:
         text = "(empty)"
     
