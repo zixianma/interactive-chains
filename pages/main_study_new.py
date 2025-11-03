@@ -362,6 +362,21 @@ def show_step_2(index):
                         st.session_state.completion = ""
                         user_id = st.session_state.get("user_id", "test_user")
                         q_id = question.get("id", "Q_unknown")
+                        logger.write_to_user_sheet(
+                                [
+                                    st.session_state.username,
+                                    st.session_state.condition,
+                                    q_id,
+                                    "",
+                                    st.session_state.step_1_response,
+                                    st.session_state.step_2_response,
+                                    0,
+                                    st.session_state["gt_answer"],
+                                    0,
+                                    st.session_state.count + 1,
+                                    0
+                                ],
+                        )
                         logger.log_user_action( st.session_state['sheet'], user_id, "Clear", st.session_state["Answer in text"], q_id)
 
                         st.rerun()
@@ -441,11 +456,12 @@ def show_step_2(index):
                         st.session_state["Answer in text"] = st.session_state.text_input_buffer
                         user_id = st.session_state.get("user_id", "test_user")
                         q_id = question.get("id", "Q_unknown")
+                        
                         logger.write_to_user_sheet(
                                 [
                                     st.session_state.username,
                                     st.session_state.condition,
-                                    0,
+                                    q_id,
                                     "",
                                     st.session_state.step_1_response,
                                     st.session_state.step_2_response,
@@ -464,6 +480,21 @@ def show_step_2(index):
                         st.session_state.completion = ""
                         user_id = st.session_state.get("user_id", "test_user")
                         q_id = question.get("id", "Q_unknown")
+                        logger.write_to_user_sheet(
+                                [
+                                    st.session_state.username,
+                                    st.session_state.condition,
+                                    q_id,
+                                    "",
+                                    st.session_state.step_1_response,
+                                    st.session_state.step_2_response,
+                                    0,
+                                    st.session_state["gt_answer"],
+                                    0,
+                                    st.session_state.count + 1,
+                                    0
+                                ],
+                        )
                         logger.log_user_action( st.session_state['sheet'], user_id, "Clear", st.session_state["Answer in text"], q_id)
 
                         st.rerun()
