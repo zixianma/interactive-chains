@@ -342,7 +342,7 @@ def show_step_2(index):
                                 [
                                     st.session_state.username,
                                     st.session_state.condition,
-                                    0,
+                                    1000,
                                     "",
                                     st.session_state.step_1_response,
                                     st.session_state.step_2_response,
@@ -354,7 +354,7 @@ def show_step_2(index):
                                 ],
                                 #answer_text=answer_text
                             )
-                            logger.log_user_action(st.session_state['sheet'], user_id, "Accept", st.session_state["Answer in text"], q_id)
+                            logger.log_user_action(st.session_state['sheet'], user_id, "Accept", st.session_state["Answer in text"], 1000)
     
                             st.rerun()
                 with col2:
@@ -366,7 +366,7 @@ def show_step_2(index):
                                 [
                                     st.session_state.username,
                                     st.session_state.condition,
-                                    q_id,
+                                    1000,
                                     "",
                                     st.session_state.step_1_response,
                                     st.session_state.step_2_response,
@@ -377,7 +377,7 @@ def show_step_2(index):
                                     0
                                 ],
                         )
-                        logger.log_user_action( st.session_state['sheet'], user_id, "Clear", st.session_state["Answer in text"], q_id)
+                        logger.log_user_action( st.session_state['sheet'], user_id, "Clear", st.session_state["Answer in text"], 1000)
 
                         st.rerun()
 
@@ -461,7 +461,7 @@ def show_step_2(index):
                                 [
                                     st.session_state.username,
                                     st.session_state.condition,
-                                    q_id,
+                                    1000,
                                     "",
                                     st.session_state.step_1_response,
                                     st.session_state.step_2_response,
@@ -472,7 +472,7 @@ def show_step_2(index):
                                     0
                                 ],
                         )
-                        logger.log_user_action( st.session_state['sheet'], user_id, "Accept", st.session_state["Answer in text"], q_id)
+                        logger.log_user_action( st.session_state['sheet'], user_id, "Accept", st.session_state["Answer in text"], 1000)
 
                         st.rerun()
                 with col2:
@@ -484,7 +484,7 @@ def show_step_2(index):
                                 [
                                     st.session_state.username,
                                     st.session_state.condition,
-                                    q_id,
+                                    1000,
                                     "",
                                     st.session_state.step_1_response,
                                     st.session_state.step_2_response,
@@ -495,7 +495,7 @@ def show_step_2(index):
                                     0
                                 ],
                         )
-                        logger.log_user_action( st.session_state['sheet'], user_id, "Clear", st.session_state["Answer in text"], q_id)
+                        logger.log_user_action( st.session_state['sheet'], user_id, "Clear", st.session_state["Answer in text"], 1000)
 
                         st.rerun()
 
@@ -824,10 +824,16 @@ def main_study():
                     st.session_state["gt_answer"],
                     time_spent,
                     st.session_state.count + 1,
-                    test_ids_str,
-                    answer_text
+                    test_ids_str
                 ],
                 #answer_text=answer_text
+            )
+            logger.log_user_action(
+                st.session_state['sheet'],
+                st.session_state.get("user_id", "test_user"),
+                "Final",
+                answer_text,
+                idx
             )
 
             
