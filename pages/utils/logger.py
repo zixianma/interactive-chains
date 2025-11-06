@@ -19,6 +19,7 @@ from pages.utils.exponential_backoff import exponential_backoff
 #     user_data_sheet = st.session_state['sheet']
 #     all_actions_sheet = exponential_backoff(user_data_sheet.worksheet, 'Main Study')  
 #     exponential_backoff(all_actions_sheet.append_row, row_data)  
+
 # def write_to_user_sheet(data, answer_text=None):
 #     sheet = st.session_state['user_worksheet']
 
@@ -63,7 +64,7 @@ def write_to_user_sheet(data, answer_text=None):
                     return header.index(n) + 1
             return None
         username_col = find_col(["Username"])
-        qidx_col = find_col(["Question idx","Question Index","Question idx"])
+        qidx_col=find_col(["Question idx","Question Index","Question ID"])
         # safe col values
         username = str(row_data[0])
         qidx_val = str(row_data[2]) if len(row_data) > 2 else ""
@@ -136,7 +137,7 @@ def log_user_action(sheet, user_id: str, action: str, text: str, question_id: in
     except Exception:
         header = []
 
-    # Find existing Action_# headers and compute next number
+    # Find existing Action_# headers
     max_action_n = 0
     for h in header:
         if isinstance(h, str) and h.startswith("Action_"):
@@ -146,7 +147,41 @@ def log_user_action(sheet, user_id: str, action: str, text: str, question_id: in
                     max_action_n = n
             except Exception:
                 continue
-    next_action_n = max_action_n + 1
+
+    # get current row values 
+    try:
+        row_vals = exponential_backoff(ws.row_values, row_idx)
+    except Exception:
+        row_vals = []
+
+    next_action_n = None
+    for i in range(1, max_action_n + 1):
+        act_name = f"Action_{i}"
+        txt_name = f"Text_{i}"
+        if act_name in header:
+            # if Text_i header exists, check the cell for this row; otherwise treat as empty and reuse
+            if txt_name in header:
+                txt_col = header.index(txt_name) + 1
+                val = row_vals[txt_col - 1] if len(row_vals) >= txt_col else ""
+                if (val is None) or (str(val).strip() == "") or (str(val).strip() == "(empty)"):
+                    next_action_n = i
+                    break
+            else:
+                next_action_n = i
+                break
+
+    if next_action_n is None:
+        next_action_n = max_action_n + 1
+
+    # If we're going to reuse an existing Action_i, adjust the local header slice so that
+    # subsequent code which uses len(header)+1 for the action column points to the existing column.
+    if next_action_n <= max_action_n:
+        try:
+            existing_action_idx = header.index(f"Action_{next_action_n}") + 1
+            # action_col = len(header) + 1 equals existing_action_idx
+            header = header[: existing_action_idx - 1]
+        except Exception:
+            pass
 
     # Determine columns where to write new Action and Text headers/data (user sheet)
     action_col = len(header) + 1
@@ -169,7 +204,9 @@ def log_user_action(sheet, user_id: str, action: str, text: str, question_id: in
                     return main_header.index(n) + 1
             return None
         username_col = find_col(["Username"])
-        qidx_col = find_col(["Question idx","Question Index","Question idx"])
+        qidx_col = find_col(["Question idx","Question Index","Question ID"])
+        print(f"[DEBUG] Username col={username_col}, Qidx col={qidx_col}")
+
         username = user_id
         qidx_val = qid_str
 
@@ -239,57 +276,7 @@ def log_user_action(sheet, user_id: str, action: str, text: str, question_id: in
 
     # Optional: small print for server logs
     print(f"Logged for {user_id}: {action} - {text} (Question {qid_str})")
-
-# def log_user_action(sheet, user_id: str, action: str, text: str, question_id: int):
-#     """
-#     Logs user actions on the SAME ROW (question_id row).
-#     Each new action adds two new columns: Action_#, Text_#.
-#     """
-#     if sheet is None:
-#         raise TypeError("log_user_action: 'sheet' is None")
-#     if not hasattr(sheet, "worksheet"):
-#         raise TypeError(f"log_user_action: 'sheet' does not have worksheet(); got {type(sheet)}")
-#     if user_id is None:
-#         raise TypeError("log_user_action: 'user_id' is None")
-
-#     if not text:
-#         text = "(empty)"
-
-#     # Open or create worksheet for the user
-#     try:
-#         ws = sheet.worksheet(user_id)
-#     except Exception:
-#         print(f"Worksheet for {user_id} not found, creating new one.")
-#         ws = sheet.add_worksheet(title=user_id, rows="100", cols="100")
-#         ws.update_cell(1, 1, "Question ID")
-
-#     # --- Find the correct row for this question ---
-#     all_qids = ws.col_values(1)
-#     if str(question_id) in all_qids:
-#         row_idx = all_qids.index(str(question_id)) + 1  # +1 because gspread is 1-indexed
-#     else:
-#         # New question — create a new row
-#         row_idx = len(all_qids) + 1
-#         ws.update_cell(row_idx, 1, str(question_id))  # store question id in first col
-
-#     # --- Determine new columns to write ---
-#     header_row = ws.row_values(1)
-#     num_cols = len(header_row)
-#     next_action_idx = (num_cols - 1) // 2 + 1  # each action has 2 columns
-
-#     action_col = num_cols + 1
-#     text_col = num_cols + 2
-
-#     # --- Update header row ---
-#     ws.update_cell(1, action_col, f"Action_{next_action_idx}")
-#     ws.update_cell(1, text_col, f"Text_{next_action_idx}")
-
-#     # --- Update data row for this question ---
-#     ws.update_cell(row_idx, action_col, action)
-#     ws.update_cell(row_idx, text_col, text)
-
-#     print(f"Logged for {user_id}: {action} - {text} (Question {question_id})")
-
+#make it to only change the last row?
 def write_survey_response(data, sheet, key_list):
     responses = []
     responses.append(st.session_state.username)

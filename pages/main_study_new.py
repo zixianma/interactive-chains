@@ -457,22 +457,20 @@ def show_step_2(index):
                         user_id = st.session_state.get("user_id", "test_user")
                         q_id = question.get("id", "Q_unknown")
                         
-                        logger.write_to_user_sheet(
-                                [
-                                    st.session_state.username,
-                                    st.session_state.condition,
-                                    1000,
-                                    "",
-                                    st.session_state.step_1_response,
-                                    st.session_state.step_2_response,
-                                    0,
-                                    st.session_state["gt_answer"],
-                                    0,
-                                    st.session_state.count + 1,
-                                    0
-                                ],
+                        logger.log_user_action(
+                            st.session_state['sheet'],
+                            st.session_state.username,
+                            "Accept",
+                            st.session_state["Answer in text"],
+                            st.session_state["question_id"], 
+                            condition=st.session_state.condition,
+                            step_1=st.session_state.step_1_response,
+                            step_2=st.session_state.step_2_response,
+                            gt_answer=st.session_state["gt_answer"],
+                            helpfulness=st.session_state.get("helpfulness", 0),
+                            time_spent=st.session_state.get("time_spent", 0),
+                            question_answered=st.session_state.count + 1
                         )
-                        logger.log_user_action( st.session_state['sheet'], user_id, "Accept", st.session_state["Answer in text"], 1000)
 
                         st.rerun()
                 with col2:
