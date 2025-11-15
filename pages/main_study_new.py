@@ -394,6 +394,8 @@ def show_step_2(index):
             st.session_state.last_sent_input = ""
         if "completion" not in st.session_state:
             st.session_state.completion = ""
+        if "action_history" not in st.session_state:
+            st.session_state.action_history = []
 
         st.session_state.text_input_buffer = st.text_area(
             "Your answer",
