@@ -481,7 +481,7 @@ def show_step_2(index):
                 with col2:
                     if st.button("Clear suggestion"):
                         st.session_state.completion = ""
-                        st.session_state.action_history.append(("Reject: ", st.session_state["Answer in text"]))
+                        st.session_state.action_history.append(("Reject: ", st.session_state.txt_input_buffer))
                         # user_id = st.session_state.get("user_id", "test_user")
                         # q_id = question.get("id", "Q_unknown")
                         # logger.write_to_user_sheet(
