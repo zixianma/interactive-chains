@@ -395,7 +395,7 @@ def show_step_2(index):
         if "completion" not in st.session_state:
             st.session_state.completion = ""
         if "action_history" not in st.session_state:
-            st.session_state.action_history = []
+            st.session_state["action_history"] = []
 
         st.session_state.text_input_buffer = st.text_area(
             "Your answer",
@@ -461,7 +461,9 @@ def show_step_2(index):
                         st.session_state["Answer in text"] = st.session_state.text_input_buffer
                         # user_id = st.session_state.get("user_id", "test_user")
                         # q_id = question.get("id", "Q_unknown")
-                        st.session_state.action_history.append(("Accept: ", st.session_state["Answer in text"]))
+                        st.session_state["action_history"].append(("Accept", st.session_state.get(st.session_state["Answer in text"], "")))
+
+                        #st.session_state.action_history.append(("Accept: ", st.session_state["Answer in text"]))
                         # logger.log_user_action(
                         #     st.session_state['sheet'],
                         #     st.session_state.username,
@@ -481,7 +483,9 @@ def show_step_2(index):
                 with col2:
                     if st.button("Clear suggestion"):
                         st.session_state.completion = ""
-                        st.session_state.action_history.append(("Reject: ", st.session_state.txt_input_buffer))
+                        st.session_state["action_history"].append(("Reject", st.session_state.get("text_input_buffer", "")))
+
+                        #st.session_state.action_history.append(("Reject: ", st.session_state.text_input_buffer))
                         # user_id = st.session_state.get("user_id", "test_user")
                         # q_id = question.get("id", "Q_unknown")
                         # logger.write_to_user_sheet(
@@ -794,6 +798,8 @@ def main_study():
     if st.session_state.step_phase == 1:
         show_step_1(idx)
     elif st.session_state.step_phase == 2:
+        if "action_history" not in st.session_state:
+            st.session_state["action_history"] = []
         show_step_2(idx)
     else:
         raise NotImplementedError
@@ -829,7 +835,7 @@ def main_study():
                     time_spent,
                     st.session_state.count + 1,
                     test_ids_str
-                ],
+                ]
                 #answer_text=answer_text
             )
             # logger.log_user_action(
