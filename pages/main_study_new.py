@@ -410,7 +410,7 @@ def show_step_2(index):
                         st.session_state.completion = ""
                         st.session_state.last_sent_input = st.session_state.text_input_buffer
                         st.session_state["Answer in text"] = st.session_state.text_input_buffer
-                        st.session_state["action_history"].append(("Accept", st.session_state.get("st.session_state.text_input_buffer", "")))
+                        st.session_state["action_history"].append(("Accept", st.session_state.get("text_input_buffer", "")))
                         st.rerun()
                 with col2:
                     if st.button("Clear suggestion"):
