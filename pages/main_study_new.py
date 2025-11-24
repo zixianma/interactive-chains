@@ -650,8 +650,8 @@ def main_study():
             Please be honest—your response to Step 1 will not influence the reward you receive.
 
             **Step 2:** You will then see a text box where you can write your answer.  
-            As you type, the AI model may **autocomplete your response**, and you can choose to accept or ignore its suggestions.
-            When you reach your final answer, please clearly mark it with:  **`Final Answer:`**  
+            As you type, the AI model may **autocomplete your response**, and you can choose to accept or ignore its suggestions. Interact with it until you think you got the right answer.
+            When you reach your final answer, please clearly mark it with:  **`Final Answer:`**. If you are not able to solve it, mark: **`Final Answer: N/A`**
             You will decide whether to **ACCEPT** or **REJECT** the model's answer based on the AI response.
 
             **Step 3:** After each question, you will answer a brief survey about how helpful the AI model's information was in guiding your decision.  

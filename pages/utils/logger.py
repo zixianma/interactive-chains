@@ -20,7 +20,7 @@ def write_to_user_sheet(data):
     else:
         row_data = data
 
-    exponential_backoff(sheet.append_row, data)
+    exponential_backoff(sheet.append_row, row_data)
     
     user_data_sheet = st.session_state['sheet']
     all_actions_sheet = exponential_backoff(user_data_sheet.worksheet, 'Main Study')  
