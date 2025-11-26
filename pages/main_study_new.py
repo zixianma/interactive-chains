@@ -126,7 +126,7 @@ def show_step_1(index):
     response = st.radio(
         "Your selection",
         options=options,
-        key=f"response_{index}",
+        key=f"step1_response_{index}",
         format_func=lambda x: x if x == response_placeholder else f"{x} -- {labels[x]}",
         label_visibility="collapsed",
         horizontal=False
@@ -136,7 +136,7 @@ def show_step_1(index):
     st.divider()
 
     # Submit button
-    if st.button("Submit", key=f"submit_{index}"):
+    if st.button("Submit", key=f"step1_submit_{index}"):
         if response != response_placeholder:
             # Store as integer 1–5
             st.session_state.step_1_response = int(response)
@@ -441,7 +441,7 @@ def show_step_2(index):
     response = st.radio(
         "Your selection",
         options=[response_placeholder, "Yes, I ACCEPT the model's answer", "No, I REJECT the model's answer"],
-        key=f"response_{index}",
+        key=f"step2_response_{index}",
         label_visibility="collapsed"
     )
 
@@ -452,7 +452,7 @@ def show_step_2(index):
     warning = st.empty()
     st.divider()
 
-    if st.button("Submit", key=f"submit_{index}"):
+    if st.button("Submit", key=f"step2_submit_{index}"):
         if response and response != response_placeholder:
             st.session_state.step_2_response = mapping[response]
             st.session_state.step_2_submitted = True
