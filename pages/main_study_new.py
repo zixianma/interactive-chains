@@ -262,18 +262,14 @@ def show_step_2(index):
         if "action_history" not in st.session_state:
             st.session_state["action_history"] = []
 
-        new_text = st.text_area(
+        st.session_state.text_input_buffer = st.text_area(
             "Your answer",
             value=st.session_state.text_input_buffer,
-            key="text_input_F",
+            key="text_input_E",
             height=200
         )
-
-        # Only update if user typed something new
-        if new_text != st.session_state.text_input_buffer:
-            st.session_state.text_input_buffer = new_text
         st.session_state["Answer in text"] = st.session_state.get("text_input_buffer", "")
-       
+        
         if "Final Answer:" in st.session_state.text_input_buffer:
             st.markdown("**Model's Final Answer:**")
             final_answer = st.session_state.text_input_buffer.split("Final Answer:")[-1].strip()
@@ -326,7 +322,7 @@ def show_step_2(index):
                             st.session_state.completion = ""
                             st.session_state.last_sent_input = st.session_state.text_input_buffer
                             st.session_state["Answer in text"] = st.session_state.text_input_buffer
-                            st.session_state["action_history"].append(("Accept", st.session_state.get("st.session_state.text_input_buffer", "")))
+                            st.session_state["action_history"].append(("Accept", st.session_state.get("text_input_buffer", "")))
                         
                             st.rerun()
                 with col2:

@@ -11,9 +11,9 @@ from pages.evaluation import evaluation
 st.set_page_config(layout="wide")
 
 # Force condition to "E. Editable Local Suggestion"
-for key in ["completion", "text_input_buffer", "last_sent_input"]:
-    if key not in st.session_state:
-        st.session_state[key] = ""
+# for key in ["completion", "text_input_buffer", "last_sent_input"]:
+#     if key not in st.session_state:
+#         st.session_state[key] = ""
 
 def main():
     if st.session_state.get("condition") != "E. Editable Local Suggestion" or "condition" not in st.session_state:
