@@ -295,7 +295,14 @@ def show_step_2(index):
         """
                 try:
                     from openai import OpenAI
-                                        
+                    import os
+
+                    # Disable proxies to avoid Client.init() error
+                    os.environ.pop("HTTP_PROXY", None)
+                    os.environ.pop("HTTPS_PROXY", None)
+                    os.environ.pop("http_proxy", None)
+                    os.environ.pop("https_proxy", None)
+                                
                     client = OpenAI(api_key=st.secrets["openai"]["api_key"])
                     response = client.chat.completions.create(
                         model="gpt-4o",
