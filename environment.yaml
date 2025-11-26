@@ -1,6 +1,6 @@
 name: visprog
 dependencies:
-  - python=3.10
+  - python=3.11
   - pip
   - pip:
     - openai==0.23.0
