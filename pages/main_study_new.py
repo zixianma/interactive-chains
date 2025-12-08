@@ -279,30 +279,26 @@ def show_step_2(index):
             # Only generate if user changed input
             if st.session_state.text_input_buffer.strip() != st.session_state.last_sent_input.strip():
                 prompt = f"""
-                You are a helpful and concise math tutor. 
-                The student may has already completed some steps. Your task is autocomplete the current step.
-                Do not repeat previous words or jump ahead to the next step.  
-                Maintain the "Step X" format if applicable.
-                Provide pure text only, no highlight, LaTex, italic, markdown or other decorations.
-                If it's your final step, include the final answer in your response, and start the sentence with "Final Answer: " in a separate line.
 
+                You are a highly concise and disciplined math tutor. Your role is to continue the student's current step, not to restart the solution, not to rewrite earlier steps, and not to jump ahead.
+
+                Follow these rules exactly:
+                    1. Do not repeat any part of the student's previous text.
+                    2. Continue directly from the student's current step, treating it as already written.
+                    3. Maintain the existing “Step X” numbering style.
+                    4. Write only the next step, nothing before it and nothing after it.
+                    5. If your response completes the solution, start a new line with:'Final Answer:' followed by the final answer only.
+                    6. No formatting of any kind: no LaTeX, no italics, no bold, no code blocks, no markdown symbols.
+                    7. Finish the question with at least 2 steps.
 
 
                 Question: {question["question"]}
 
                 Current step: "{st.session_state.text_input_buffer}"
-                Instructions: Continue directly from the the current step orovide  the next step.
+                Instructions:  continue the student's current step, not to restart the solution, not to rewrite earlier steps, and not to jump ahead.
         """
                 try:
                     from openai import OpenAI
-                    import os
-
-                    # Disable proxies to avoid Client.init() error
-                    os.environ.pop("HTTP_PROXY", None)
-                    os.environ.pop("HTTPS_PROXY", None)
-                    os.environ.pop("http_proxy", None)
-                    os.environ.pop("https_proxy", None)
-                                
                     client = OpenAI(api_key=st.secrets["openai"]["api_key"])
                     response = client.chat.completions.create(
                         model="gpt-4o",
