@@ -289,9 +289,7 @@ def show_step_2(index):
                     4. Write only the next step, nothing before it and nothing after it.
                     5. If your response completes the solution, start a new line with:'Final Answer:' followed by the final answer only.
                     6. No formatting of any kind: no LaTeX, no italics, no bold, no code blocks, no markdown symbols.
-                    7. Finish the question with at least 2 steps.
-
-
+    
                 Question: {question["question"]}
 
                 Current step: "{st.session_state.text_input_buffer}"
@@ -303,7 +301,7 @@ def show_step_2(index):
                     response = client.chat.completions.create(
                         model="gpt-4o",
                         messages=[{"role": "user", "content": prompt}],
-                        max_tokens=200,
+                        max_tokens=150,
                         temperature=0.4,
                         #stop=["\n"]#
                     )
